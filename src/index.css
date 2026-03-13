@@ -1,0 +1,155 @@
+:root {
+  color-scheme: light dark;
+  font-family: "SF Pro Text", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: 48px 1fr 32px;
+  height: 100%;
+  background: #f5f6f8;
+  color: #111827;
+}
+
+.toolbar,
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid #d1d5db;
+  background: #ffffff;
+  gap: 8px;
+}
+
+.status-bar {
+  border-top: 1px solid #d1d5db;
+  border-bottom: 0;
+  font-size: 12px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+}
+
+.pane {
+  min-height: 0;
+  overflow: auto;
+}
+
+.pane.editor {
+  border-right: 1px solid #d1d5db;
+}
+
+.pane.full {
+  grid-column: 1 / -1;
+}
+
+textarea {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  padding: 16px;
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.preview {
+  padding: 16px;
+  background: #ffffff;
+}
+
+.preview :is(h1, h2, h3) {
+  margin-top: 1.25rem;
+}
+
+.preview pre {
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+}
+
+button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #e2e8f0;
+}
+
+.left-group,
+.center-group,
+.right-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.right-group {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-shell {
+    background: #111827;
+    color: #e5e7eb;
+  }
+
+  .toolbar,
+  .status-bar {
+    background: #0f172a;
+    border-color: #1f2937;
+  }
+
+  .pane.editor {
+    border-right-color: #1f2937;
+  }
+
+  textarea {
+    background: #111827;
+    color: #e5e7eb;
+  }
+
+  .preview {
+    background: #0b1220;
+    color: #e5e7eb;
+  }
+
+  button {
+    border-color: #334155;
+    background: #1e293b;
+    color: #e5e7eb;
+  }
+
+  button:hover {
+    background: #334155;
+  }
+}

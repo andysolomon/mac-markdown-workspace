@@ -1,0 +1,7 @@
+2026-03-13
+- Scaffolded Electron Forge + Vite app.
+- Added Bun lock and Bun-first dependency workflow.
+- Wired secure main/preload IPC for open/save/save-as/zoom/version.
+- Replaced default renderer with React app shell and Markdown preview baseline.
+- Added implementation plan and initial test setup.
+- Next: integrate CodeMirror 6 editor and full markdown feature plugins.
