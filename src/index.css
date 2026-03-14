@@ -16,12 +16,15 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
+  max-width: 100vw;
 }
 
 .app-shell {
   display: grid;
   grid-template-rows: 48px 1fr 32px;
   height: 100%;
+  max-width: 100vw;
+  overflow: hidden;
   background: var(--bg-app);
   color: var(--text-primary);
   padding-top: env(safe-area-inset-top);
@@ -39,6 +42,8 @@ body,
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-toolbar);
   gap: 8px;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .status-bar {
@@ -68,6 +73,7 @@ body,
 
 .pane {
   min-height: 0;
+  min-width: 0;
   overflow: auto;
 }
 
@@ -94,12 +100,17 @@ body,
 /* CodeMirror container styling */
 .pane.editor .cm-editor {
   height: 100%;
+  max-width: 100%;
 }
 
 .pane.editor .cm-editor .cm-scroller {
   font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.pane.editor .cm-editor .cm-content {
+  max-width: 100%;
 }
 
 textarea {
@@ -227,6 +238,8 @@ button.active:hover {
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-toolbar);
   flex-shrink: 0;
+  flex-wrap: wrap;
+  overflow: hidden;
 }
 
 .wysiwyg-toolbar button {
