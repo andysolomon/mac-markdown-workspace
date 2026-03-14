@@ -1,5 +1,6 @@
+@import "./styles/themes.css";
+
 :root {
-  color-scheme: light dark;
   font-family: "SF Pro Text", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -20,8 +21,8 @@ body,
   display: grid;
   grid-template-rows: 48px 1fr 32px;
   height: 100%;
-  background: #f5f6f8;
-  color: #111827;
+  background: var(--bg-app);
+  color: var(--text-primary);
 }
 
 .toolbar,
@@ -30,15 +31,16 @@ body,
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  border-bottom: 1px solid #d1d5db;
-  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-toolbar);
   gap: 8px;
 }
 
 .status-bar {
-  border-top: 1px solid #d1d5db;
+  border-top: 1px solid var(--border-color);
   border-bottom: 0;
   font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .workspace {
@@ -53,11 +55,34 @@ body,
 }
 
 .pane.editor {
-  border-right: 1px solid #d1d5db;
+  border-right: none;
 }
 
 .pane.full {
   grid-column: 1 / -1;
+}
+
+/* Resizable divider between panes */
+.pane-divider {
+  width: 5px;
+  cursor: col-resize;
+  background: var(--border-color);
+  transition: background 0.15s;
+}
+
+.pane-divider:hover {
+  background: var(--accent);
+}
+
+/* CodeMirror container styling */
+.pane.editor .cm-editor {
+  height: 100%;
+}
+
+.pane.editor .cm-editor .cm-scroller {
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 textarea {
@@ -70,13 +95,14 @@ textarea {
   font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
   font-size: 14px;
   line-height: 1.5;
-  background: #f9fafb;
-  color: #111827;
+  background: var(--bg-editor);
+  color: var(--text-primary);
 }
 
 .preview {
   padding: 16px;
-  background: #ffffff;
+  background: var(--bg-preview);
+  color: var(--text-primary);
 }
 
 .preview :is(h1, h2, h3) {
@@ -87,13 +113,14 @@ textarea {
   overflow: auto;
   padding: 0.75rem;
   border-radius: 8px;
-  background: #111827;
-  color: #f9fafb;
+  background: var(--bg-code);
+  color: var(--text-code);
 }
 
 button {
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  border: 1px solid var(--border-button);
+  background: var(--bg-button);
+  color: var(--text-primary);
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 12px;
@@ -101,7 +128,17 @@ button {
 }
 
 button:hover {
-  background: #e2e8f0;
+  background: var(--bg-button-hover);
+}
+
+button.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+button.active:hover {
+  background: var(--accent-hover);
 }
 
 .left-group,
@@ -115,41 +152,100 @@ button:hover {
 .right-group {
   font-size: 12px;
   opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 400px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .app-shell {
-    background: #111827;
-    color: #e5e7eb;
-  }
+/* Export dropdown */
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
 
-  .toolbar,
-  .status-bar {
-    background: #0f172a;
-    border-color: #1f2937;
-  }
+.export-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  margin-top: 4px;
+  min-width: 120px;
+  background: var(--bg-toolbar);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
 
-  .pane.editor {
-    border-right-color: #1f2937;
-  }
+.export-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  padding: 8px 12px;
+}
 
-  textarea {
-    background: #111827;
-    color: #e5e7eb;
-  }
+.export-menu button:hover {
+  background: var(--bg-button-hover);
+}
 
-  .preview {
-    background: #0b1220;
-    color: #e5e7eb;
-  }
+/* WYSIWYG toolbar */
+.wysiwyg-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
 
-  button {
-    border-color: #334155;
-    background: #1e293b;
-    color: #e5e7eb;
-  }
+.wysiwyg-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-toolbar);
+  flex-shrink: 0;
+}
 
-  button:hover {
-    background: #334155;
-  }
+.wysiwyg-toolbar button {
+  min-width: 32px;
+  height: 32px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wysiwyg-toolbar button:hover {
+  background: var(--bg-button-hover);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.wysiwyg-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.wysiwyg-body .milkdown {
+  outline: none;
+}
+
+.wysiwyg-body .ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+
+.wysiwyg-body .ProseMirror > * + * {
+  margin-top: 0.75em;
 }

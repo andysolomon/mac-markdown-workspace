@@ -1,0 +1,33 @@
+[data-theme="light"] {
+  --bg-app: #f5f6f8;
+  --bg-toolbar: #ffffff;
+  --bg-editor: #f9fafb;
+  --bg-preview: #ffffff;
+  --bg-button: #f8fafc;
+  --bg-button-hover: #e2e8f0;
+  --bg-code: #111827;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-code: #f9fafb;
+  --border-color: #d1d5db;
+  --border-button: #cbd5e1;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+}
+
+[data-theme="dark"] {
+  --bg-app: #111827;
+  --bg-toolbar: #0f172a;
+  --bg-editor: #111827;
+  --bg-preview: #0b1220;
+  --bg-button: #1e293b;
+  --bg-button-hover: #334155;
+  --bg-code: #0d1117;
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-code: #e5e7eb;
+  --border-color: #1f2937;
+  --border-button: #334155;
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+}

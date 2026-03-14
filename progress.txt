@@ -1,7 +1,60 @@
 2026-03-13
+Phase 1 (complete):
 - Scaffolded Electron Forge + Vite app.
 - Added Bun lock and Bun-first dependency workflow.
 - Wired secure main/preload IPC for open/save/save-as/zoom/version.
 - Replaced default renderer with React app shell and Markdown preview baseline.
-- Added implementation plan and initial test setup.
-- Next: integrate CodeMirror 6 editor and full markdown feature plugins.
+
+Phase 2 (complete):
+- Zustand document store (content, savedContent, filePath, isDirty, viewMode, cursorPosition).
+- useFileOperations hook extracting open/save/saveAs/newFile logic.
+- Decomposed renderer into App, Toolbar, Workspace, SourceEditor, Preview, StatusBar.
+- CodeMirror 6 integration with markdown syntax, line numbers, bracket matching.
+- renderer.tsx is now a thin mount shell.
+
+Phase 3 (complete):
+- Theme store (light/dark/system) with CSS variables and data-theme attribute.
+- Theme CSS variables in src/styles/themes.css.
+- CodeMirror dark theme (oneDark) toggled by resolved theme.
+- Toolbar theme cycle button (Light/Dark/System).
+- Settings persistence via electron-store IPC (settings:get/set).
+- Status bar: line/word/char counts, cursor position (Ln/Col), dirty indicator.
+- Keyboard shortcuts: Cmd+S/Shift+S/O/N, Cmd+1/2/3 (modes).
+- Native macOS app menu (File, Edit, View, Window, Help) with accelerators.
+
+Phase 4 (complete):
+- Unsaved changes dialog (Save/Don't Save/Cancel) via IPC.
+- Dirty guard on open/new file operations.
+- Export to TXT (raw content save dialog).
+- Export to PDF (hidden BrowserWindow printToPDF).
+- Export to DOCX (html-to-docx conversion).
+- Export dropdown UI in toolbar.
+- markdownToHtml service using ReactDOMServer.renderToString.
+
+Phase 5 (complete):
+- Milkdown WYSIWYG editor component with commonmark preset.
+- React.lazy() loading for Milkdown (code-split).
+- Workspace renders WysiwygEditor in wysiwyg mode, Preview in split.
+- Debounced preview render (150ms) in split mode.
+- Content syncs through Zustand store (single source of truth).
+
+Phase 6 (complete):
+- forge.config.ts: appBundleId, appCategoryType, icon path, signing stubs.
+- Full macOS menu with standard Edit (undo/redo/cut/copy/paste/selectAll).
+- Unit tests: documentStore (7 tests), StatusBar (7 tests).
+- E2E test scaffolding with Playwright (app-launch, file-operations, view-modes).
+- vitest excludes e2e directory.
+- Active view mode button styling (.active class).
+- React.memo on Preview, StatusBar, Toolbar, SourceEditor, WysiwygEditor.
+
+Phase 7 (complete):
+- Web entry point (src/web/entry.tsx) with browserApi shim assigned to window.appApi.
+- Web HTML shell (web/index.html) for Vite dev/build.
+- File System Access API type declarations (src/web/file-system-access.d.ts).
+- Vite web config (vite.web.config.ts) with GitHub Pages base path.
+- Browser-compatible drag-and-drop (File API fallback when no Electron path).
+- Package scripts: web:dev, web:build, web:preview.
+- GitHub Actions workflow for automatic GitHub Pages deployment on push to main.
+- dist-web/ added to .gitignore.
+
+All checks pass: typecheck, lint, 15 unit tests, web build.
