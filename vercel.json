@@ -1,0 +1,9 @@
+{
+  "buildCommand": "VITE_BASE=/ vite build --config vite.web.config.ts",
+  "outputDirectory": "dist-web",
+  "installCommand": "bun install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

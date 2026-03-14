@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "/mac-markdown-workspace/",
+  base: process.env.VITE_BASE ?? "/mac-markdown-workspace/",
   build: {
     outDir: "dist-web",
     emptyOutDir: true,
