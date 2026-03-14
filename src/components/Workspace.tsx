@@ -52,17 +52,19 @@ export function Workspace() {
 
   const { fraction, containerRef, onMouseDown } = usePaneDrag(0.5);
 
-  // Debounce preview content in split mode
+  // Debounce preview content in split/preview mode
   const [debouncedContent, setDebouncedContent] = useState(content);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
+  const showsPreview = viewMode === "split" || viewMode === "preview";
+
   useEffect(() => {
-    if (viewMode === "split") {
+    if (showsPreview) {
       timerRef.current = setTimeout(() => setDebouncedContent(content), 150);
       return () => clearTimeout(timerRef.current);
     }
     setDebouncedContent(content);
-  }, [content, viewMode]);
+  }, [content, showsPreview]);
 
   const isSplit = viewMode === "split";
 
@@ -76,7 +78,7 @@ export function Workspace() {
           : undefined
       }
     >
-      {viewMode !== "wysiwyg" && (
+      {(viewMode === "source" || isSplit) && (
         <section className={`pane editor ${viewMode === "source" ? "full" : ""}`}>
           <SourceEditor />
         </section>
@@ -86,8 +88,8 @@ export function Workspace() {
         <div className="pane-divider" onMouseDown={onMouseDown} />
       )}
 
-      {isSplit && (
-        <section className="pane preview">
+      {(isSplit || viewMode === "preview") && (
+        <section className={`pane preview ${viewMode === "preview" ? "full" : ""}`}>
           <Preview content={debouncedContent} />
         </section>
       )}

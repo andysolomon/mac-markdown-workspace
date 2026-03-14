@@ -23,7 +23,7 @@ export function App() {
 
   // Load saved theme from settings
   useEffect(() => {
-    window.appApi.getSetting?.("theme").then((saved) => {
+    window.appApi?.getSetting?.("theme").then((saved) => {
       if (saved === "light" || saved === "dark" || saved === "system") {
         setTheme(saved);
       }
@@ -32,7 +32,7 @@ export function App() {
 
   // Listen for menu actions from main process
   useEffect(() => {
-    const cleanup = window.appApi.onMenuAction?.((action: string) => {
+    const cleanup = window.appApi?.onMenuAction?.((action: string) => {
       window.dispatchEvent(new CustomEvent("menu-action", { detail: action }));
     });
     return cleanup;
@@ -60,7 +60,7 @@ export function App() {
 
     if (filePath) {
       // Electron: read via IPC using the native file path
-      const result = await window.appApi.readFile({ filePath });
+      const result = await window.appApi?.readFile({ filePath });
       if (!result) return;
       useDocumentStore.setState({
         content: result.content,

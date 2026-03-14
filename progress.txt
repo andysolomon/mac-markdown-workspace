@@ -57,4 +57,14 @@ Phase 7 (complete):
 - GitHub Actions workflow for automatic GitHub Pages deployment on push to main.
 - dist-web/ added to .gitignore.
 
-All checks pass: typecheck, lint, 15 unit tests, web build.
+Phase 8 (complete):
+- Capacitor config (capacitor.config.ts) with appId, appName, webDir.
+- iOS API shim (src/ios/capacitorApi.ts) implementing AppApi with Capacitor plugins.
+- iOS entry point (src/ios/entry.tsx) mounting React app with capacitorApi.
+- iOS HTML shell (ios/index.html) with viewport-fit=cover and apple-mobile-web-app-capable.
+- Vite iOS config (vite.ios.config.ts) with relative base path for file:// protocol.
+- Safe area inset padding on .app-shell for notch/home indicator.
+- Package scripts: ios:build, ios:sync, ios:open.
+- ios/App/ added to .gitignore.
+
+All checks pass: typecheck, lint, 15 unit tests, web build, ios build.

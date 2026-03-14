@@ -17,12 +17,12 @@ export const StatusBar = React.memo(function StatusBar() {
 
   return (
     <footer className="status-bar">
-      <span>
-        {isDirty ? "Modified" : "Saved"} | Words: {wordCount} | Chars: {charCount} | Lines: {lineCount}
-      </span>
-      <span>
-        Ln {cursorPosition.line}, Col {cursorPosition.col} | {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
-      </span>
+      <span className="status-item">{isDirty ? "Modified" : "Saved"}</span>
+      <span className="status-item">Words: {wordCount}</span>
+      <span className="status-item">Chars: {charCount}</span>
+      <span className="status-item">Lines: {lineCount}</span>
+      <span className="status-item">Ln {cursorPosition.line}, Col {cursorPosition.col}</span>
+      <span className="status-item">{viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}</span>
     </footer>
   );
 });

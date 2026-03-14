@@ -93,3 +93,7 @@ out/
 
 # Web build
 dist-web/
+.vercel
+
+# Capacitor iOS native project
+ios/App/

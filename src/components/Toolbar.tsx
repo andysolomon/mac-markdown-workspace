@@ -22,7 +22,9 @@ export const Toolbar = React.memo(function Toolbar() {
   const content = useDocumentStore((s) => s.content);
 
   const [exportOpen, setExportOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Close export dropdown on outside click
   useEffect(() => {
@@ -36,7 +38,20 @@ export const Toolbar = React.memo(function Toolbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [exportOpen]);
 
-  const modes: ViewMode[] = ["source", "split", "wysiwyg"];
+  // Close hamburger menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
+  const mobileModes: ViewMode[] = ["source", "preview", "wysiwyg"];
 
   const cycleTheme = () => {
     const idx = themes.indexOf(theme);
@@ -47,6 +62,7 @@ export const Toolbar = React.memo(function Toolbar() {
 
   const handleExport = async (format: "txt" | "pdf" | "docx") => {
     setExportOpen(false);
+    setMenuOpen(false);
     if (format === "txt") {
       await window.appApi.exportTxt?.({ content });
     } else {
@@ -60,9 +76,12 @@ export const Toolbar = React.memo(function Toolbar() {
     }
   };
 
+  const fileName = filePath ? filePath.split("/").pop() : "Unsaved document";
+
   return (
     <header className="toolbar">
-      <div className="left-group">
+      {/* Desktop layout */}
+      <div className="left-group desktop-only">
         <button onClick={openFile}>Open</button>
         <button onClick={saveFile}>Save</button>
         <div className="export-dropdown" ref={exportRef}>
@@ -76,8 +95,8 @@ export const Toolbar = React.memo(function Toolbar() {
           )}
         </div>
       </div>
-      <div className="center-group">
-        {modes.map((m) => (
+      <div className="center-group desktop-only">
+        {desktopModes.map((m) => (
           <button
             key={m}
             className={viewMode === m ? "active" : ""}
@@ -87,10 +106,46 @@ export const Toolbar = React.memo(function Toolbar() {
           </button>
         ))}
       </div>
-      <div className="right-group">
+      <div className="right-group desktop-only">
         <button onClick={cycleTheme}>{themeLabels[theme]}</button>
         <span>
-          {filePath ? filePath.split("/").pop() : "Unsaved document"}
+          {fileName}
+          {isDirty ? " *" : ""}
+        </span>
+      </div>
+
+      {/* Mobile layout */}
+      <div className="mobile-only mobile-toolbar">
+        <div className="hamburger-wrapper" ref={menuRef}>
+          <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
+            &#9776;
+          </button>
+          {menuOpen && (
+            <div className="hamburger-menu">
+              <button onClick={() => { openFile(); setMenuOpen(false); }}>Open</button>
+              <button onClick={() => { saveFile(); setMenuOpen(false); }}>Save</button>
+              <button onClick={() => handleExport("txt")}>Export Text</button>
+              <button onClick={() => handleExport("pdf")}>Export PDF</button>
+              <button onClick={() => handleExport("docx")}>Export Word</button>
+              <hr />
+              {mobileModes.map((m) => (
+                <button
+                  key={m}
+                  className={viewMode === m ? "active" : ""}
+                  onClick={() => { setViewMode(m); setMenuOpen(false); }}
+                >
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </button>
+              ))}
+              <hr />
+              <button onClick={() => { cycleTheme(); setMenuOpen(false); }}>
+                Theme: {themeLabels[theme]}
+              </button>
+            </div>
+          )}
+        </div>
+        <span className="mobile-filename">
+          {fileName}
           {isDirty ? " *" : ""}
         </span>
       </div>
