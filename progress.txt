@@ -1,70 +1,69 @@
-2026-03-13
-Phase 1 (complete):
-- Scaffolded Electron Forge + Vite app.
-- Added Bun lock and Bun-first dependency workflow.
-- Wired secure main/preload IPC for open/save/save-as/zoom/version.
-- Replaced default renderer with React app shell and Markdown preview baseline.
+Mac Markdown Workspace — Design Overhaul Progress
+Generated: 2026-07-05
 
-Phase 2 (complete):
-- Zustand document store (content, savedContent, filePath, isDirty, viewMode, cursorPosition).
-- useFileOperations hook extracting open/save/saveAs/newFile logic.
-- Decomposed renderer into App, Toolbar, Workspace, SourceEditor, Preview, StatusBar.
-- CodeMirror 6 integration with markdown syntax, line numbers, bracket matching.
-- renderer.tsx is now a thin mount shell.
+Legend: [x] done  [~] in progress  [ ] not started
+Scope: rebuild the single-doc editor into a Bear-style three-pane notes
+workspace on the "Mac Markdown" design system (4 light themes + derived dark),
+across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
 
-Phase 3 (complete):
-- Theme store (light/dark/system) with CSS variables and data-theme attribute.
-- Theme CSS variables in src/styles/themes.css.
-- CodeMirror dark theme (oneDark) toggled by resolved theme.
-- Toolbar theme cycle button (Light/Dark/System).
-- Settings persistence via electron-store IPC (settings:get/set).
-- Status bar: line/word/char counts, cursor position (Ln/Col), dirty indicator.
-- Keyboard shortcuts: Cmd+S/Shift+S/O/N, Cmd+1/2/3 (modes).
-- Native macOS app menu (File, Edit, View, Window, Help) with accelerators.
+[x] 0.0 - Phase 0 - Foundation (v1, shipped)
+    [x] 0.1 - React 19 app on window.appApi abstraction (Electron/web/iOS shims)
+    [x] 0.2 - Single-doc store, CodeMirror source, Milkdown WYSIWYG, react-markdown preview
+    [x] 0.3 - File open/save/saveAs + TXT/PDF/DOCX export per platform
+    [x] 0.4 - light/dark/system themes (color-only tokens)
+    [x] 0.5 - Web entry wiring fixed + regression test (src/tests/webEntry.test.ts)
 
-Phase 4 (complete):
-- Unsaved changes dialog (Save/Don't Save/Cancel) via IPC.
-- Dirty guard on open/new file operations.
-- Export to TXT (raw content save dialog).
-- Export to PDF (hidden BrowserWindow printToPDF).
-- Export to DOCX (html-to-docx conversion).
-- Export dropdown UI in toolbar.
-- markdownToHtml service using ReactDOMServer.renderToString.
+[ ] 1.0 - Phase 1 - Token foundation + dark derivation
+    [ ] 1.1 - Copy kit tokens into src/styles/tokens/{colors,typography,spacing,markdown}.css + tokens entry
+    [ ] 1.2 - Derive dark variants for all four palettes (data-mode="dark"), contrast-checked
+    [ ] 1.3 - Rework themeStore to {palette, mode} and stamp data-theme + data-mode on <html>
+    [ ] 1.4 - Port guidelines/*.card.html into a preview harness for all 8 palette x mode combos
+    [ ] 1.5 - Acceptance: live re-color on palette/mode switch; no raw hex outside token files
 
-Phase 5 (complete):
-- Milkdown WYSIWYG editor component with commonmark preset.
-- React.lazy() loading for Milkdown (code-split).
-- Workspace renders WysiwygEditor in wysiwyg mode, Preview in split.
-- Debounced preview render (150ms) in split mode.
-- Content syncs through Zustand store (single source of truth).
+[ ] 2.0 - Phase 2 - Typography + base
+    [ ] 2.1 - Load Nunito Sans (Avenir Next fallback); set --mm-font-* and type scales
+    [ ] 2.2 - Reconcile src/index.css base rules to --mm-space-*/--mm-radius-* tokens
+    [ ] 2.3 - Acceptance: brand type renders; no hardcoded px in restyled base; light + dark legible
 
-Phase 6 (complete):
-- forge.config.ts: appBundleId, appCategoryType, icon path, signing stubs.
-- Full macOS menu with standard Edit (undo/redo/cut/copy/paste/selectAll).
-- Unit tests: documentStore (7 tests), StatusBar (7 tests).
-- E2E test scaffolding with Playwright (app-launch, file-operations, view-modes).
-- vitest excludes e2e directory.
-- Active view mode button styling (.active class).
-- React.memo on Preview, StatusBar, Toolbar, SourceEditor, WysiwygEditor.
+[ ] 3.0 - Phase 3 - Notes library data model + persistence (backbone)
+    [ ] 3.1 - Note type (id, derived title, body, tags, timestamps)
+    [ ] 3.2 - Extend AppApi: listNotes/readNote/createNote/writeNote/deleteNote
+    [ ] 3.3 - Electron impl (workspace folder of .md via fs)
+    [ ] 3.4 - Web impl (File System Access dir handle + IndexedDB fallback)
+    [ ] 3.5 - iOS impl (Capacitor Filesystem, Documents dir)
+    [ ] 3.6 - notesStore (Zustand) + migrate current open/save into "import to library"; autosave
+    [ ] 3.7 - Acceptance: CRUD persists across reload on all 3 platforms; unit tests for store + title/tag derivation
 
-Phase 7 (complete):
-- Web entry point (src/web/entry.tsx) with browserApi shim assigned to window.appApi.
-- Web HTML shell (web/index.html) for Vite dev/build.
-- File System Access API type declarations (src/web/file-system-access.d.ts).
-- Vite web config (vite.web.config.ts) with GitHub Pages base path.
-- Browser-compatible drag-and-drop (File API fallback when no Electron path).
-- Package scripts: web:dev, web:build, web:preview.
-- GitHub Actions workflow for automatic GitHub Pages deployment on push to main.
-- dist-web/ added to .gitignore.
+[ ] 4.0 - Phase 4 - Tag + search engine
+    [ ] 4.1 - Parse #hashtags -> tag index with counts (exclude code spans, URLs, heading hashes)
+    [ ] 4.2 - selectedTag filter + "All"; substring/token search over title+body
+    [ ] 4.3 - Derived filtered/sorted list selector
+    [ ] 4.4 - Acceptance: tags surface with correct counts; tag + search narrow the list; unit tests
 
-Phase 8 (complete):
-- Capacitor config (capacitor.config.ts) with appId, appName, webDir.
-- iOS API shim (src/ios/capacitorApi.ts) implementing AppApi with Capacitor plugins.
-- iOS entry point (src/ios/entry.tsx) mounting React app with capacitorApi.
-- iOS HTML shell (ios/index.html) with viewport-fit=cover and apple-mobile-web-app-capable.
-- Vite iOS config (vite.ios.config.ts) with relative base path for file:// protocol.
-- Safe area inset padding on .app-shell for notch/home indicator.
-- Package scripts: ios:build, ios:sync, ios:open.
-- ios/App/ added to .gitignore.
+[ ] 5.0 - Phase 5 - Three-pane shell UI
+    [ ] 5.1 - Port kit components (WindowDots, Tag, DocListItem, ThemeSwatch, MarkdownLine)
+    [ ] 5.2 - Sidebar (dots, All pill, HASHTAGS, tag list)
+    [ ] 5.3 - DocList (search + rows) wired to notesStore
+    [ ] 5.4 - EditorChrome (list icon, Aa, +, edit/read toggle) + layout via --mm-*-w/--mm-topbar-h
+    [ ] 5.5 - Responsive collapse to sidebar->list->editor stack on mobile/iOS
+    [ ] 5.6 - Acceptance: three-pane workspace matches mockup/screenshots across 4 palettes + dark; navigation works desktop + mobile
 
-All checks pass: typecheck, lint, 15 unit tests, web build, ios build.
+[ ] 6.0 - Phase 6 - Structure-colored Markdown editor
+    [ ] 6.1 - CodeMirror decoration theme: syntax markers in accent, prose neutral (replace oneDark)
+    [ ] 6.2 - Read-mode rendering mapped to --md-* roles per tokens/markdown.css
+    [ ] 6.3 - Aa font popover swaps editor face + scales base size
+    [ ] 6.4 - Acceptance: markers/#/checkboxes/quote bars/table rules in accent, prose neutral, edit + read, all themes
+
+[ ] 7.0 - Phase 7 - Theme + font switcher UX
+    [ ] 7.1 - ThemeSwatch two-tone picker (palette + light/dark)
+    [ ] 7.2 - Aa popover (curated faces + size scale)
+    [ ] 7.3 - Persist {palette, mode, font, size} via AppApi settings per platform
+    [ ] 7.4 - Acceptance: selections persist across reload on all 3 platforms
+
+[ ] 8.0 - Phase 8 - Cross-platform verification, migration, cleanup
+    [ ] 8.1 - Verify library persistence + UI on web, Electron, iOS
+    [ ] 8.2 - Keep file open/save/export as per-note import/export; remove dead v1 chrome
+    [ ] 8.3 - Update README.md + CLAUDE.md for the new architecture
+    [ ] 8.4 - Expand tests (notes store, tag parsing, theme switching); keep webEntry guard
+    [ ] 8.5 - Re-verify Open/Save in real Safari
+    [ ] 8.6 - Acceptance: typecheck, lint, tests, web + iOS builds, Playwright e2e all pass; screenshots match
