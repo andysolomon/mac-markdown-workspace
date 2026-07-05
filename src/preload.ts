@@ -15,6 +15,11 @@ const api: AppApi = {
   exportTxt: (payload) => ipcRenderer.invoke("export:txt", payload),
   exportPdf: (payload) => ipcRenderer.invoke("export:pdf", payload),
   exportDocx: (payload) => ipcRenderer.invoke("export:docx", payload),
+  listNotes: () => ipcRenderer.invoke("notes:list"),
+  readNote: (payload) => ipcRenderer.invoke("notes:read", payload),
+  createNote: (payload) => ipcRenderer.invoke("notes:create", payload),
+  writeNote: (payload) => ipcRenderer.invoke("notes:write", payload),
+  deleteNote: (payload) => ipcRenderer.invoke("notes:delete", payload),
   onMenuAction: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, action: string) => callback(action);
     ipcRenderer.on("menu:action", handler);

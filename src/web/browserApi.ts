@@ -1,11 +1,44 @@
 import type { AppApi } from "../../shared/types/ipc";
+import type { RawNote } from "../services/notesModel";
 
 /**
  * Browser-compatible shim for the Electron appApi.
- * Uses File System Access API, localStorage, and download links.
+ * Uses File System Access API for open/save, localStorage for settings,
+ * download links for export, and IndexedDB for the notes library. (Safari
+ * lacks persistent directory handles, so the library lives in IndexedDB — a
+ * File System Access "real folder" backing can be layered on for Chrome/Edge.)
  */
 
 let fileHandle: FileSystemFileHandle | null = null;
+
+// --- IndexedDB-backed notes library ---
+const NOTES_DB = "mmw-notes";
+const NOTES_STORE = "notes";
+let notesDbPromise: Promise<IDBDatabase> | null = null;
+
+function openNotesDb(): Promise<IDBDatabase> {
+  if (!notesDbPromise) {
+    notesDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(NOTES_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(NOTES_STORE, { keyPath: "id" });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  return notesDbPromise;
+}
+
+function idbRequest<T>(req: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function notesStore(mode: IDBTransactionMode): Promise<IDBObjectStore> {
+  const db = await openNotesDb();
+  return db.transaction(NOTES_STORE, mode).objectStore(NOTES_STORE);
+}
 
 function getSettings(): Record<string, unknown> {
   try {
@@ -162,4 +195,33 @@ export const browserApi: AppApi = {
   },
 
   checkDirty: () => () => { /* no-op */ },
+
+  listNotes: async () => {
+    const store = await notesStore("readonly");
+    return (await idbRequest(store.getAll())) as RawNote[];
+  },
+
+  readNote: async ({ id }) => {
+    const store = await notesStore("readonly");
+    return ((await idbRequest(store.get(id))) as RawNote | undefined) ?? null;
+  },
+
+  createNote: async ({ body }) => {
+    const note: RawNote = { id: crypto.randomUUID(), body: body ?? "", updatedAt: Date.now() };
+    const store = await notesStore("readwrite");
+    await idbRequest(store.put(note));
+    return note;
+  },
+
+  writeNote: async ({ id, body }) => {
+    const note: RawNote = { id, body, updatedAt: Date.now() };
+    const store = await notesStore("readwrite");
+    await idbRequest(store.put(note));
+    return note;
+  },
+
+  deleteNote: async ({ id }) => {
+    const store = await notesStore("readwrite");
+    await idbRequest(store.delete(id));
+  },
 };

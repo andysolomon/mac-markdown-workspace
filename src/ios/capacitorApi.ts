@@ -1,6 +1,18 @@
 import type { AppApi } from "../../shared/types/ipc";
+import type { RawNote } from "../services/notesModel";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
+
+const NOTES_DIR = "notes";
+const notePath = (id: string) => `${NOTES_DIR}/${id}.md`;
+
+async function readRawNote(id: string): Promise<RawNote> {
+  const [read, stat] = await Promise.all([
+    Filesystem.readFile({ path: notePath(id), directory: Directory.Documents, encoding: Encoding.UTF8 }),
+    Filesystem.stat({ path: notePath(id), directory: Directory.Documents }),
+  ]);
+  return { id, body: read.data as string, updatedAt: stat.mtime };
+}
 
 /**
  * Capacitor-native API shim for iOS (WKWebView).
@@ -190,5 +202,63 @@ export const capacitorApi: AppApi = {
 
   checkDirty: () => () => {
     /* no-op */
+  },
+
+  listNotes: async () => {
+    try {
+      const res = await Filesystem.readdir({ path: NOTES_DIR, directory: Directory.Documents });
+      const notes: RawNote[] = [];
+      for (const entry of res.files) {
+        const name = typeof entry === "string" ? entry : entry.name;
+        if (!name.endsWith(".md")) continue;
+        try {
+          notes.push(await readRawNote(name.slice(0, -3)));
+        } catch {
+          /* skip unreadable */
+        }
+      }
+      return notes;
+    } catch {
+      return []; // notes dir not created yet
+    }
+  },
+
+  readNote: async ({ id }) => {
+    try {
+      return await readRawNote(id);
+    } catch {
+      return null;
+    }
+  },
+
+  createNote: async ({ body }) => {
+    const id = crypto.randomUUID();
+    await Filesystem.writeFile({
+      path: notePath(id),
+      data: body ?? "",
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+    return { id, body: body ?? "", updatedAt: Date.now() };
+  },
+
+  writeNote: async ({ id, body }) => {
+    await Filesystem.writeFile({
+      path: notePath(id),
+      data: body,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+    return { id, body, updatedAt: Date.now() };
+  },
+
+  deleteNote: async ({ id }) => {
+    try {
+      await Filesystem.deleteFile({ path: notePath(id), directory: Directory.Documents });
+    } catch {
+      /* already gone */
+    }
   },
 };

@@ -25,14 +25,14 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 2.2 - Reconcile src/index.css spacing/radii to --mm-space-*/--mm-radius-* tokens
     [x] 2.3 - Acceptance: Avenir Next renders (Nunito Sans fallback), preview at 20px; verified light + dark; web + iOS builds pass
 
-[ ] 3.0 - Phase 3 - Notes library data model + persistence (backbone)
-    [ ] 3.1 - Note type (id, derived title, body, tags, timestamps)
-    [ ] 3.2 - Extend AppApi: listNotes/readNote/createNote/writeNote/deleteNote
-    [ ] 3.3 - Electron impl (workspace folder of .md via fs)
-    [ ] 3.4 - Web impl (File System Access dir handle + IndexedDB fallback)
-    [ ] 3.5 - iOS impl (Capacitor Filesystem, Documents dir)
-    [ ] 3.6 - notesStore (Zustand) + migrate current open/save into "import to library"; autosave
-    [ ] 3.7 - Acceptance: CRUD persists across reload on all 3 platforms; unit tests for store + title/tag derivation
+[~] 3.0 - Phase 3 - Notes library data model + persistence (backbone)
+    [x] 3.1 - Note model + derivation (title/preview/#tags) in notesModel.ts; 14 unit tests
+    [x] 3.2 - Extend AppApi: listNotes/readNote/createNote/writeNote/deleteNote (RawNote)
+    [~] 3.3 - Electron impl (Documents/Mac Markdown/*.md via fs) — code complete; runtime check pending desktop launch
+    [x] 3.4 - Web impl (IndexedDB) — VERIFIED persists across reload + CRUD round-trip. (File System Access "real folder" for Chrome/Edge deferred)
+    [~] 3.5 - iOS impl (Capacitor Filesystem, Documents/notes) — code complete; runtime check pending simulator
+    [x] 3.6 - notesStore (Zustand) + welcome-note seeding; 5 unit tests. (editor<->note autosave wiring lands in Phase 5)
+    [~] 3.7 - Acceptance: web verified; Electron/iOS runtime pending; typecheck + 38 tests + web/iOS builds pass
 
 [ ] 4.0 - Phase 4 - Tag + search engine
     [ ] 4.1 - Parse #hashtags -> tag index with counts (exclude code spans, URLs, heading hashes)

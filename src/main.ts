@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, session } from "electron";
 import path from "node:path";
 import { promises as fs } from "node:fs";
+import { randomUUID } from "node:crypto";
 import started from "electron-squirrel-startup";
 import Store from "electron-store";
 
@@ -335,6 +336,60 @@ const registerIpc = (): void => {
     } catch (err) {
       console.error("DOCX export failed:", err);
       return false;
+    }
+  });
+
+  // Notes library — a user-visible folder of .md files in Documents/Mac Markdown.
+  const notesDir = () => path.join(app.getPath("documents"), "Mac Markdown");
+  const ensureNotesDir = () => fs.mkdir(notesDir(), { recursive: true });
+  const notePath = (id: string) => path.join(notesDir(), `${id}.md`);
+  const readRawNote = async (id: string) => {
+    const full = notePath(id);
+    const [body, stat] = await Promise.all([fs.readFile(full, "utf8"), fs.stat(full)]);
+    return { id, body, updatedAt: stat.mtimeMs };
+  };
+
+  ipcMain.handle("notes:list", async () => {
+    await ensureNotesDir();
+    const entries = await fs.readdir(notesDir());
+    const notes = [];
+    for (const name of entries) {
+      if (!name.endsWith(".md")) continue;
+      try {
+        notes.push(await readRawNote(name.slice(0, -3)));
+      } catch {
+        /* skip unreadable files */
+      }
+    }
+    return notes;
+  });
+
+  ipcMain.handle("notes:read", async (_event, payload: { id: string }) => {
+    try {
+      return await readRawNote(payload.id);
+    } catch {
+      return null;
+    }
+  });
+
+  ipcMain.handle("notes:create", async (_event, payload: { body: string }) => {
+    await ensureNotesDir();
+    const id = randomUUID();
+    await fs.writeFile(notePath(id), payload.body ?? "", "utf8");
+    return readRawNote(id);
+  });
+
+  ipcMain.handle("notes:write", async (_event, payload: { id: string; body: string }) => {
+    await ensureNotesDir();
+    await fs.writeFile(notePath(payload.id), payload.body, "utf8");
+    return readRawNote(payload.id);
+  });
+
+  ipcMain.handle("notes:delete", async (_event, payload: { id: string }) => {
+    try {
+      await fs.unlink(notePath(payload.id));
+    } catch {
+      /* already gone */
     }
   });
 };

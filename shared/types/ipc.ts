@@ -1,3 +1,5 @@
+import type { RawNote } from "../../src/services/notesModel";
+
 export type OpenFileResult =
   | {
       filePath: string;
@@ -26,4 +28,11 @@ export type AppApi = {
   exportPdf: (payload: { html: string }) => Promise<boolean>;
   exportDocx: (payload: { html: string }) => Promise<boolean>;
   checkDirty: (callback: () => Promise<boolean>) => () => void;
+
+  // Notes library — each note is a markdown file/record keyed by a stable id.
+  listNotes: () => Promise<RawNote[]>;
+  readNote: (payload: { id: string }) => Promise<RawNote | null>;
+  createNote: (payload: { body: string }) => Promise<RawNote>;
+  writeNote: (payload: { id: string; body: string }) => Promise<RawNote>;
+  deleteNote: (payload: { id: string }) => Promise<void>;
 };
