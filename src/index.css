@@ -2,7 +2,9 @@
 @import "./styles/compat.css";
 
 :root {
-  font-family: "SF Pro Text", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--mm-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -39,10 +41,10 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 var(--mm-space-3);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-toolbar);
-  gap: 8px;
+  gap: var(--mm-space-2);
   overflow: hidden;
   min-width: 0;
 }
@@ -62,7 +64,7 @@ body,
 
 .status-item:not(:last-child)::after {
   content: "|";
-  margin-left: 8px;
+  margin-left: var(--mm-space-2);
 }
 
 .workspace {
@@ -105,7 +107,7 @@ body,
 }
 
 .pane.editor .cm-editor .cm-scroller {
-  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-family: var(--mm-font-mono);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -120,8 +122,8 @@ textarea {
   border: 0;
   outline: none;
   resize: none;
-  padding: 16px;
-  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  padding: var(--mm-space-4);
+  font-family: var(--mm-font-mono);
   font-size: 14px;
   line-height: 1.5;
   background: var(--bg-editor);
@@ -129,21 +131,24 @@ textarea {
 }
 
 .preview {
-  padding: 16px;
+  padding: var(--mm-space-6) var(--mm-space-7);
   background: var(--bg-preview);
   color: var(--text-primary);
   min-width: 0;
   overflow-wrap: break-word;
+  font-size: var(--mm-text-base);
+  line-height: var(--mm-lh-body);
 }
 
 .preview :is(h1, h2, h3) {
   margin-top: 1.25rem;
+  line-height: var(--mm-lh-heading);
 }
 
 .preview pre {
   overflow: auto;
-  padding: 0.75rem;
-  border-radius: 8px;
+  padding: var(--mm-space-3) var(--mm-space-4);
+  border-radius: var(--mm-radius-lg);
   background: var(--bg-code);
   color: var(--text-code);
   max-width: 100%;
@@ -153,7 +158,7 @@ button {
   border: 1px solid var(--border-button);
   background: var(--bg-button);
   color: var(--text-primary);
-  border-radius: 6px;
+  border-radius: var(--mm-radius-md);
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -178,7 +183,7 @@ button.active:hover {
 .right-group {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mm-space-2);
 }
 
 .right-group {
@@ -201,11 +206,11 @@ button.active:hover {
   top: 100%;
   left: 0;
   z-index: 10;
-  margin-top: 4px;
+  margin-top: var(--mm-space-1);
   min-width: 120px;
   background: var(--bg-toolbar);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: var(--mm-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 }
@@ -216,7 +221,7 @@ button.active:hover {
   text-align: left;
   border: none;
   border-radius: 0;
-  padding: 8px 12px;
+  padding: var(--mm-space-2) var(--mm-space-3);
 }
 
 .export-menu button:hover {
@@ -235,7 +240,7 @@ button.active:hover {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 6px 12px;
+  padding: 6px var(--mm-space-3);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-toolbar);
   flex-shrink: 0;
@@ -246,13 +251,13 @@ button.active:hover {
 .wysiwyg-toolbar button {
   min-width: 32px;
   height: 32px;
-  padding: 4px 8px;
+  padding: var(--mm-space-1) var(--mm-space-2);
   font-size: 13px;
   font-weight: 600;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: 4px;
+  border-radius: var(--mm-radius-sm);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -268,9 +273,11 @@ button.active:hover {
 .wysiwyg-body {
   flex: 1;
   overflow: auto;
-  padding: 16px;
+  padding: var(--mm-space-6) var(--mm-space-7);
   min-width: 0;
   overflow-wrap: break-word;
+  font-size: var(--mm-text-base);
+  line-height: var(--mm-lh-body);
 }
 
 .wysiwyg-body .milkdown {
@@ -292,12 +299,12 @@ button.active:hover {
 .wysiwyg-body .milkdown code {
   background: var(--bg-code) !important;
   color: var(--text-code) !important;
-  border-radius: 6px;
+  border-radius: var(--mm-radius-md);
 }
 
 .wysiwyg-body .ProseMirror pre,
 .wysiwyg-body .milkdown pre {
-  padding: 0.75rem;
+  padding: var(--mm-space-3) var(--mm-space-4);
   overflow: auto;
   max-width: 100%;
 }
@@ -318,7 +325,7 @@ button.active:hover {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 8px;
+  gap: var(--mm-space-2);
 }
 
 .hamburger-wrapper {
@@ -328,7 +335,7 @@ button.active:hover {
 .hamburger-btn {
   font-size: 18px;
   line-height: 1;
-  padding: 4px 8px;
+  padding: var(--mm-space-1) var(--mm-space-2);
   border: none;
   background: transparent;
   color: var(--text-primary);
@@ -339,11 +346,11 @@ button.active:hover {
   top: 100%;
   left: 0;
   z-index: 20;
-  margin-top: 4px;
+  margin-top: var(--mm-space-1);
   min-width: 180px;
   background: var(--bg-toolbar);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: var(--mm-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
@@ -354,7 +361,7 @@ button.active:hover {
   text-align: left;
   border: none;
   border-radius: 0;
-  padding: 10px 14px;
+  padding: var(--mm-space-3) var(--mm-space-4);
   font-size: 14px;
 }
 
@@ -368,7 +375,7 @@ button.active:hover {
 }
 
 .hamburger-menu hr {
-  margin: 4px 0;
+  margin: var(--mm-space-1) 0;
   border: none;
   border-top: 1px solid var(--border-color);
 }
@@ -397,8 +404,8 @@ button.active:hover {
 
   .status-bar {
     min-height: 28px;
-    padding: 4px 8px;
-    gap: 4px 8px;
+    padding: var(--mm-space-1) var(--mm-space-2);
+    gap: var(--mm-space-1) var(--mm-space-2);
     font-size: 11px;
   }
 
@@ -416,6 +423,12 @@ button.active:hover {
 
   .pane.editor {
     grid-column: 1 / -1;
+  }
+
+  /* Keep the reading panes comfortable but tighter on small screens */
+  .preview,
+  .wysiwyg-body {
+    padding: var(--mm-space-4);
   }
 
   /* Prevent iOS auto-zoom on focus — inputs must be >= 16px */

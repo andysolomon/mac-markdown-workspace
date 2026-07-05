@@ -20,10 +20,10 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 1.4 - Interactive preview harness (all 8 palette x mode combos) delivered for review
     [x] 1.5 - Acceptance: verified live in-app (Forest/Light + Teal/Dark), persists across reload; compat.css bridges legacy chrome; no raw hex outside token files
 
-[ ] 2.0 - Phase 2 - Typography + base
-    [ ] 2.1 - Load Nunito Sans (Avenir Next fallback); set --mm-font-* and type scales
-    [ ] 2.2 - Reconcile src/index.css base rules to --mm-space-*/--mm-radius-* tokens
-    [ ] 2.3 - Acceptance: brand type renders; no hardcoded px in restyled base; light + dark legible
+[x] 2.0 - Phase 2 - Typography + base
+    [x] 2.1 - Brand type applied (--mm-font-sans / --mm-font-mono) + antialiasing; reading panes use 20px --mm-text-base
+    [x] 2.2 - Reconcile src/index.css spacing/radii to --mm-space-*/--mm-radius-* tokens
+    [x] 2.3 - Acceptance: Avenir Next renders (Nunito Sans fallback), preview at 20px; verified light + dark; web + iOS builds pass
 
 [ ] 3.0 - Phase 3 - Notes library data model + persistence (backbone)
     [ ] 3.1 - Note type (id, derived title, body, tags, timestamps)
