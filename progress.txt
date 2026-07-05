@@ -40,13 +40,14 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 4.3 - filterNotes + selectFilteredNotes / selectTagIndex derived selectors
     [x] 4.4 - Acceptance: verified by unit tests (46 total); typecheck, lint, web build pass
 
-[ ] 5.0 - Phase 5 - Three-pane shell UI
-    [ ] 5.1 - Port kit components (WindowDots, Tag, DocListItem, ThemeSwatch, MarkdownLine)
-    [ ] 5.2 - Sidebar (dots, All pill, HASHTAGS, tag list)
-    [ ] 5.3 - DocList (search + rows) wired to notesStore
-    [ ] 5.4 - EditorChrome (list icon, Aa, +, edit/read toggle) + layout via --mm-*-w/--mm-topbar-h
-    [ ] 5.5 - Responsive collapse to sidebar->list->editor stack on mobile/iOS
-    [ ] 5.6 - Acceptance: three-pane workspace matches mockup/screenshots across 4 palettes + dark; navigation works desktop + mobile
+[x] 5.0 - Phase 5 - Three-pane shell UI
+    [x] 5.1 - Port kit components (WindowDots, Tag, DocListItem, ThemeSwatch, MarkdownLine) — typed TSX in src/components/shell/ (delegated to Composer worker; verified + accepted)
+    [x] 5.2 - Sidebar (dots, All pill, HASHTAGS, tag list)
+    [x] 5.3 - DocList (search + rows) wired to notesStore via NotesShell container
+    [x] 5.4 - EditorChrome (list icon toggles list, Aa stub for Phase 7, + creates note); NotesShell: selection->buffer sync + debounced autosave with flush-on-switch; Open/drop/Cmd+N now import into the library (prevents autosave overwriting the active note)
+    [x] 5.5 - Responsive collapse: sidebar hidden on mobile; doc list toggles as a full-width sheet
+    [x] 5.6 - Acceptance: verified live (create/edit/autosave/tags/filter/search/reload-persist); Teal/Light + Crimson/Dark screenshots match mockup; 46 tests, typecheck, lint, web + iOS builds pass
+    Note: legacy toolbar remains temporarily inside the editor column (actions migrate in Phases 6-7); editor content colors are Phase 6; no delete-note UI yet
 
 [ ] 6.0 - Phase 6 - Structure-colored Markdown editor
     [ ] 6.1 - CodeMirror decoration theme: syntax markers in accent, prose neutral (replace oneDark)

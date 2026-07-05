@@ -1,0 +1,164 @@
+/* Three-pane Bear-style shell layout (Mac Markdown design system). */
+
+.mm-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mm-sidebar {
+  width: var(--mm-sidebar-w);
+  flex: none;
+  background: var(--mm-panel);
+  border-right: 1px solid var(--mm-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.mm-dots-row {
+  display: flex;
+  gap: var(--mm-space-2);
+  padding: 17px 18px 8px;
+}
+
+.mm-scroll {
+  overflow-y: auto;
+}
+
+.mm-all {
+  margin: var(--mm-space-2) 11px 2px;
+  padding: 9px 17px;
+  border-radius: var(--mm-radius-lg);
+  font-size: var(--mm-ui-lg);
+  font-weight: var(--mm-w-black);
+  cursor: pointer;
+}
+
+.mm-all.sel {
+  background: var(--mm-sel);
+}
+
+.mm-hashhead {
+  padding: 15px 20px 6px;
+  font-size: var(--mm-ui-xs);
+  font-weight: var(--mm-w-black);
+  letter-spacing: 4px;
+  color: var(--mm-faint);
+  opacity: 0.8;
+}
+
+.mm-doclist {
+  width: var(--mm-list-w);
+  min-width: var(--mm-list-min);
+  max-width: var(--mm-list-max);
+  flex: none;
+  border-right: 1px solid var(--mm-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.mm-search {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 20px 26px 18px;
+}
+
+.mm-mag {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--mm-faint);
+  border-radius: 50%;
+  position: relative;
+  opacity: 0.8;
+  flex: none;
+}
+
+.mm-mag::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 2px;
+  background: var(--mm-faint);
+  bottom: -3px;
+  right: -5px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.mm-search input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--mm-ui-md);
+  color: var(--mm-text);
+  width: 100%;
+}
+
+.mm-editor {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mm-topbar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 var(--mm-space-7);
+  height: var(--mm-topbar-h);
+  flex: none;
+}
+
+.mm-listicon,
+.mm-aa,
+.mm-plus {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mm-listicon {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--mm-accent);
+}
+
+.mm-listicon .r {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mm-listicon .r span:first-child {
+  width: 5px;
+  height: 5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.mm-listicon .r span:last-child {
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+}
+
+.mm-aa {
+  font-size: 30px;
+  font-weight: var(--mm-w-bold);
+  color: var(--mm-text);
+}
+
+.mm-plus {
+  margin-left: auto;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 300;
+  color: var(--mm-faint);
+}

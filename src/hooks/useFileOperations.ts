@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useDocumentStore, selectIsDirty } from "../services/documentStore";
+import { useNotesStore } from "../services/notesStore";
 
 async function checkDirtyAndProceed(): Promise<boolean> {
   const state = useDocumentStore.getState();
@@ -28,7 +29,6 @@ async function checkDirtyAndProceed(): Promise<boolean> {
 }
 
 export function useFileOperations() {
-  const resetDocument = useDocumentStore((s) => s.resetDocument);
 
   const openFile = useCallback(async () => {
     const canProceed = await checkDirtyAndProceed();
@@ -37,12 +37,10 @@ export function useFileOperations() {
     const result = await window.appApi.openFile();
     if (!result) return;
 
-    // Update all state at once to avoid partial renders
-    useDocumentStore.setState({
-      content: result.content,
-      savedContent: result.content,
-      filePath: result.filePath,
-    });
+    // Import the file into the notes library as a new note (the library is
+    // the source of truth; creating selects it, and the shell syncs the
+    // editing buffer from the selection).
+    await useNotesStore.getState().createNote(result.content);
   }, []);
 
   const saveFile = useCallback(async () => {
@@ -77,8 +75,10 @@ export function useFileOperations() {
   const newFile = useCallback(async () => {
     const canProceed = await checkDirtyAndProceed();
     if (!canProceed) return;
-    resetDocument();
-  }, [resetDocument]);
+    // A "new file" is a new note in the library. Resetting the buffer alone
+    // would autosave an empty body over the active note.
+    await useNotesStore.getState().createNote("");
+  }, []);
 
   return { openFile, saveFile, saveFileAs, newFile };
 }

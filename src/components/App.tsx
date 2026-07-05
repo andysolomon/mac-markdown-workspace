@@ -1,10 +1,8 @@
 import React, { useEffect, useCallback } from "react";
-import { Toolbar } from "./Toolbar";
-import { Workspace } from "./Workspace";
-import { StatusBar } from "./StatusBar";
+import { NotesShell } from "./shell/NotesShell";
 import { useThemeStore } from "../services/themeStore";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
-import { useDocumentStore } from "../services/documentStore";
+import { useNotesStore } from "../services/notesStore";
 
 const MD_EXTENSIONS = [".md", ".markdown", ".mdx", ".txt"];
 
@@ -67,35 +65,29 @@ export function App() {
 
     const filePath = (file as File & { path?: string }).path;
 
+    // Dropped files are imported into the notes library as new notes (the
+    // library is the source of truth; writing into the buffer would autosave
+    // over the active note).
+    let content: string | null = null;
     if (filePath) {
       // Electron: read via IPC using the native file path
       const result = await window.appApi?.readFile({ filePath });
-      if (!result) return;
-      useDocumentStore.setState({
-        content: result.content,
-        savedContent: result.content,
-        filePath: result.filePath,
-      });
+      content = result?.content ?? null;
     } else {
       // Browser: read via File API
-      const content = await file.text();
-      useDocumentStore.setState({
-        content,
-        savedContent: content,
-        filePath: file.name,
-      });
+      content = await file.text();
     }
+    if (content === null) return;
+    await useNotesStore.getState().createNote(content);
   }, []);
 
   return (
     <div
-      className="app-shell"
+      className="app-shell mm-shell"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <Toolbar />
-      <Workspace />
-      <StatusBar />
+      <NotesShell />
     </div>
   );
 }
