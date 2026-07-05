@@ -1,0 +1,47 @@
+/* Typography — Avenir Next is the brand face; the app also ships a
+   reader-selectable set of system faces. Nunito Sans is loaded as the
+   web fallback for Avenir Next (Avenir Next is not a licensed webfont). */
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400;1,6..12,600&display=swap");
+
+:root {
+  /* Brand face + fallback */
+  --mm-font-sans: "Avenir Next", "Avenir", "Nunito Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --mm-font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* Reader-selectable faces (the Aa font picker) */
+  --mm-font-cochin: "Cochin", "Cormorant Garamond", "Times New Roman", serif;
+  --mm-font-courier: "Courier New", Courier, monospace;
+  --mm-font-georgia: Georgia, "Times New Roman", serif;
+  --mm-font-helvetica: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mm-font-iowan: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mm-font-menlo: Menlo, Monaco, Consolas, monospace;
+  --mm-font-palatino: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --mm-font-times: "Times New Roman", Times, serif;
+
+  /* Editor type scale — reader base is 20px, everything derives from it */
+  --mm-text-base: 20px;
+  --mm-h1: 38px;
+  --mm-h2: 30px;
+  --mm-h3: 25px;
+  --mm-h4: 22px;
+  --mm-h5: 20px;
+  --mm-h6: 18px;
+  --mm-title: 21px;
+
+  /* Chrome type scale */
+  --mm-ui-lg: 26px;   /* "All" pill, section headers */
+  --mm-ui-md: 20px;   /* doc titles, search */
+  --mm-ui-sm: 18px;   /* previews, tags */
+  --mm-ui-xs: 14px;   /* HASHTAGS label */
+
+  /* Weights */
+  --mm-w-regular: 400;
+  --mm-w-semibold: 600;
+  --mm-w-bold: 700;
+  --mm-w-black: 800;
+
+  /* Line heights */
+  --mm-lh-heading: 1.25;
+  --mm-lh-list: 1.5;
+  --mm-lh-body: 1.62;
+}

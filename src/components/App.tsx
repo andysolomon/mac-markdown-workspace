@@ -13,22 +13,31 @@ function isMarkdownFile(name: string): boolean {
 }
 
 export function App() {
-  const resolvedTheme = useThemeStore((s) => s.resolvedTheme);
-  const setTheme = useThemeStore((s) => s.setTheme);
+  const palette = useThemeStore((s) => s.palette);
+  const resolvedMode = useThemeStore((s) => s.resolvedMode);
+  const setPalette = useThemeStore((s) => s.setPalette);
+  const setMode = useThemeStore((s) => s.setMode);
 
-  // Apply theme to document
+  // Apply palette + mode to the document root. The --md-* markdown roles
+  // resolve against :root's --mm-*, so the theme must live on <html>.
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", resolvedTheme);
-  }, [resolvedTheme]);
+    document.documentElement.setAttribute("data-theme", palette);
+    document.documentElement.setAttribute("data-mode", resolvedMode);
+  }, [palette, resolvedMode]);
 
-  // Load saved theme from settings
+  // Load saved palette + mode from settings
   useEffect(() => {
-    window.appApi?.getSetting?.("theme").then((saved) => {
-      if (saved === "light" || saved === "dark" || saved === "system") {
-        setTheme(saved);
+    window.appApi?.getSetting?.("palette").then((saved) => {
+      if (saved === "teal" || saved === "forest" || saved === "gold" || saved === "crimson") {
+        setPalette(saved);
       }
     });
-  }, [setTheme]);
+    window.appApi?.getSetting?.("mode").then((saved) => {
+      if (saved === "light" || saved === "dark" || saved === "system") {
+        setMode(saved);
+      }
+    });
+  }, [setPalette, setMode]);
 
   // Listen for menu actions from main process
   useEffect(() => {

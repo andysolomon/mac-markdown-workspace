@@ -11,7 +11,7 @@ export const SourceEditor = React.memo(function SourceEditor() {
   const content = useDocumentStore((s) => s.content);
   const setContent = useDocumentStore((s) => s.setContent);
   const setCursorPosition = useDocumentStore((s) => s.setCursorPosition);
-  const resolvedTheme = useThemeStore((s) => s.resolvedTheme);
+  const resolvedMode = useThemeStore((s) => s.resolvedMode);
 
   const onChange = useCallback(
     (value: string) => {
@@ -36,11 +36,11 @@ export const SourceEditor = React.memo(function SourceEditor() {
 
   const extensions = useMemo(() => {
     const exts = [markdown(), EditorView.lineWrapping];
-    if (resolvedTheme === "dark") {
+    if (resolvedMode === "dark") {
       exts.push(oneDark);
     }
     return exts;
-  }, [resolvedTheme]);
+  }, [resolvedMode]);
 
   return (
     <CodeMirror
@@ -48,7 +48,7 @@ export const SourceEditor = React.memo(function SourceEditor() {
       onChange={onChange}
       onUpdate={onUpdate}
       extensions={extensions}
-      theme={resolvedTheme === "dark" ? "dark" : "light"}
+      theme={resolvedMode === "dark" ? "dark" : "light"}
       basicSetup={{
         lineNumbers: true,
         bracketMatching: true,

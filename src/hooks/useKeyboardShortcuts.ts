@@ -1,15 +1,12 @@
 import { useEffect } from "react";
 import { useDocumentStore } from "../services/documentStore";
-import { useThemeStore, type ThemeChoice } from "../services/themeStore";
+import { useThemeStore } from "../services/themeStore";
 import { useFileOperations } from "./useFileOperations";
-
-const themes: ThemeChoice[] = ["light", "dark", "system"];
 
 export function useKeyboardShortcuts() {
   const { openFile, saveFile, saveFileAs, newFile } = useFileOperations();
   const setViewMode = useDocumentStore((s) => s.setViewMode);
-  const theme = useThemeStore((s) => s.theme);
-  const setTheme = useThemeStore((s) => s.setTheme);
+  const cycleMode = useThemeStore((s) => s.cycleMode);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -73,10 +70,8 @@ export function useKeyboardShortcuts() {
           setViewMode("wysiwyg");
           break;
         case "toggle-theme": {
-          const idx = themes.indexOf(theme);
-          const next = themes[(idx + 1) % themes.length];
-          setTheme(next);
-          window.appApi.setSetting?.("theme", next);
+          cycleMode();
+          window.appApi.setSetting?.("mode", useThemeStore.getState().mode);
           break;
         }
       }
@@ -88,5 +83,5 @@ export function useKeyboardShortcuts() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("menu-action", handleMenuAction);
     };
-  }, [openFile, saveFile, saveFileAs, newFile, setViewMode, theme, setTheme]);
+  }, [openFile, saveFile, saveFileAs, newFile, setViewMode, cycleMode]);
 }

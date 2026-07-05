@@ -1,0 +1,67 @@
+/* Dark variants — DERIVED, not from the design kit (which ships light-only).
+   Each block overrides the kit's light palette when the root carries both
+   data-theme="<palette>" and data-mode="dark". The two-attribute selector
+   outranks the kit's single-attribute light rule, so dark wins when active
+   and the kit's colors.css stays untouched (re-syncable).
+
+   Derivation rules, per palette:
+   - Keep the hue identity (teal=cool, forest=warm-green, gold=amber, crimson=plum).
+   - Deep, slightly hue-tinted background; panel one step lighter.
+   - Brighten the accent so it stays luminous and AA-legible on dark.
+   - Off-white text, mid-gray faint; hairline borders as subtle elevations. */
+
+[data-theme="teal"][data-mode="dark"] {
+  --mm-bg: #16181a;
+  --mm-panel: #1d2023;
+  --mm-text: #dcdcda;
+  --mm-faint: #82868a;
+  --mm-accent: #3cc4d8;
+  --mm-link: #3cc4d8;
+  --mm-code: #e8697c;
+  --mm-code-bg: #22262a;
+  --mm-border: #2b2f33;
+  --mm-sel: #262b2f;
+  --mm-swatch-bottom: #1d5a66;
+}
+
+[data-theme="forest"][data-mode="dark"] {
+  --mm-bg: #15170f;
+  --mm-panel: #1c1f15;
+  --mm-text: #dbd7c6;
+  --mm-faint: #8b876f;
+  --mm-accent: #45c48c;
+  --mm-link: #45c48c;
+  --mm-code: #d98a54;
+  --mm-code-bg: #202318;
+  --mm-border: #2a2d1f;
+  --mm-sel: #25281b;
+  --mm-swatch-bottom: #244430;
+}
+
+[data-theme="gold"][data-mode="dark"] {
+  --mm-bg: #1a1710;
+  --mm-panel: #211d14;
+  --mm-text: #e2dbc8;
+  --mm-faint: #988f78;
+  --mm-accent: #e6b53f;
+  --mm-link: #e6b53f;
+  --mm-code: #d98a54;
+  --mm-code-bg: #251f14;
+  --mm-border: #2d2718;
+  --mm-sel: #292317;
+  --mm-swatch-bottom: #4a3d1a;
+}
+
+[data-theme="crimson"][data-mode="dark"] {
+  --mm-bg: #191316;
+  --mm-panel: #20161a;
+  --mm-text: #e4d6da;
+  --mm-faint: #9e838b;
+  --mm-accent: #e85d89;
+  --mm-link: #e85d89;
+  --mm-code: #e85d89;
+  --mm-code-bg: #251820;
+  --mm-border: #301f26;
+  --mm-sel: #2a1b21;
+  --mm-swatch-bottom: #4a2334;
+}

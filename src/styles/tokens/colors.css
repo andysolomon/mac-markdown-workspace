@@ -1,0 +1,68 @@
+/* Color — four reader-selectable themes. Each theme sets the same set of
+   semantic variables, so all components are theme-agnostic: they only ever
+   reference --mm-* aliases, never raw hex. :root defaults to Teal so a card
+   without a data-theme wrapper still renders correctly. */
+
+:root,
+[data-theme="teal"] {
+  --mm-bg: #ffffff;
+  --mm-panel: #f1f0ee;
+  --mm-text: #3d3d3d;
+  --mm-faint: #9b9b9b;
+  --mm-accent: #1ea7bb;
+  --mm-link: #1ea7bb;
+  --mm-code: #d1495b;
+  --mm-code-bg: #f2f3f5;
+  --mm-border: #e7e7e7;
+  --mm-sel: #eae9e7;
+  --mm-swatch-bottom: #d7eef2;
+}
+
+[data-theme="forest"] {
+  --mm-bg: #fbf3dc;
+  --mm-panel: #f4ebd0;
+  --mm-text: #4a4636;
+  --mm-faint: #a79f86;
+  --mm-accent: #2f9e73;
+  --mm-link: #2f9e73;
+  --mm-code: #b5642f;
+  --mm-code-bg: #f2e8cb;
+  --mm-border: #e6dcc0;
+  --mm-sel: #efe4c6;
+  --mm-swatch-bottom: #efe4c6;
+}
+
+[data-theme="gold"] {
+  --mm-bg: #fffdf6;
+  --mm-panel: #f7f2e4;
+  --mm-text: #403c31;
+  --mm-faint: #a89f88;
+  --mm-accent: #c8971a;
+  --mm-link: #c8971a;
+  --mm-code: #b5642f;
+  --mm-code-bg: #f6f0df;
+  --mm-border: #ece3c9;
+  --mm-sel: #f0e9d2;
+  --mm-swatch-bottom: #f4ecc9;
+}
+
+[data-theme="crimson"] {
+  --mm-bg: #fff7f8;
+  --mm-panel: #f9edf0;
+  --mm-text: #3f3237;
+  --mm-faint: #b39aa1;
+  --mm-accent: #c23b6a;
+  --mm-link: #c23b6a;
+  --mm-code: #c23b6a;
+  --mm-code-bg: #faeef1;
+  --mm-border: #f0dbe1;
+  --mm-sel: #f4dfe6;
+  --mm-swatch-bottom: #f6dbe4;
+}
+
+/* macOS traffic-light dots — fixed brand constants, never themed */
+:root {
+  --mm-dot-red: #ff5f57;
+  --mm-dot-yellow: #febc2e;
+  --mm-dot-green: #28c840;
+}

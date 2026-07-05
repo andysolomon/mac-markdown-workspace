@@ -1,23 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDocumentStore, selectIsDirty, type ViewMode } from "../services/documentStore";
-import { useThemeStore, type ThemeChoice } from "../services/themeStore";
+import { useThemeStore, type Palette, type ModeChoice } from "../services/themeStore";
 import { useFileOperations } from "../hooks/useFileOperations";
 
-const themeLabels: Record<ThemeChoice, string> = {
+const paletteLabels: Record<Palette, string> = {
+  teal: "Teal",
+  forest: "Forest",
+  gold: "Gold",
+  crimson: "Crimson",
+};
+
+const modeLabels: Record<ModeChoice, string> = {
   light: "Light",
   dark: "Dark",
   system: "System",
 };
-
-const themes: ThemeChoice[] = ["light", "dark", "system"];
 
 export const Toolbar = React.memo(function Toolbar() {
   const filePath = useDocumentStore((s) => s.filePath);
   const viewMode = useDocumentStore((s) => s.viewMode);
   const setViewMode = useDocumentStore((s) => s.setViewMode);
   const isDirty = useDocumentStore(selectIsDirty);
-  const theme = useThemeStore((s) => s.theme);
-  const setTheme = useThemeStore((s) => s.setTheme);
+  const palette = useThemeStore((s) => s.palette);
+  const mode = useThemeStore((s) => s.mode);
+  const cyclePalette = useThemeStore((s) => s.cyclePalette);
+  const cycleMode = useThemeStore((s) => s.cycleMode);
   const { openFile, saveFile } = useFileOperations();
   const content = useDocumentStore((s) => s.content);
 
@@ -53,11 +60,14 @@ export const Toolbar = React.memo(function Toolbar() {
   const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
   const mobileModes: ViewMode[] = ["source", "preview", "wysiwyg"];
 
-  const cycleTheme = () => {
-    const idx = themes.indexOf(theme);
-    const next = themes[(idx + 1) % themes.length];
-    setTheme(next);
-    window.appApi.setSetting?.("theme", next);
+  const handleCyclePalette = () => {
+    cyclePalette();
+    window.appApi.setSetting?.("palette", useThemeStore.getState().palette);
+  };
+
+  const handleCycleMode = () => {
+    cycleMode();
+    window.appApi.setSetting?.("mode", useThemeStore.getState().mode);
   };
 
   const handleExport = async (format: "txt" | "pdf" | "docx") => {
@@ -107,7 +117,8 @@ export const Toolbar = React.memo(function Toolbar() {
         ))}
       </div>
       <div className="right-group desktop-only">
-        <button onClick={cycleTheme}>{themeLabels[theme]}</button>
+        <button onClick={handleCyclePalette}>{paletteLabels[palette]}</button>
+        <button onClick={handleCycleMode}>{modeLabels[mode]}</button>
         <span>
           {fileName}
           {isDirty ? " *" : ""}
@@ -138,8 +149,9 @@ export const Toolbar = React.memo(function Toolbar() {
                 </button>
               ))}
               <hr />
-              <button onClick={() => { cycleTheme(); setMenuOpen(false); }}>
-                Theme: {themeLabels[theme]}
+              <button onClick={handleCyclePalette}>Palette: {paletteLabels[palette]}</button>
+              <button onClick={() => { handleCycleMode(); setMenuOpen(false); }}>
+                Mode: {modeLabels[mode]}
               </button>
             </div>
           )}

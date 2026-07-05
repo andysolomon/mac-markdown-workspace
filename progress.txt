@@ -13,12 +13,12 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 0.4 - light/dark/system themes (color-only tokens)
     [x] 0.5 - Web entry wiring fixed + regression test (src/tests/webEntry.test.ts)
 
-[ ] 1.0 - Phase 1 - Token foundation + dark derivation
-    [ ] 1.1 - Copy kit tokens into src/styles/tokens/{colors,typography,spacing,markdown}.css + tokens entry
-    [ ] 1.2 - Derive dark variants for all four palettes (data-mode="dark"), contrast-checked
-    [ ] 1.3 - Rework themeStore to {palette, mode} and stamp data-theme + data-mode on <html>
-    [ ] 1.4 - Port guidelines/*.card.html into a preview harness for all 8 palette x mode combos
-    [ ] 1.5 - Acceptance: live re-color on palette/mode switch; no raw hex outside token files
+[x] 1.0 - Phase 1 - Token foundation + dark derivation
+    [x] 1.1 - Copy kit tokens into src/styles/tokens/{colors,typography,spacing,markdown}.css + tokens entry (index.css)
+    [x] 1.2 - Derive dark variants for all four palettes (colors-dark.css, data-mode="dark") — approved by author
+    [x] 1.3 - Rework themeStore to {palette, mode} + stamp data-theme + data-mode on <html>; palette/mode toolbar controls; persist
+    [x] 1.4 - Interactive preview harness (all 8 palette x mode combos) delivered for review
+    [x] 1.5 - Acceptance: verified live in-app (Forest/Light + Teal/Dark), persists across reload; compat.css bridges legacy chrome; no raw hex outside token files
 
 [ ] 2.0 - Phase 2 - Typography + base
     [ ] 2.1 - Load Nunito Sans (Avenir Next fallback); set --mm-font-* and type scales

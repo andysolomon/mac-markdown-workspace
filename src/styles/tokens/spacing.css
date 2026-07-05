@@ -1,0 +1,30 @@
+/* Spacing, radii, shadows, and layout constants. */
+:root {
+  --mm-space-1: 4px;
+  --mm-space-2: 8px;
+  --mm-space-3: 12px;
+  --mm-space-4: 16px;
+  --mm-space-5: 22px;
+  --mm-space-6: 28px;
+  --mm-space-7: 34px;
+  --mm-space-8: 46px;
+
+  /* List indent step in the editor (per nesting level) */
+  --mm-indent-step: 26px;
+
+  --mm-radius-sm: 5px;   /* inline code, checkboxes */
+  --mm-radius-md: 8px;   /* tags */
+  --mm-radius-lg: 10px;  /* pills, code blocks */
+  --mm-radius-xl: 16px;  /* popover card */
+  --mm-radius-round: 50%;
+
+  --mm-shadow-pop: 0 18px 48px rgba(20, 20, 30, 0.22);
+
+  /* Three-pane layout */
+  --mm-sidebar-w: 212px;
+  --mm-list-w: 37%;
+  --mm-list-min: 340px;
+  --mm-list-max: 590px;
+  --mm-topbar-h: 72px;
+  --mm-dot-size: 13px;
+}

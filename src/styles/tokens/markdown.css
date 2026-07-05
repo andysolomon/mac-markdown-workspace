@@ -1,0 +1,35 @@
+/* Markdown token semantics — the heart of the system. Every markdown
+   construct maps to a role here; the reader's active theme colors them.
+   The core rule: SYNTAX (markers, headings hashes, list bullets, checkboxes)
+   is drawn in the accent; PROSE stays in --mm-text. They are never the
+   same color. */
+:root {
+  /* Structural markers — always accent */
+  --md-marker: var(--mm-accent);        /* - , 1. , # , > bar */
+  --md-checkbox: var(--mm-accent);      /* task list box + tick */
+
+  /* Headings */
+  --md-h1: var(--mm-accent);            /* H1 leads with accent */
+  --md-h2: var(--mm-text);
+  --md-h3: var(--mm-text);
+  --md-h4: var(--mm-text);
+  --md-h5: var(--mm-faint);             /* H5/H6 uppercase + tracked */
+  --md-h6: var(--mm-faint);
+
+  /* Inline runs */
+  --md-body: var(--mm-text);
+  --md-bold: var(--mm-text);            /* weight carries it, not color */
+  --md-bold-weight: 800;
+  --md-italic: var(--mm-text);
+  --md-strike: var(--mm-faint);         /* dimmed + line-through */
+  --md-link: var(--mm-link);            /* underlined, accent */
+  --md-code: var(--mm-code);            /* inline + fenced text */
+  --md-code-bg: var(--mm-code-bg);
+
+  /* Blocks */
+  --md-quote-text: var(--mm-faint);     /* italic, dimmed */
+  --md-quote-bar: var(--mm-accent);
+  --md-table-rule: var(--mm-accent);    /* header underline */
+  --md-table-border: var(--mm-border);
+  --md-rule: var(--mm-border);          /* thematic break --- */
+}

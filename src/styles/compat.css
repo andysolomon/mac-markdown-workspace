@@ -1,0 +1,21 @@
+/* Compatibility bridge (temporary — Phase 1).
+   The legacy chrome in src/index.css references these old variable names.
+   Map them onto the design-system --mm-* tokens so the existing UI stays
+   styled with the new four-palette themes until each surface is restyled to
+   --mm-* directly (Phase 2 base, Phase 5 shell). Remove as migration lands. */
+:root {
+  --bg-app: var(--mm-bg);
+  --bg-toolbar: var(--mm-panel);
+  --bg-editor: var(--mm-bg);
+  --bg-preview: var(--mm-bg);
+  --bg-button: var(--mm-panel);
+  --bg-button-hover: var(--mm-sel);
+  --bg-code: var(--mm-code-bg);
+  --text-primary: var(--mm-text);
+  --text-secondary: var(--mm-faint);
+  --text-code: var(--mm-code);
+  --border-color: var(--mm-border);
+  --border-button: var(--mm-border);
+  --accent: var(--mm-accent);
+  --accent-hover: var(--mm-accent);
+}
