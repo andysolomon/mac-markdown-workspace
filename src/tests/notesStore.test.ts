@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useNotesStore, selectActiveNote } from "../services/notesStore";
+import {
+  useNotesStore,
+  selectActiveNote,
+  selectTagIndex,
+  selectFilteredNotes,
+} from "../services/notesStore";
 import type { RawNote } from "../services/notesModel";
 
 /** In-memory fake of the notes half of window.appApi. */
@@ -27,7 +32,14 @@ function installFakeApi(seed: RawNote[] = []) {
 
 describe("notesStore", () => {
   beforeEach(() => {
-    useNotesStore.setState({ notes: [], activeNoteId: null, loading: false, loaded: false });
+    useNotesStore.setState({
+      notes: [],
+      activeNoteId: null,
+      selectedTag: null,
+      searchQuery: "",
+      loading: false,
+      loaded: false,
+    });
   });
 
   it("seeds a welcome note when the library is empty", async () => {
@@ -80,5 +92,29 @@ describe("notesStore", () => {
     const { notes, activeNoteId } = useNotesStore.getState();
     expect(notes.map((n) => n.id)).toEqual(["b"]);
     expect(activeNoteId).toBe("b");
+  });
+
+  it("exposes a tag index and filters the list by tag + search", async () => {
+    installFakeApi([
+      { id: "a", body: "# Roadmap\nship the #app", updatedAt: 300 },
+      { id: "b", body: "# Groceries\nmilk, eggs", updatedAt: 200 },
+      { id: "c", body: "# App ideas\n#app #ideas brainstorm", updatedAt: 100 },
+    ]);
+    await useNotesStore.getState().loadLibrary();
+
+    expect(selectTagIndex(useNotesStore.getState())).toEqual([
+      { tag: "app", count: 2 },
+      { tag: "ideas", count: 1 },
+    ]);
+
+    useNotesStore.getState().setSelectedTag("app");
+    expect(selectFilteredNotes(useNotesStore.getState()).map((n) => n.id)).toEqual(["a", "c"]);
+
+    useNotesStore.getState().setSearchQuery("brainstorm");
+    expect(selectFilteredNotes(useNotesStore.getState()).map((n) => n.id)).toEqual(["c"]);
+
+    useNotesStore.getState().setSelectedTag(null);
+    useNotesStore.getState().setSearchQuery("milk");
+    expect(selectFilteredNotes(useNotesStore.getState()).map((n) => n.id)).toEqual(["b"]);
   });
 });

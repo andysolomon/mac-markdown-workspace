@@ -92,3 +92,49 @@ export function buildNote(raw: RawNote): Note {
     tags: extractTags(raw.body),
   };
 }
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+/**
+ * Aggregate tags across the library into a counted, alphabetically-sorted
+ * index for the sidebar. Tags are matched case-insensitively; the first-seen
+ * casing is kept for display (mirrors extractTags).
+ */
+export function buildTagIndex(notes: Note[]): TagCount[] {
+  const counts = new Map<string, TagCount>();
+  for (const note of notes) {
+    for (const tag of note.tags) {
+      const key = tag.toLowerCase();
+      const existing = counts.get(key);
+      if (existing) existing.count += 1;
+      else counts.set(key, { tag, count: 1 });
+    }
+  }
+  return [...counts.values()].sort((a, b) =>
+    a.tag.toLowerCase().localeCompare(b.tag.toLowerCase()),
+  );
+}
+
+/**
+ * Filter notes by an active tag (case-insensitive) and/or a search query.
+ * Search is token-based: every whitespace-separated term must appear somewhere
+ * in the note's title or body (case-insensitive). Order is preserved.
+ */
+export function filterNotes(
+  notes: Note[],
+  opts: { tag?: string | null; query?: string },
+): Note[] {
+  const tag = opts.tag ?? null;
+  const terms = (opts.query ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return notes.filter((note) => {
+    if (tag && !note.tags.some((t) => t.toLowerCase() === tag.toLowerCase())) return false;
+    if (terms.length) {
+      const hay = `${note.title}\n${note.body}`.toLowerCase();
+      return terms.every((term) => hay.includes(term));
+    }
+    return true;
+  });
+}

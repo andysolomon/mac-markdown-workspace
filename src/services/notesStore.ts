@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { buildNote, type Note } from "./notesModel";
+import { buildNote, buildTagIndex, filterNotes, type Note, type TagCount } from "./notesModel";
 
 const WELCOME_BODY = `# Welcome to Mac Markdown
 
@@ -13,6 +13,8 @@ search across everything.
 interface NotesState {
   notes: Note[];        // sorted by updatedAt, newest first
   activeNoteId: string | null;
+  selectedTag: string | null;   // null = "All"
+  searchQuery: string;
   loading: boolean;
   loaded: boolean;
 }
@@ -23,6 +25,8 @@ interface NotesActions {
   updateActiveNote: (body: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   selectNote: (id: string | null) => void;
+  setSelectedTag: (tag: string | null) => void;
+  setSearchQuery: (query: string) => void;
 }
 
 export type NotesStore = NotesState & NotesActions;
@@ -34,6 +38,8 @@ function sortNotes(notes: Note[]): Note[] {
 export const useNotesStore = create<NotesStore>((set, get) => ({
   notes: [],
   activeNoteId: null,
+  selectedTag: null,
+  searchQuery: "",
   loading: false,
   loaded: false,
 
@@ -70,7 +76,16 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   selectNote: (id) => set({ activeNoteId: id }),
+  setSelectedTag: (selectedTag) => set({ selectedTag }),
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
 }));
 
 export const selectActiveNote = (s: NotesStore): Note | null =>
   s.notes.find((n) => n.id === s.activeNoteId) ?? null;
+
+/** Counted, alphabetical tag index for the sidebar. */
+export const selectTagIndex = (s: NotesStore): TagCount[] => buildTagIndex(s.notes);
+
+/** The document list after applying the active tag + search query. */
+export const selectFilteredNotes = (s: NotesStore): Note[] =>
+  filterNotes(s.notes, { tag: s.selectedTag, query: s.searchQuery });

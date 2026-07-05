@@ -34,11 +34,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 3.6 - notesStore (Zustand) + welcome-note seeding; 5 unit tests. (editor<->note autosave wiring lands in Phase 5)
     [~] 3.7 - Acceptance: web verified; Electron/iOS runtime pending; typecheck + 38 tests + web/iOS builds pass
 
-[ ] 4.0 - Phase 4 - Tag + search engine
-    [ ] 4.1 - Parse #hashtags -> tag index with counts (exclude code spans, URLs, heading hashes)
-    [ ] 4.2 - selectedTag filter + "All"; substring/token search over title+body
-    [ ] 4.3 - Derived filtered/sorted list selector
-    [ ] 4.4 - Acceptance: tags surface with correct counts; tag + search narrow the list; unit tests
+[x] 4.0 - Phase 4 - Tag + search engine
+    [x] 4.1 - buildTagIndex: counted, alphabetical tag index across the library (case-insensitive merge)
+    [x] 4.2 - notesStore selectedTag + searchQuery state/setters; token search over title+body
+    [x] 4.3 - filterNotes + selectFilteredNotes / selectTagIndex derived selectors
+    [x] 4.4 - Acceptance: verified by unit tests (46 total); typecheck, lint, web build pass
 
 [ ] 5.0 - Phase 5 - Three-pane shell UI
     [ ] 5.1 - Port kit components (WindowDots, Tag, DocListItem, ThemeSwatch, MarkdownLine)
