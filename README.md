@@ -67,6 +67,9 @@ bun run test           # unit tests (Vitest) — note: NOT `bun test`
 bun run test:e2e       # end-to-end (Playwright)
 ```
 
+For visual testing across the Mac app, web, and iOS (screenshots, Playwright
+baselines, Simulator), see [`docs/visual-testing.md`](./docs/visual-testing.md).
+
 > Use `bun run test`, not `bun test`. The latter invokes Bun's built-in runner, which lacks a jsdom environment and picks up the Playwright specs in `e2e/`, producing spurious failures. The real suite runs through `vitest`.
 
 ## Architecture
