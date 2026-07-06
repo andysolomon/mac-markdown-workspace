@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Sidebar } from "./Sidebar";
 import { DocList } from "./DocList";
 import { EditorChrome } from "./EditorChrome";
+import { FontPopover } from "./FontPopover";
 import { Toolbar } from "../Toolbar";
 import { Workspace } from "../Workspace";
 import { StatusBar } from "../StatusBar";
@@ -41,6 +42,7 @@ export function NotesShell() {
   const [listOpen, setListOpen] = useState(
     () => typeof window === "undefined" || window.innerWidth > 640,
   );
+  const [fontOpen, setFontOpen] = useState(false);
   const saveTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -129,11 +131,10 @@ export function NotesShell() {
       <section className="mm-editor">
         <EditorChrome
           onToggleList={() => setListOpen((v) => !v)}
-          onFontClick={() => {
-            /* Aa font popover lands in Phase 7 */
-          }}
+          onFontClick={() => setFontOpen((v) => !v)}
           onNewNote={handleNewNote}
         />
+        <FontPopover open={fontOpen} onClose={() => setFontOpen(false)} />
         <Toolbar />
         <Workspace />
         <StatusBar />

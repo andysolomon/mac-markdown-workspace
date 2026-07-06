@@ -1,30 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDocumentStore, selectIsDirty, type ViewMode } from "../services/documentStore";
-import { useThemeStore, type Palette, type ModeChoice } from "../services/themeStore";
 import { useFileOperations } from "../hooks/useFileOperations";
-
-const paletteLabels: Record<Palette, string> = {
-  teal: "Teal",
-  forest: "Forest",
-  gold: "Gold",
-  crimson: "Crimson",
-};
-
-const modeLabels: Record<ModeChoice, string> = {
-  light: "Light",
-  dark: "Dark",
-  system: "System",
-};
 
 export const Toolbar = React.memo(function Toolbar() {
   const filePath = useDocumentStore((s) => s.filePath);
   const viewMode = useDocumentStore((s) => s.viewMode);
   const setViewMode = useDocumentStore((s) => s.setViewMode);
   const isDirty = useDocumentStore(selectIsDirty);
-  const palette = useThemeStore((s) => s.palette);
-  const mode = useThemeStore((s) => s.mode);
-  const cyclePalette = useThemeStore((s) => s.cyclePalette);
-  const cycleMode = useThemeStore((s) => s.cycleMode);
   const { openFile, saveFile } = useFileOperations();
   const content = useDocumentStore((s) => s.content);
 
@@ -59,16 +41,6 @@ export const Toolbar = React.memo(function Toolbar() {
 
   const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
   const mobileModes: ViewMode[] = ["source", "preview", "wysiwyg"];
-
-  const handleCyclePalette = () => {
-    cyclePalette();
-    window.appApi.setSetting?.("palette", useThemeStore.getState().palette);
-  };
-
-  const handleCycleMode = () => {
-    cycleMode();
-    window.appApi.setSetting?.("mode", useThemeStore.getState().mode);
-  };
 
   const handleExport = async (format: "txt" | "pdf" | "docx") => {
     setExportOpen(false);
@@ -117,8 +89,6 @@ export const Toolbar = React.memo(function Toolbar() {
         ))}
       </div>
       <div className="right-group desktop-only">
-        <button onClick={handleCyclePalette}>{paletteLabels[palette]}</button>
-        <button onClick={handleCycleMode}>{modeLabels[mode]}</button>
         <span>
           {fileName}
           {isDirty ? " *" : ""}
@@ -148,11 +118,6 @@ export const Toolbar = React.memo(function Toolbar() {
                   {m.charAt(0).toUpperCase() + m.slice(1)}
                 </button>
               ))}
-              <hr />
-              <button onClick={handleCyclePalette}>Palette: {paletteLabels[palette]}</button>
-              <button onClick={() => { handleCycleMode(); setMenuOpen(false); }}>
-                Mode: {modeLabels[mode]}
-              </button>
             </div>
           )}
         </div>

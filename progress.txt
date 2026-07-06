@@ -55,11 +55,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [>] 6.3 - Aa font popover -> moved to Phase 7 (duplicate of 7.2; the --mm-font-editor/--mm-editor-size hooks are in place)
     [x] 6.4 - Acceptance: verified live in split view, Teal/Light + Gold/Dark — marks accent, prose neutral, edit + read consistent. Fixed CodeMirror duplicate-instance bug via vite resolve.dedupe (all 3 configs) + package.json overrides. 46 tests, typecheck, lint, web + iOS builds pass
 
-[ ] 7.0 - Phase 7 - Theme + font switcher UX
-    [ ] 7.1 - ThemeSwatch two-tone picker (palette + light/dark)
-    [ ] 7.2 - Aa popover (curated faces + size scale)
-    [ ] 7.3 - Persist {palette, mode, font, size} via AppApi settings per platform
-    [ ] 7.4 - Acceptance: selections persist across reload on all 3 platforms
+[x] 7.0 - Phase 7 - Theme + font switcher UX
+    [x] 7.1 - ThemeSwatch two-tone palette picker + Light/Dark/System pills in the Aa popover; palette/mode buttons removed from the legacy toolbar
+    [x] 7.2 - Aa popover (FontPopover): 9 curated faces each rendered in its own font, A-/A+ size stepper (16-28px, clamped); --mm-shadow-pop card
+    [x] 7.3 - themeStore extended with {font, size}; App applies --mm-font-editor/--mm-editor-size; all four settings persist via AppApi (electron-store / localStorage per platform)
+    [x] 7.4 - Acceptance: verified live on web — Forest/Dark/Georgia/23px round-trips across reload; rapid-click stepper stale-closure bug found+fixed; Electron/iOS persistence via same AppApi settings path (runtime pass in Phase 8). 46 tests, typecheck, lint, web + iOS builds pass
 
 [ ] 8.0 - Phase 8 - Cross-platform verification, migration, cleanup
     [ ] 8.1 - Verify library persistence + UI on web, Electron, iOS

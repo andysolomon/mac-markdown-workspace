@@ -1,6 +1,11 @@
 import React, { useEffect, useCallback } from "react";
 import { NotesShell } from "./shell/NotesShell";
-import { useThemeStore } from "../services/themeStore";
+import {
+  useThemeStore,
+  FONT_OPTIONS,
+  MIN_EDITOR_SIZE,
+  MAX_EDITOR_SIZE,
+} from "../services/themeStore";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useNotesStore } from "../services/notesStore";
 
@@ -13,8 +18,12 @@ function isMarkdownFile(name: string): boolean {
 export function App() {
   const palette = useThemeStore((s) => s.palette);
   const resolvedMode = useThemeStore((s) => s.resolvedMode);
+  const font = useThemeStore((s) => s.font);
+  const size = useThemeStore((s) => s.size);
   const setPalette = useThemeStore((s) => s.setPalette);
   const setMode = useThemeStore((s) => s.setMode);
+  const setFont = useThemeStore((s) => s.setFont);
+  const setSize = useThemeStore((s) => s.setSize);
 
   // Apply palette + mode to the document root. The --md-* markdown roles
   // resolve against :root's --mm-*, so the theme must live on <html>.
@@ -23,7 +32,14 @@ export function App() {
     document.documentElement.setAttribute("data-mode", resolvedMode);
   }, [palette, resolvedMode]);
 
-  // Load saved palette + mode from settings
+  // Apply the reader's editor face + size (the Aa popover writes these).
+  useEffect(() => {
+    const option = FONT_OPTIONS.find((f) => f.key === font) ?? FONT_OPTIONS[0];
+    document.documentElement.style.setProperty("--mm-font-editor", `var(${option.cssVar})`);
+    document.documentElement.style.setProperty("--mm-editor-size", `${size}px`);
+  }, [font, size]);
+
+  // Load saved appearance from settings
   useEffect(() => {
     window.appApi?.getSetting?.("palette").then((saved) => {
       if (saved === "teal" || saved === "forest" || saved === "gold" || saved === "crimson") {
@@ -35,7 +51,18 @@ export function App() {
         setMode(saved);
       }
     });
-  }, [setPalette, setMode]);
+    window.appApi?.getSetting?.("font").then((saved) => {
+      if (typeof saved === "string" && FONT_OPTIONS.some((f) => f.key === saved)) {
+        setFont(saved as (typeof FONT_OPTIONS)[number]["key"]);
+      }
+    });
+    window.appApi?.getSetting?.("size").then((saved) => {
+      const n = Number(saved);
+      if (Number.isFinite(n) && n >= MIN_EDITOR_SIZE && n <= MAX_EDITOR_SIZE) {
+        setSize(n);
+      }
+    });
+  }, [setPalette, setMode, setFont, setSize]);
 
   // Listen for menu actions from main process
   useEffect(() => {

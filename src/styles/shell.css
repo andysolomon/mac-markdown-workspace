@@ -102,6 +102,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  position: relative; /* anchors the Aa popover */
 }
 
 .mm-topbar {
@@ -161,4 +162,117 @@
   line-height: 1;
   font-weight: 300;
   color: var(--mm-faint);
+}
+
+/* Aa popover — the one floating, shadowed surface in the system. */
+.mm-popover {
+  position: absolute;
+  top: calc(var(--mm-topbar-h) - 10px);
+  left: var(--mm-space-7);
+  z-index: 40;
+  min-width: 260px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  background: var(--mm-bg);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-xl);
+  box-shadow: var(--mm-shadow-pop);
+  padding: var(--mm-space-4);
+}
+
+.mm-pop-section {
+  margin-bottom: var(--mm-space-4);
+}
+
+.mm-pop-label {
+  font-size: var(--mm-ui-xs);
+  font-weight: var(--mm-w-black);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--mm-faint);
+  margin-bottom: var(--mm-space-2);
+}
+
+.mm-font-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--mm-space-3);
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--mm-text);
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: var(--mm-radius-md);
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.mm-font-row:hover,
+.mm-font-row.sel {
+  background: var(--mm-sel);
+}
+
+.mm-check {
+  color: var(--mm-accent);
+  font-weight: var(--mm-w-black);
+}
+
+.mm-size-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-3);
+}
+
+.mm-size-btn {
+  border: 1px solid var(--mm-border);
+  background: transparent;
+  color: var(--mm-text);
+  border-radius: var(--mm-radius-md);
+  padding: 4px 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: var(--mm-w-bold);
+  cursor: pointer;
+}
+
+.mm-size-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mm-size-read {
+  font-family: var(--mm-font-mono);
+  font-size: 14px;
+  color: var(--mm-faint);
+  min-width: 48px;
+  text-align: center;
+}
+
+.mm-swatch-row {
+  display: flex;
+  gap: var(--mm-space-3);
+}
+
+.mm-mode-row {
+  display: flex;
+  gap: var(--mm-space-2);
+}
+
+.mm-mode-pill {
+  border: 1px solid var(--mm-border);
+  background: transparent;
+  color: var(--mm-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: var(--mm-w-bold);
+  padding: 5px 14px;
+  border-radius: var(--mm-radius-pill);
+  cursor: pointer;
+}
+
+.mm-mode-pill.sel {
+  background: var(--mm-sel);
+  border-color: var(--mm-faint);
 }
