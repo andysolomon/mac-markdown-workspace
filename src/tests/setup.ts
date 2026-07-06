@@ -1,15 +1,17 @@
 /* Vitest setup — jsdom lacks matchMedia, which themeStore and NotesShell
    consume at module scope / mount. */
+const noop = (): void => undefined;
+
 if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = (query: string): MediaQueryList =>
     ({
       matches: false,
       media: query,
       onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
+      addListener: noop,
+      removeListener: noop,
+      addEventListener: noop,
+      removeEventListener: noop,
       dispatchEvent: (): boolean => false,
     }) as unknown as MediaQueryList;
 }
