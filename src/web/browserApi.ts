@@ -57,8 +57,33 @@ function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  // iOS Safari needs the anchor in the DOM, and processes the download
+  // asynchronously — revoking the URL synchronously aborts it (issue #12).
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/** Deliver an exported file: native share sheet on touch devices (the only
+    reliable path on iOS Safari), download anchor elsewhere. */
+async function deliverFile(blob: Blob, filename: string, mime: string): Promise<boolean> {
+  const isTouch = navigator.maxTouchPoints > 1;
+  if (isTouch && typeof navigator.canShare === "function") {
+    const file = new File([blob], filename, { type: mime });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      } catch (err) {
+        // User cancelled the sheet — that's a completed interaction.
+        if ((err as DOMException)?.name === "AbortError") return true;
+        // Otherwise fall through to the download path.
+      }
+    }
+  }
+  downloadBlob(blob, filename);
+  return true;
 }
 
 export const browserApi: AppApi = {
@@ -169,8 +194,7 @@ export const browserApi: AppApi = {
 
   exportTxt: async (payload) => {
     const blob = new Blob([payload.content], { type: "text/plain" });
-    downloadBlob(blob, "document.txt");
-    return true;
+    return deliverFile(blob, "document.txt", "text/plain");
   },
 
   // payload.html is a complete standalone document; print it in a hidden
@@ -182,8 +206,7 @@ export const browserApi: AppApi = {
 
   exportHtml: async (payload) => {
     const blob = new Blob([payload.html], { type: "text/html" });
-    downloadBlob(blob, "document.html");
-    return true;
+    return deliverFile(blob, "document.html", "text/html");
   },
 
   exportDocx: async (payload) => {
@@ -195,8 +218,11 @@ export const browserApi: AppApi = {
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
-      downloadBlob(blob, "document.docx");
-      return true;
+      return deliverFile(
+        blob,
+        "document.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
     } catch {
       return false;
     }

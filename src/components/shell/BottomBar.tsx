@@ -27,9 +27,10 @@ export function BottomBar({
     return () => document.removeEventListener("mousedown", handler);
   }, [shareOpen]);
 
-  const handleExport = async (format: ExportFormat) => {
+  const handleExport = (format: ExportFormat) => {
     setShareOpen(false);
-    await exportDocument(format, content);
+    // Synchronous into exportDocument — keeps iOS transient activation live.
+    void exportDocument(format, content);
   };
 
   return (

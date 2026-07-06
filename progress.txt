@@ -80,6 +80,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 10.3 - visualViewport-aware bottom offset (tracks the iOS keyboard); popovers bottom-anchored on mobile
     [x] 10.4 - Acceptance: verified on 390px web viewport — bars swap on editor focus/Done, heading/task/bold insert + toggle correctly with focus kept, Done always visible, neither bar renders on desktop; 46 tests, typecheck, lint, web + iOS builds pass. iOS device pass in Phase 11
 
+[x] 10.6 - Feedback round 2 (author iPad testing, 2026-07-05)
+    [x] 10.6.1 - Default view mode is Source (issue #11); verified live
+    [x] 10.6.2 - iOS Safari export (issue #12): DOM-attached download anchor + delayed URL revoke; share-sheet delivery (navigator.share w/ files) on touch; PDF pre-opens a tab synchronously in the click stack (static exportActions import preserves transient activation) and prints there — touch-WebKit branch verified in Playwright WebKit (popup + themed doc); REAL-DEVICE CONFIRMATION PENDING (issue open)
+    [x] 10.6.3 - Maximize editor (issue #13): list icon now toggles BOTH panels; verified live — full-width editor and restore; mobile overlay preserved
+
 [ ] 11.0 - Phase 11 - Cross-platform verification, migration, cleanup
     [ ] 11.1 - Verify library persistence + UI on web, Electron, iOS
     [ ] 11.2 - Keep file open/save/export as per-note import/export; remove dead v1 chrome

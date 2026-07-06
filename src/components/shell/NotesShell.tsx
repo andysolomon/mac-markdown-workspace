@@ -53,7 +53,7 @@ export function NotesShell() {
   const [isNarrow, setIsNarrow] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
   );
-  const [listOpen, setListOpen] = useState(() => !isNarrowQuery().matches);
+  const [panelsOpen, setPanelsOpen] = useState(() => !isNarrowQuery().matches);
   const [fontOpen, setFontOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
@@ -92,7 +92,7 @@ export function NotesShell() {
       setIsNarrow(e.matches);
       // Crossing the breakpoint resets pane visibility to that layout's
       // default: panes restored when wide, list closed (overlay) when narrow.
-      setListOpen(!e.matches);
+      setPanelsOpen(!e.matches);
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -159,7 +159,7 @@ export function NotesShell() {
       await flushPendingSave();
       selectNote(id);
       if (isNarrow) {
-        setListOpen(false);
+        setPanelsOpen(false);
       }
     },
     [flushPendingSave, selectNote, isNarrow],
@@ -172,8 +172,10 @@ export function NotesShell() {
 
   return (
     <>
-      <Sidebar tags={tags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
-      {listOpen && (
+      {panelsOpen && (
+        <Sidebar tags={tags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
+      )}
+      {panelsOpen && (
         <DocList
           notes={filteredNotes}
           activeNoteId={activeNoteId}
@@ -184,7 +186,7 @@ export function NotesShell() {
       )}
       <section className="mm-editor">
         <EditorChrome
-          onToggleList={() => setListOpen((v) => !v)}
+          onToggleList={() => setPanelsOpen((v) => !v)}
           onFontClick={() => setFontOpen((v) => !v)}
           onNewNote={handleNewNote}
           onSettingsClick={() => setSettingsOpen((v) => !v)}

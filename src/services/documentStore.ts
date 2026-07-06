@@ -45,7 +45,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
   content: initialContent,
   savedContent: initialContent,
   filePath: "",
-  viewMode: "split",
+  viewMode: "source",
   cursorPosition: { line: 1, col: 1 },
 
   setContent: (content) => set({ content }),

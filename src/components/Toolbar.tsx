@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDocumentStore, selectIsDirty, type ViewMode } from "../services/documentStore";
 import { useFileOperations } from "../hooks/useFileOperations";
+import { exportDocument } from "../services/exportActions";
 
 export const Toolbar = React.memo(function Toolbar() {
   const filePath = useDocumentStore((s) => s.filePath);
@@ -42,11 +43,12 @@ export const Toolbar = React.memo(function Toolbar() {
   const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
   const mobileModes: ViewMode[] = ["source", "preview", "wysiwyg"];
 
-  const handleExport = async (format: "txt" | "pdf" | "docx" | "html") => {
+  const handleExport = (format: "txt" | "pdf" | "docx" | "html") => {
     setExportOpen(false);
     setMenuOpen(false);
-    const { exportDocument } = await import("../services/exportActions");
-    await exportDocument(format, content);
+    // Called synchronously from the click so iOS Safari's transient
+    // activation is still live inside exportDocument (issue #12).
+    void exportDocument(format, content);
   };
 
   const fileName = filePath ? filePath.split("/").pop() : "Unsaved document";
