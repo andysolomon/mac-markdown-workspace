@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDocumentStore } from "../../services/documentStore";
-import { exportDocument, type ExportFormat } from "../../services/exportActions";
+import {
+  exportDocument,
+  prepareExport,
+  type ExportFormat,
+  type PreparedExport,
+} from "../../services/exportActions";
 
 /**
  * BottomBar — Bear-style mobile tool strip (issue #9 / W-000009):
@@ -17,6 +22,13 @@ export function BottomBar({
   const content = useDocumentStore((s) => s.content);
   const [shareOpen, setShareOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+  // Pre-rendered when the share menu opens (iOS gesture discipline, #12).
+  const prepRef = useRef<PreparedExport | undefined>(undefined);
+
+  const toggleShare = () => {
+    if (!shareOpen) prepRef.current = prepareExport(content);
+    setShareOpen((v) => !v);
+  };
 
   useEffect(() => {
     if (!shareOpen) return;
@@ -29,8 +41,9 @@ export function BottomBar({
 
   const handleExport = (format: ExportFormat) => {
     setShareOpen(false);
-    // Synchronous into exportDocument — keeps iOS transient activation live.
-    void exportDocument(format, content);
+    // Synchronous into exportDocument with the pre-rendered payload — keeps
+    // iOS transient activation live for share/print delivery.
+    void exportDocument(format, content, prepRef.current);
   };
 
   return (
@@ -40,7 +53,7 @@ export function BottomBar({
           type="button"
           className="mm-bb-btn"
           aria-label="Share or export"
-          onClick={() => setShareOpen((v) => !v)}
+          onClick={toggleShare}
         >
           <span className="mm-share-icon">
             <span className="mm-share-arrow">↑</span>
