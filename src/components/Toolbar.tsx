@@ -45,24 +45,8 @@ export const Toolbar = React.memo(function Toolbar() {
   const handleExport = async (format: "txt" | "pdf" | "docx" | "html") => {
     setExportOpen(false);
     setMenuOpen(false);
-    if (format === "txt") {
-      await window.appApi.exportTxt?.({ content });
-      return;
-    }
-    const html = await generateHtml(content);
-    if (format === "docx") {
-      await window.appApi.exportDocx?.({ html });
-      return;
-    }
-    // HTML and PDF take a complete standalone themed document.
-    const { buildStandaloneHtml } = await import("../services/exportHtml");
-    const { deriveTitle } = await import("../services/notesModel");
-    const doc = buildStandaloneHtml(html, deriveTitle(content));
-    if (format === "html") {
-      await window.appApi.exportHtml?.({ html: doc });
-    } else {
-      await window.appApi.exportPdf?.({ html: doc });
-    }
+    const { exportDocument } = await import("../services/exportActions");
+    await exportDocument(format, content);
   };
 
   const fileName = filePath ? filePath.split("/").pop() : "Unsaved document";
@@ -138,9 +122,3 @@ export const Toolbar = React.memo(function Toolbar() {
     </header>
   );
 });
-
-async function generateHtml(markdown: string): Promise<string> {
-  // Dynamically import to avoid bundling in main chunk
-  const { markdownToHtml } = await import("../services/markdownToHtml");
-  return markdownToHtml(markdown);
-}

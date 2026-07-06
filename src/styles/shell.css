@@ -332,3 +332,149 @@
 .mm-toggle.on .mm-toggle-knob {
   transform: translateX(18px);
 }
+
+/* Bottom tool strip — Bear-style share · Aa · + (mobile only, issue #9). */
+.mm-bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px var(--mm-space-6) calc(10px + env(safe-area-inset-bottom));
+  background: var(--mm-bg);
+  border-top: 1px solid var(--mm-border);
+}
+
+.mm-bb-btn {
+  border: 0;
+  background: transparent;
+  padding: 4px 10px;
+  cursor: pointer;
+  color: var(--mm-accent);
+  font-family: inherit;
+}
+
+.mm-bb-aa {
+  font-size: 24px;
+  font-weight: var(--mm-w-bold);
+}
+
+.mm-bb-plus {
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+/* Share glyph from CSS primitives: open box + rising arrow. */
+.mm-share-icon {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 3px 3px;
+}
+
+.mm-share-arrow {
+  position: absolute;
+  left: 50%;
+  top: -13px;
+  transform: translateX(-50%);
+  font-size: 15px;
+  font-weight: var(--mm-w-bold);
+  line-height: 1;
+}
+
+.mm-share-wrap {
+  position: relative;
+}
+
+.mm-share-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  min-width: 190px;
+  background: var(--mm-bg);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-xl);
+  box-shadow: var(--mm-shadow-pop);
+  overflow: hidden;
+  padding: var(--mm-space-2);
+}
+
+.mm-share-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--mm-text);
+  font-family: inherit;
+  font-size: 16px;
+  padding: 9px 12px;
+  border-radius: var(--mm-radius-md);
+  cursor: pointer;
+}
+
+.mm-share-menu button:hover {
+  background: var(--mm-sel);
+}
+
+/* Markdown keyboard accessory — rides above the on-screen keyboard (#10). */
+.mm-accessory {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px var(--mm-space-2);
+  background: var(--mm-accent);
+  overflow-x: auto;
+}
+
+.mm-acc-btn {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: var(--mm-w-bold);
+  min-width: 40px;
+  height: 38px;
+  border-radius: var(--mm-radius-md);
+  cursor: pointer;
+  flex: none;
+}
+
+.mm-acc-btn.mono {
+  font-family: var(--mm-font-mono);
+  font-size: 15px;
+}
+
+.mm-acc-btn:active {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mm-acc-done {
+  margin-left: auto;
+  border: 0;
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: var(--mm-w-black);
+  padding: 0 var(--mm-space-3);
+  height: 38px;
+  cursor: pointer;
+  flex: none;
+  /* Always visible even when the button row scrolls. */
+  position: sticky;
+  right: 0;
+  background: var(--mm-accent);
+  box-shadow: -8px 0 8px -6px rgba(0, 0, 0, 0.25);
+}

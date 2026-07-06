@@ -4,6 +4,8 @@ import { DocList } from "./DocList";
 import { EditorChrome } from "./EditorChrome";
 import { FontPopover } from "./FontPopover";
 import { SettingsPanel } from "./SettingsPanel";
+import { BottomBar } from "./BottomBar";
+import { MarkdownAccessoryBar } from "./MarkdownAccessoryBar";
 import { useSettingsStore } from "../../services/settingsStore";
 import { Toolbar } from "../Toolbar";
 import { Workspace } from "../Workspace";
@@ -54,7 +56,35 @@ export function NotesShell() {
   const [listOpen, setListOpen] = useState(() => !isNarrowQuery().matches);
   const [fontOpen, setFontOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editorFocused, setEditorFocused] = useState(false);
   const showToolbar = useSettingsStore((s) => s.showToolbar);
+
+  // Track whether the CodeMirror editor owns focus (drives which mobile bar
+  // shows: keyboard accessory while editing, bottom tool strip otherwise).
+  // Blur is deferred a tick so accessory taps don't flicker the bars.
+  useEffect(() => {
+    let blurTimer: number | null = null;
+    const isEditorTarget = (t: EventTarget | null) =>
+      t instanceof Element && !!t.closest(".cm-content");
+    const onFocusIn = (e: FocusEvent) => {
+      if (isEditorTarget(e.target)) {
+        if (blurTimer) window.clearTimeout(blurTimer);
+        setEditorFocused(true);
+      }
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (isEditorTarget(e.target)) {
+        blurTimer = window.setTimeout(() => setEditorFocused(false), 120);
+      }
+    };
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+      if (blurTimer) window.clearTimeout(blurTimer);
+    };
+  }, []);
 
   useEffect(() => {
     const mq = isNarrowQuery();
@@ -164,6 +194,10 @@ export function NotesShell() {
         {showToolbar ? <Toolbar /> : null}
         <Workspace />
         <StatusBar />
+        {isNarrow && !editorFocused ? (
+          <BottomBar onFontClick={() => setFontOpen((v) => !v)} onNewNote={handleNewNote} />
+        ) : null}
+        {isNarrow && editorFocused ? <MarkdownAccessoryBar /> : null}
       </section>
     </>
   );

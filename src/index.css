@@ -565,6 +565,23 @@ button.active:hover {
     gap: var(--mm-space-4);
   }
 
+  /* Popovers anchor to the bottom on mobile (near the bottom bar / thumb). */
+  .mm-popover {
+    top: auto;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    left: var(--mm-space-3);
+    right: var(--mm-space-3);
+    min-width: 0;
+    max-height: 60vh;
+  }
+
+  /* Editor content clears the fixed bottom bar. */
+  .mm-editor .cm-scroller,
+  .preview,
+  .wysiwyg-body {
+    padding-bottom: 88px;
+  }
+
   .mm-aa {
     font-size: 22px;
   }

@@ -74,11 +74,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [~] 9.3 - iOS save-location (issue #8): settingsStore + pills (native-only via Capacitor.isNativePlatform), shim writes to selected dir, merge-read both + dual-delete so switching never hides notes — code complete, iOS runtime verify in Phase 11 (issue left open)
     [x] 9.4 - Acceptance (web): panel + toggle verified live; Storage section correctly absent on web; 46 tests, typecheck, lint, web + iOS builds pass
 
-[ ] 10.0 - Phase 10 - Mobile editing kit: bottom bar + markdown keyboard accessory
-    [ ] 10.1 - Bottom tool strip (share/export, Aa, +) on mobile/tablet per Bear reference
-    [ ] 10.2 - Markdown keyboard accessory bar above on-screen keyboard (#, bold, italic, list, task, quote, code, link, indent, Done) inserting at CodeMirror cursor
-    [ ] 10.3 - visualViewport-aware positioning on iOS
-    [ ] 10.4 - Acceptance: verified on narrow web viewport + iOS build
+[x] 10.0 - Phase 10 - Mobile editing kit: bottom bar + markdown keyboard accessory
+    [x] 10.1 - BottomBar (issue #9): share menu (HTML/PDF/TXT/DOCX via shared exportActions), Aa -> font popover, + -> new note; CSS-primitive share glyph; mobile-only
+    [x] 10.2 - MarkdownAccessoryBar (issue #10): #, B, I, list, task, quote, code, link, indent + sticky Done; inserts at the CodeMirror cursor via editorBridge (wrap/toggle-prefix/indent/link); focus preserved through taps (mousedown preventDefault)
+    [x] 10.3 - visualViewport-aware bottom offset (tracks the iOS keyboard); popovers bottom-anchored on mobile
+    [x] 10.4 - Acceptance: verified on 390px web viewport — bars swap on editor focus/Done, heading/task/bold insert + toggle correctly with focus kept, Done always visible, neither bar renders on desktop; 46 tests, typecheck, lint, web + iOS builds pass. iOS device pass in Phase 11
 
 [ ] 11.0 - Phase 11 - Cross-platform verification, migration, cleanup
     [ ] 11.1 - Verify library persistence + UI on web, Electron, iOS
