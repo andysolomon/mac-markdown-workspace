@@ -6,10 +6,20 @@ import { Share } from "@capacitor/share";
 const NOTES_DIR = "notes";
 const notePath = (id: string) => `${NOTES_DIR}/${id}.md`;
 
-async function readRawNote(id: string): Promise<RawNote> {
+/** Storage location follows the persisted setting (issue #8 / W-000008):
+    "icloud" -> Documents (iCloud-backed, Files-visible); "device" -> Data
+    (app-private). Reads merge BOTH locations so switching never hides
+    existing notes; writes go to the selected location; deletes cover both. */
+function selectedDirectory(): Directory {
+  return getSettings()["iosStorage"] === "device" ? Directory.Data : Directory.Documents;
+}
+
+const BOTH_DIRECTORIES: Directory[] = [Directory.Documents, Directory.Data];
+
+async function readRawNoteFrom(directory: Directory, id: string): Promise<RawNote> {
   const [read, stat] = await Promise.all([
-    Filesystem.readFile({ path: notePath(id), directory: Directory.Documents, encoding: Encoding.UTF8 }),
-    Filesystem.stat({ path: notePath(id), directory: Directory.Documents }),
+    Filesystem.readFile({ path: notePath(id), directory, encoding: Encoding.UTF8 }),
+    Filesystem.stat({ path: notePath(id), directory }),
   ]);
   return { id, body: read.data as string, updatedAt: stat.mtime };
 }
@@ -209,30 +219,39 @@ export const capacitorApi: AppApi = {
   },
 
   listNotes: async () => {
-    try {
-      const res = await Filesystem.readdir({ path: NOTES_DIR, directory: Directory.Documents });
-      const notes: RawNote[] = [];
-      for (const entry of res.files) {
-        const name = typeof entry === "string" ? entry : entry.name;
-        if (!name.endsWith(".md")) continue;
-        try {
-          notes.push(await readRawNote(name.slice(0, -3)));
-        } catch {
-          /* skip unreadable */
+    // Merge both storage locations, newest copy of an id wins (see
+    // selectedDirectory for why both are read).
+    const byId = new Map<string, RawNote>();
+    for (const directory of BOTH_DIRECTORIES) {
+      try {
+        const res = await Filesystem.readdir({ path: NOTES_DIR, directory });
+        for (const entry of res.files) {
+          const name = typeof entry === "string" ? entry : entry.name;
+          if (!name.endsWith(".md")) continue;
+          try {
+            const note = await readRawNoteFrom(directory, name.slice(0, -3));
+            const existing = byId.get(note.id);
+            if (!existing || note.updatedAt > existing.updatedAt) byId.set(note.id, note);
+          } catch {
+            /* skip unreadable */
+          }
         }
+      } catch {
+        /* directory not created yet */
       }
-      return notes;
-    } catch {
-      return []; // notes dir not created yet
     }
+    return [...byId.values()];
   },
 
   readNote: async ({ id }) => {
-    try {
-      return await readRawNote(id);
-    } catch {
-      return null;
+    for (const directory of [selectedDirectory(), ...BOTH_DIRECTORIES]) {
+      try {
+        return await readRawNoteFrom(directory, id);
+      } catch {
+        /* try next location */
+      }
     }
+    return null;
   },
 
   createNote: async ({ body }) => {
@@ -240,7 +259,7 @@ export const capacitorApi: AppApi = {
     await Filesystem.writeFile({
       path: notePath(id),
       data: body ?? "",
-      directory: Directory.Documents,
+      directory: selectedDirectory(),
       encoding: Encoding.UTF8,
       recursive: true,
     });
@@ -251,7 +270,7 @@ export const capacitorApi: AppApi = {
     await Filesystem.writeFile({
       path: notePath(id),
       data: body,
-      directory: Directory.Documents,
+      directory: selectedDirectory(),
       encoding: Encoding.UTF8,
       recursive: true,
     });
@@ -259,10 +278,13 @@ export const capacitorApi: AppApi = {
   },
 
   deleteNote: async ({ id }) => {
-    try {
-      await Filesystem.deleteFile({ path: notePath(id), directory: Directory.Documents });
-    } catch {
-      /* already gone */
+    // Remove from every location so stale copies can't resurface in the merge.
+    for (const directory of BOTH_DIRECTORIES) {
+      try {
+        await Filesystem.deleteFile({ path: notePath(id), directory });
+      } catch {
+        /* not present there */
+      }
     }
   },
 };

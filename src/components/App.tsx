@@ -8,6 +8,7 @@ import {
 } from "../services/themeStore";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useNotesStore } from "../services/notesStore";
+import { useSettingsStore } from "../services/settingsStore";
 
 const MD_EXTENSIONS = [".md", ".markdown", ".mdx", ".txt"];
 
@@ -60,6 +61,16 @@ export function App() {
       const n = Number(saved);
       if (Number.isFinite(n) && n >= MIN_EDITOR_SIZE && n <= MAX_EDITOR_SIZE) {
         setSize(n);
+      }
+    });
+    window.appApi?.getSetting?.("showToolbar").then((saved) => {
+      if (typeof saved === "boolean") {
+        useSettingsStore.getState().setShowToolbar(saved);
+      }
+    });
+    window.appApi?.getSetting?.("iosStorage").then((saved) => {
+      if (saved === "icloud" || saved === "device") {
+        useSettingsStore.getState().setIosStorage(saved);
       }
     });
   }, [setPalette, setMode, setFont, setSize]);

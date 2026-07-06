@@ -4,10 +4,12 @@ export function EditorChrome({
   onToggleList,
   onFontClick,
   onNewNote,
+  onSettingsClick,
 }: {
   onToggleList: () => void;
   onFontClick: () => void;
   onNewNote: () => void;
+  onSettingsClick: () => void;
 }) {
   return (
     <div className="mm-topbar">
@@ -40,6 +42,14 @@ export function EditorChrome({
         onClick={onNewNote}
       >
         +
+      </button>
+      <button
+        type="button"
+        className="mm-more"
+        aria-label="Settings"
+        onClick={onSettingsClick}
+      >
+        ⋯
       </button>
     </div>
   );

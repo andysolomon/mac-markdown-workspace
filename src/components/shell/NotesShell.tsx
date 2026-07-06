@@ -3,6 +3,8 @@ import { Sidebar } from "./Sidebar";
 import { DocList } from "./DocList";
 import { EditorChrome } from "./EditorChrome";
 import { FontPopover } from "./FontPopover";
+import { SettingsPanel } from "./SettingsPanel";
+import { useSettingsStore } from "../../services/settingsStore";
 import { Toolbar } from "../Toolbar";
 import { Workspace } from "../Workspace";
 import { StatusBar } from "../StatusBar";
@@ -51,6 +53,8 @@ export function NotesShell() {
   );
   const [listOpen, setListOpen] = useState(() => !isNarrowQuery().matches);
   const [fontOpen, setFontOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const showToolbar = useSettingsStore((s) => s.showToolbar);
 
   useEffect(() => {
     const mq = isNarrowQuery();
@@ -153,9 +157,11 @@ export function NotesShell() {
           onToggleList={() => setListOpen((v) => !v)}
           onFontClick={() => setFontOpen((v) => !v)}
           onNewNote={handleNewNote}
+          onSettingsClick={() => setSettingsOpen((v) => !v)}
         />
         <FontPopover open={fontOpen} onClose={() => setFontOpen(false)} />
-        <Toolbar />
+        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        {showToolbar ? <Toolbar /> : null}
         <Workspace />
         <StatusBar />
       </section>

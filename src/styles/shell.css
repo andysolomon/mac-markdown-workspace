@@ -116,7 +116,8 @@
 
 .mm-listicon,
 .mm-aa,
-.mm-plus {
+.mm-plus,
+.mm-more {
   border: 0;
   background: transparent;
   padding: 0;
@@ -161,6 +162,13 @@
   font-size: 42px;
   line-height: 1;
   font-weight: 300;
+  color: var(--mm-faint);
+}
+
+.mm-more {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 700;
   color: var(--mm-faint);
 }
 
@@ -275,4 +283,52 @@
 .mm-mode-pill.sel {
   background: var(--mm-sel);
   border-color: var(--mm-faint);
+}
+
+/* Settings panel — same popover card, anchored to the topbar's right side. */
+.mm-settings {
+  left: auto;
+  right: var(--mm-space-7);
+  min-width: 230px;
+}
+
+.mm-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mm-space-3);
+  font-size: 16px;
+}
+
+.mm-toggle {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-sel);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s ease;
+}
+
+.mm-toggle.on {
+  background: var(--mm-accent);
+  border-color: var(--mm-accent);
+}
+
+.mm-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.12s ease;
+}
+
+.mm-toggle.on .mm-toggle-knob {
+  transform: translateX(18px);
 }

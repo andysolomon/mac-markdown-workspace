@@ -68,11 +68,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 8.4 - Export menu: HTML + PDF + TXT + DOCX (desktop + hamburger); HTML path verified end-to-end to the shim boundary
     [x] 8.5 - Save = flush to library, no dialog (issue #4, verified: no picker, status Saved); iOS iCloud storage + entitlement steps documented in docs/ios-icloud.md (issue #5)
 
-[ ] 9.0 - Phase 9 - Settings screen
-    [ ] 9.1 - Settings panel (gear in chrome, popover design language)
-    [ ] 9.2 - Toolbar show/hide toggle (persisted)
-    [ ] 9.3 - iOS save-location option (iCloud vs on-device), persisted
-    [ ] 9.4 - Acceptance: toggles persist + apply live on all platforms
+[x] 9.0 - Phase 9 - Settings screen
+    [x] 9.1 - SettingsPanel (issue #6): "..." entry in topbar, popover design language, outside-click close
+    [x] 9.2 - Toolbar show/hide toggle (issue #7): verified live — hides instantly, persists across reload, restores; shortcuts unaffected
+    [~] 9.3 - iOS save-location (issue #8): settingsStore + pills (native-only via Capacitor.isNativePlatform), shim writes to selected dir, merge-read both + dual-delete so switching never hides notes — code complete, iOS runtime verify in Phase 11 (issue left open)
+    [x] 9.4 - Acceptance (web): panel + toggle verified live; Storage section correctly absent on web; 46 tests, typecheck, lint, web + iOS builds pass
 
 [ ] 10.0 - Phase 10 - Mobile editing kit: bottom bar + markdown keyboard accessory
     [ ] 10.1 - Bottom tool strip (share/export, Aa, +) on mobile/tablet per Bear reference
