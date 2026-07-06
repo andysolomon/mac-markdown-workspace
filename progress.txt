@@ -92,3 +92,9 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 11.4 - Tests 46 -> 56: themeStore, settings/app defaults, buildStandaloneHtml, loadLibrary concurrency; matchMedia setup stub; webEntry guard intact
     [x] 11.5 - Real Safari (26.4) vs production: shell renders, default-Source live, notes CRUD round-trip in IndexedDB
     [x] 11.6 - Acceptance: typecheck, lint, 56 unit tests, web + iOS builds, and all 5 Playwright e2e specs (updated to the new shell, run against the packaged app) pass
+
+[x] 12.0 - Post-overhaul polish (2026-07-06)
+    [x] 12.1 - Portfolio case study rewritten for the notes-workspace redesign (new hero + dark shots); live on andrewsolomon.dev
+    [x] 12.2 - Delete-note affordance on doc rows (hover x, faint on touch, confirm) — verified live
+    [x] 12.3 - Export feedback toast ("Exported document.html" / "Opened print view" / "Export failed") — verified live; immediately caught 12.4
+    [x] 12.4 - Build collision fixed: iOS build clobbered dist-web (both configs shared outDir), so local previews after ios:build served the Capacitor bundle. iOS now outputs dist-ios (capacitor webDir updated); verified bundles distinct

@@ -11,7 +11,13 @@
     - The touch-WebKit PDF path opens its tab synchronously in the click
       call stack. */
 
+import { showToast } from "./toast";
+
 export type ExportFormat = "txt" | "pdf" | "docx" | "html";
+
+function toastResult(ok: boolean | undefined, message: string): void {
+  showToast(ok ? message : "Export failed");
+}
 
 /** Mutable holder filled in the background after prepareExport(). */
 export interface PreparedExport {
@@ -57,22 +63,23 @@ export async function exportDocument(
 
   if (format === "txt") {
     // No rendering: the shim's share/download runs inside the tap's stack.
-    await window.appApi.exportTxt?.({ content });
+    toastResult(await window.appApi.exportTxt?.({ content }), "Exported document.txt");
     return;
   }
 
   if (format === "html" && prep?.doc) {
     // Pre-rendered on menu open — delivery starts synchronously in this tap.
-    await window.appApi.exportHtml?.({ html: prep.doc });
+    toastResult(await window.appApi.exportHtml?.({ html: prep.doc }), "Exported document.html");
     return;
   }
 
   if (format === "pdf" && prep?.doc) {
     if (pdfTab) {
       writeAndPrint(pdfTab, prep.doc);
+      showToast("Opened print view");
       return;
     }
-    await window.appApi.exportPdf?.({ html: prep.doc });
+    toastResult(await window.appApi.exportPdf?.({ html: prep.doc }), "Exported PDF");
     return;
   }
 
@@ -80,21 +87,22 @@ export async function exportDocument(
   // iOS may still need a second tap once prepared).
   const html = prep?.html ?? (await (await import("./markdownToHtml")).markdownToHtml(content));
   if (format === "docx") {
-    await window.appApi.exportDocx?.({ html });
+    toastResult(await window.appApi.exportDocx?.({ html }), "Exported document.docx");
     return;
   }
   const { buildStandaloneHtml } = await import("./exportHtml");
   const { deriveTitle } = await import("./notesModel");
   const doc = buildStandaloneHtml(html, deriveTitle(content));
   if (format === "html") {
-    await window.appApi.exportHtml?.({ html: doc });
+    toastResult(await window.appApi.exportHtml?.({ html: doc }), "Exported document.html");
     return;
   }
   if (pdfTab) {
     writeAndPrint(pdfTab, doc);
+    showToast("Opened print view");
     return;
   }
-  await window.appApi.exportPdf?.({ html: doc });
+  toastResult(await window.appApi.exportPdf?.({ html: doc }), "Exported PDF");
 }
 
 function writeAndPrint(tab: Window, doc: string): void {

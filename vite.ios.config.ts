@@ -9,7 +9,7 @@ export default defineConfig({
   },
   base: "./",
   build: {
-    outDir: "../dist-web",
+    outDir: "../dist-ios",
     emptyOutDir: true,
   },
   resolve: {

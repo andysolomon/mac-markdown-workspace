@@ -333,6 +333,58 @@
   transform: translateX(18px);
 }
 
+/* Delete affordance on document rows — hidden until hover; always faintly
+   visible on touch devices (no hover there). */
+.mm-doc-delete {
+  position: absolute;
+  top: 18px;
+  right: 14px;
+  border: 0;
+  background: transparent;
+  color: var(--mm-faint);
+  font-family: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--mm-radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.mm-doc-row:hover .mm-doc-delete {
+  opacity: 1;
+}
+
+.mm-doc-delete:hover {
+  color: var(--mm-text);
+  background: var(--mm-sel);
+}
+
+@media (pointer: coarse) {
+  .mm-doc-delete {
+    opacity: 0.45;
+  }
+}
+
+/* Toast — a quiet confirmation pill, no shadow (the popover keeps the
+   system's only shadow). */
+.mm-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  background: var(--mm-panel);
+  color: var(--mm-text);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-pill);
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: var(--mm-w-bold);
+  white-space: nowrap;
+}
+
 .mm-build-id {
   font-family: var(--mm-font-mono);
   font-size: 11px;

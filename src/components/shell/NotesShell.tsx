@@ -13,6 +13,7 @@ import { StatusBar } from "../StatusBar";
 import { useNotesStore } from "../../services/notesStore";
 import { buildTagIndex, filterNotes } from "../../services/notesModel";
 import { useDocumentStore } from "../../services/documentStore";
+import { TOAST_EVENT } from "../../services/toast";
 
 const AUTOSAVE_MS = 600;
 
@@ -57,7 +58,23 @@ export function NotesShell() {
   const [fontOpen, setFontOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const showToolbar = useSettingsStore((s) => s.showToolbar);
+
+  // Quiet confirmation pill (export feedback etc.); auto-dismisses.
+  useEffect(() => {
+    let timer: number | null = null;
+    const onToast = (e: Event) => {
+      setToast((e as CustomEvent<string>).detail);
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setToast(null), 3000);
+    };
+    window.addEventListener(TOAST_EVENT, onToast);
+    return () => {
+      window.removeEventListener(TOAST_EVENT, onToast);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
 
   // Track whether the CodeMirror editor owns focus (drives which mobile bar
   // shows: keyboard accessory while editing, bottom tool strip otherwise).
@@ -170,6 +187,13 @@ export function NotesShell() {
     await createNote("");
   }, [flushPendingSave, createNote]);
 
+  const handleDeleteNote = useCallback(async (id: string) => {
+    const note = useNotesStore.getState().notes.find((n) => n.id === id);
+    const ok = window.confirm(`Delete "${note?.title ?? "this note"}"?`);
+    if (!ok) return;
+    await useNotesStore.getState().deleteNote(id);
+  }, []);
+
   return (
     <>
       {panelsOpen && (
@@ -182,6 +206,7 @@ export function NotesShell() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSelectNote={handleSelectNote}
+          onDeleteNote={handleDeleteNote}
         />
       )}
       <section className="mm-editor">
@@ -200,6 +225,7 @@ export function NotesShell() {
           <BottomBar onFontClick={() => setFontOpen((v) => !v)} onNewNote={handleNewNote} />
         ) : null}
         {isNarrow && editorFocused ? <MarkdownAccessoryBar /> : null}
+        {toast ? <div className="mm-toast">{toast}</div> : null}
       </section>
     </>
   );

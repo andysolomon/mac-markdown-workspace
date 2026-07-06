@@ -97,3 +97,4 @@ dist-web/
 
 # Capacitor iOS native project
 ios/App/
+dist-ios/

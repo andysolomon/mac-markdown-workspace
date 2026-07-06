@@ -8,12 +8,14 @@ export function DocList({
   searchQuery,
   onSearchChange,
   onSelectNote,
+  onDeleteNote,
 }: {
   notes: Note[];
   activeNoteId: string | null;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onSelectNote: (id: string) => void;
+  onDeleteNote: (id: string) => void;
 }) {
   return (
     <section className="mm-doclist">
@@ -33,6 +35,7 @@ export function DocList({
             preview={n.preview}
             selected={n.id === activeNoteId}
             onClick={() => onSelectNote(n.id)}
+            onDelete={() => onDeleteNote(n.id)}
           />
         ))}
       </div>
