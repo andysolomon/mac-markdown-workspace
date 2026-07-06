@@ -52,8 +52,10 @@ export function BottomBar({
   return (
     <div className="mm-bottombar">
       {onBack ? (
-        <button type="button" className="mm-bb-btn mm-bb-back" aria-label="Back to notes" onClick={onBack}>
-          ‹
+        <button type="button" className="mm-bb-btn" aria-label="Back to notes" onClick={onBack}>
+          <svg viewBox="0 0 24 24" className="mm-bb-icon" aria-hidden="true">
+            <path d="M14.5 5 L8 12 L14.5 19" />
+          </svg>
         </button>
       ) : null}
       <div className="mm-share-wrap" ref={shareRef}>
@@ -63,9 +65,11 @@ export function BottomBar({
           aria-label="Share or export"
           onClick={toggleShare}
         >
-          <span className="mm-share-icon">
-            <span className="mm-share-arrow">↑</span>
-          </span>
+          <svg viewBox="0 0 24 24" className="mm-bb-icon" aria-hidden="true">
+            <path d="M8 10 H6.5 A1.5 1.5 0 0 0 5 11.5 V19 a1.5 1.5 0 0 0 1.5 1.5 h11 A1.5 1.5 0 0 0 19 19 v-7.5 A1.5 1.5 0 0 0 17.5 10 H16" />
+            <path d="M12 14.5 V3.5" />
+            <path d="M8.5 6.5 L12 3 L15.5 6.5" />
+          </svg>
         </button>
         {shareOpen ? (
           <div className="mm-share-menu">
@@ -79,8 +83,10 @@ export function BottomBar({
       <button type="button" className="mm-bb-btn mm-bb-aa" onClick={onFontClick}>
         Aa
       </button>
-      <button type="button" className="mm-bb-btn mm-bb-plus" aria-label="New note" onClick={onNewNote}>
-        +
+      <button type="button" className="mm-bb-btn" aria-label="New note" onClick={onNewNote}>
+        <svg viewBox="0 0 24 24" className="mm-bb-icon" aria-hidden="true">
+          <path d="M12 5.5 V18.5 M5.5 12 H18.5" />
+        </svg>
       </button>
     </div>
   );

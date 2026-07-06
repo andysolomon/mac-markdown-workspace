@@ -681,3 +681,22 @@
     display: none;
   }
 }
+
+/* Uniform bottom-bar iconography: one 24px grid, one stroke weight
+   (refs issue #18 — the mixed text/CSS glyphs could never align optically). */
+.mm-bb-icon {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+}
+
+.mm-bottombar .mm-bb-aa {
+  font-size: 21px;
+  font-weight: var(--mm-w-bold);
+  letter-spacing: -0.01em;
+}
