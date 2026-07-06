@@ -59,8 +59,11 @@ body,
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-toolbar);
   gap: var(--mm-space-2);
-  overflow: hidden;
   min-width: 0;
+  /* NO overflow: hidden here — it clipped the absolutely-positioned Export
+     dropdown and hamburger menu into invisibility (the "export doesn't work"
+     bug: humans saw no menu; programmatic clicks still worked, so automated
+     verification missed it). The status bar clips separately below. */
 }
 
 .status-bar {
@@ -70,6 +73,7 @@ body,
   color: var(--text-secondary);
   flex-wrap: wrap;
   justify-content: flex-start;
+  overflow: hidden;
 }
 
 .status-item {
