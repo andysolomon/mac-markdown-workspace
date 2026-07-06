@@ -48,23 +48,29 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
     window.appApi?.setSetting?.("iosStorage", storage);
   };
 
+  // The toolbar is desktop-only chrome (mobile uses page navigation), so its
+  // toggle is meaningless — and confusing — on narrow viewports (issue #18).
+  const isNarrow = window.matchMedia("(max-width: 640px)").matches;
+
   return (
     <div className="mm-popover mm-settings" ref={ref}>
-      <div className="mm-pop-section">
-        <div className="mm-pop-label">Toolbar</div>
-        <div className="mm-setting-row">
-          <span>Show toolbar</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showToolbar}
-            className={`mm-toggle${showToolbar ? " on" : ""}`}
-            onClick={toggleToolbar}
-          >
-            <span className="mm-toggle-knob" />
-          </button>
+      {!isNarrow ? (
+        <div className="mm-pop-section">
+          <div className="mm-pop-label">Toolbar</div>
+          <div className="mm-setting-row">
+            <span>Show toolbar</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showToolbar}
+              className={`mm-toggle${showToolbar ? " on" : ""}`}
+              onClick={toggleToolbar}
+            >
+              <span className="mm-toggle-knob" />
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {isCapacitor() ? (
         <div className="mm-pop-section">

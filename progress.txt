@@ -108,3 +108,10 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
 [x] 14.0 - Bear navigation + palette expansion (author feedback round 3, 2026-07-06)
     [x] 14.1 - Mobile page stack (issue #16): sidebar > list > editor as full pages; chevrons on All/tag rows; list page header (back, title, +); bottom bar gains back; hamburger menu removed; toolbar hidden on mobile. Verified full flow at 390px; desktop split layout unchanged
     [x] 14.2 - Four new palettes (issue #17): Blue, Olive, Graphite, Red in colors-extra.css (light + dark each); 8 swatches in Aa popover; App palette validation now list-driven. Verified all four resolve tokens in dark mode
+
+[x] 15.0 - Simulator feedback round (issue #18 / W-000018, 2026-07-06)
+    [x] 15.1 - Editor page top quieted: list icon hidden on mobile (read as a hamburger; bottom-bar back owns navigation); settings "..." stays
+    [x] 15.2 - Swipe-to-delete on doc rows (touch translate + revealed destructive action, confirm-guarded); hover x remains for desktop; verified via synthetic touch (reveal -84px, delete works)
+    [x] 15.3 - Bottom bar normalized: four equal flex cells, uniform height/size/weight/accent color
+    [x] 15.4 - Toolbar toggle hidden in mobile settings (desktop-only preference)
+    [~] 15.5 - Native keyboard: @capacitor/keyboard added, resize "native" (webview shrinks -> accessory bar stays above keyboard), Keyboard.setStyle follows light/dark mode — REQUIRES bun run ios:sync (new pod); device confirmation pending with #14

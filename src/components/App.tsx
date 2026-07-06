@@ -34,6 +34,16 @@ export function App() {
     document.documentElement.setAttribute("data-mode", resolvedMode);
   }, [palette, resolvedMode]);
 
+  // Native iOS: the system keyboard follows the app's light/dark mode
+  // (issue #18 / W-000018). No-op on web/Electron.
+  useEffect(() => {
+    const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (cap?.isNativePlatform?.() !== true) return;
+    void import("@capacitor/keyboard").then(({ Keyboard, KeyboardStyle }) =>
+      Keyboard.setStyle({ style: resolvedMode === "dark" ? KeyboardStyle.Dark : KeyboardStyle.Light }),
+    ).catch(() => undefined);
+  }, [resolvedMode]);
+
   // Apply the reader's editor face + size (the Aa popover writes these).
   useEffect(() => {
     const option = FONT_OPTIONS.find((f) => f.key === font) ?? FONT_OPTIONS[0];

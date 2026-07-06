@@ -613,3 +613,71 @@
     display: inline;
   }
 }
+
+/* Simulator feedback round (issue #18 / W-000018) */
+
+/* Swipe-to-delete: the row translates left to reveal a destructive action. */
+.mm-doc-swipe {
+  position: relative;
+  overflow: hidden;
+}
+
+.mm-swipe-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 84px;
+  border: 0;
+  background: #d2453c;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: var(--mm-w-bold);
+  cursor: pointer;
+}
+
+/* Uniform bottom-bar icons: equal flex cells, one size/weight/color. */
+.mm-bottombar .mm-bb-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0;
+  color: var(--mm-accent);
+  font-size: 24px;
+  font-weight: var(--mm-w-bold);
+  line-height: 1;
+}
+
+.mm-bb-back,
+.mm-bb-plus {
+  font-size: 28px;
+}
+
+.mm-bb-plus {
+  font-weight: var(--mm-w-regular);
+}
+
+.mm-share-wrap {
+  flex: 1;
+  display: flex;
+}
+
+.mm-share-wrap .mm-bb-btn {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  /* Editor page top stays quiet — back lives in the bottom bar; the list
+     icon read as a hamburger and duplicated navigation. */
+  .mm-topbar .mm-listicon {
+    display: none;
+  }
+
+  /* Swipe replaces the hover x on touch layouts. */
+  .mm-doc-delete {
+    display: none;
+  }
+}
