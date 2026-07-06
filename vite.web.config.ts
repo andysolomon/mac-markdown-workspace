@@ -5,6 +5,12 @@ export default defineConfig({
   root: "web",
   plugins: [react()],
   base: process.env.VITE_BASE ?? "/mac-markdown-workspace/",
+  define: {
+    // Surfaced in the Settings panel so stale SPA tabs are diagnosable.
+    __BUILD_ID__: JSON.stringify(
+      (process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7),
+    ),
+  },
   build: {
     outDir: "../dist-web",
     emptyOutDir: true,

@@ -333,6 +333,13 @@
   transform: translateX(18px);
 }
 
+.mm-build-id {
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  color: var(--mm-faint);
+  text-align: right;
+}
+
 /* Bottom tool strip — Bear-style share · Aa · + (mobile only, issue #9). */
 .mm-bottombar {
   position: fixed;

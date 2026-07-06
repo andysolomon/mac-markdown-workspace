@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   root: "ios",
   plugins: [react()],
+  define: {
+    __BUILD_ID__: JSON.stringify((process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7)),
+  },
   base: "./",
   build: {
     outDir: "../dist-web",

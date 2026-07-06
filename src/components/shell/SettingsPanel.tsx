@@ -63,7 +63,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
       </div>
 
       {isCapacitor() ? (
-        <div className="mm-pop-section" style={{ marginBottom: 0 }}>
+        <div className="mm-pop-section">
           <div className="mm-pop-label">Storage</div>
           <div className="mm-mode-row">
             <button
@@ -83,6 +83,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </div>
       ) : null}
+
+      <div className="mm-build-id">Build {__BUILD_ID__}</div>
     </div>
   );
 }
