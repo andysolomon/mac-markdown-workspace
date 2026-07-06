@@ -61,12 +61,12 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 7.3 - themeStore extended with {font, size}; App applies --mm-font-editor/--mm-editor-size; all four settings persist via AppApi (electron-store / localStorage per platform)
     [x] 7.4 - Acceptance: verified live on web — Forest/Dark/Georgia/23px round-trips across reload; rapid-click stepper stale-closure bug found+fixed; Electron/iOS persistence via same AppApi settings path (runtime pass in Phase 8). 46 tests, typecheck, lint, web + iOS builds pass
 
-[ ] 8.0 - Phase 8 - Feedback round: export overhaul, save semantics, pane-collapse fix (author feedback 2026-07-05)
-    [ ] 8.1 - Fix pane collapse on window resize/zoom-restore (matchMedia breakpoint listener; sidebar reachable on narrow desktop; panes restore when wide again)
-    [ ] 8.2 - Add exportHtml to AppApi (3 shims): standalone themed HTML document download
-    [ ] 8.3 - Rebuild web exportPdf: print only the rendered note (print-scoped document), not the app chrome
-    [ ] 8.4 - Export menu offers HTML + PDF (+ TXT/DOCX); verified working on web
-    [ ] 8.5 - Save semantics: web Save = flush to library + saved feedback (no dialog); iOS Save = iCloud-backed Documents (entitlements documented)
+[x] 8.0 - Phase 8 - Feedback round: export overhaul, save semantics, pane-collapse fix (author feedback 2026-07-05)
+    [x] 8.1 - Pane collapse fixed (issue #1): matchMedia listener; verified live — narrow collapses, widening restores both panes
+    [x] 8.2 - exportHtml on AppApi + all 3 shims (issue #2); standalone themed doc verified: derived title, inlined tokens, self-contained
+    [x] 8.3 - Web exportPdf prints a standalone note-only document via hidden frame (issue #3); Electron PDF now uses the same themed doc; print-preview eyeball deferred to Phase 11 real-browser pass
+    [x] 8.4 - Export menu: HTML + PDF + TXT + DOCX (desktop + hamburger); HTML path verified end-to-end to the shim boundary
+    [x] 8.5 - Save = flush to library, no dialog (issue #4, verified: no picker, status Saved); iOS iCloud storage + entitlement steps documented in docs/ios-icloud.md (issue #5)
 
 [ ] 9.0 - Phase 9 - Settings screen
     [ ] 9.1 - Settings panel (gear in chrome, popover design language)

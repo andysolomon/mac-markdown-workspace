@@ -45,6 +45,17 @@ export function useFileOperations() {
 
   const saveFile = useCallback(async () => {
     const { content, filePath } = useDocumentStore.getState();
+
+    // Library-first: Save flushes the buffer into the active note — no file
+    // dialog (issue #4 / W-000004). Export is the path to a file on disk.
+    const { activeNoteId } = useNotesStore.getState();
+    if (activeNoteId) {
+      await useNotesStore.getState().updateActiveNote(content);
+      useDocumentStore.getState().markClean();
+      return;
+    }
+
+    // Legacy fallback when no note is active (shouldn't happen in the shell).
     if (!filePath) {
       const saved = await window.appApi.saveFileAs({
         content,

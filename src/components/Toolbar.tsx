@@ -42,19 +42,26 @@ export const Toolbar = React.memo(function Toolbar() {
   const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
   const mobileModes: ViewMode[] = ["source", "preview", "wysiwyg"];
 
-  const handleExport = async (format: "txt" | "pdf" | "docx") => {
+  const handleExport = async (format: "txt" | "pdf" | "docx" | "html") => {
     setExportOpen(false);
     setMenuOpen(false);
     if (format === "txt") {
       await window.appApi.exportTxt?.({ content });
+      return;
+    }
+    const html = await generateHtml(content);
+    if (format === "docx") {
+      await window.appApi.exportDocx?.({ html });
+      return;
+    }
+    // HTML and PDF take a complete standalone themed document.
+    const { buildStandaloneHtml } = await import("../services/exportHtml");
+    const { deriveTitle } = await import("../services/notesModel");
+    const doc = buildStandaloneHtml(html, deriveTitle(content));
+    if (format === "html") {
+      await window.appApi.exportHtml?.({ html: doc });
     } else {
-      // Generate HTML for PDF/DOCX
-      const html = await generateHtml(content);
-      if (format === "pdf") {
-        await window.appApi.exportPdf?.({ html });
-      } else {
-        await window.appApi.exportDocx?.({ html });
-      }
+      await window.appApi.exportPdf?.({ html: doc });
     }
   };
 
@@ -70,8 +77,9 @@ export const Toolbar = React.memo(function Toolbar() {
           <button onClick={() => setExportOpen(!exportOpen)}>Export</button>
           {exportOpen && (
             <div className="export-menu">
-              <button onClick={() => handleExport("txt")}>Text (.txt)</button>
+              <button onClick={() => handleExport("html")}>Web Page (.html)</button>
               <button onClick={() => handleExport("pdf")}>PDF (.pdf)</button>
+              <button onClick={() => handleExport("txt")}>Text (.txt)</button>
               <button onClick={() => handleExport("docx")}>Word (.docx)</button>
             </div>
           )}
@@ -105,8 +113,9 @@ export const Toolbar = React.memo(function Toolbar() {
             <div className="hamburger-menu">
               <button onClick={() => { openFile(); setMenuOpen(false); }}>Open</button>
               <button onClick={() => { saveFile(); setMenuOpen(false); }}>Save</button>
-              <button onClick={() => handleExport("txt")}>Export Text</button>
+              <button onClick={() => handleExport("html")}>Export HTML</button>
               <button onClick={() => handleExport("pdf")}>Export PDF</button>
+              <button onClick={() => handleExport("txt")}>Export Text</button>
               <button onClick={() => handleExport("docx")}>Export Word</button>
               <hr />
               {mobileModes.map((m) => (

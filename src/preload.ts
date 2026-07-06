@@ -15,6 +15,7 @@ const api: AppApi = {
   exportTxt: (payload) => ipcRenderer.invoke("export:txt", payload),
   exportPdf: (payload) => ipcRenderer.invoke("export:pdf", payload),
   exportDocx: (payload) => ipcRenderer.invoke("export:docx", payload),
+  exportHtml: (payload) => ipcRenderer.invoke("export:html", payload),
   listNotes: () => ipcRenderer.invoke("notes:list"),
   readNote: (payload) => ipcRenderer.invoke("notes:read", payload),
   createNote: (payload) => ipcRenderer.invoke("notes:create", payload),

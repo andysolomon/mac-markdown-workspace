@@ -25,8 +25,12 @@ export type AppApi = {
   onMenuAction: (callback: (action: string) => void) => () => void;
   confirmDiscard: () => Promise<ConfirmDiscardResult>;
   exportTxt: (payload: { content: string }) => Promise<boolean>;
+  /** `html` is a complete standalone document (built by the renderer). */
   exportPdf: (payload: { html: string }) => Promise<boolean>;
+  /** `html` is a rendered fragment (converted by html-to-docx). */
   exportDocx: (payload: { html: string }) => Promise<boolean>;
+  /** `html` is a complete standalone document (built by the renderer). */
+  exportHtml: (payload: { html: string }) => Promise<boolean>;
   checkDirty: (callback: () => Promise<boolean>) => () => void;
 
   // Notes library — each note is a markdown file/record keyed by a stable id.

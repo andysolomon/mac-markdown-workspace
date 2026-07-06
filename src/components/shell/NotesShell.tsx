@@ -12,6 +12,10 @@ import { useDocumentStore } from "../../services/documentStore";
 
 const AUTOSAVE_MS = 600;
 
+function isNarrowQuery(): MediaQueryList {
+  return window.matchMedia("(max-width: 640px)");
+}
+
 /**
  * NotesShell — the Bear-style three-pane workspace container. Wires the notes
  * library (sidebar tags, doc list, selection) to the existing editor stack.
@@ -39,10 +43,26 @@ export function NotesShell() {
 
   const content = useDocumentStore((s) => s.content);
 
-  const [listOpen, setListOpen] = useState(
-    () => typeof window === "undefined" || window.innerWidth > 640,
+  // Track the mobile breakpoint live — sampling width only at mount strands
+  // the panes when the window is resized or macOS-zoom-restored across 640px
+  // (issue #1 / W-000001).
+  const [isNarrow, setIsNarrow] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
   );
+  const [listOpen, setListOpen] = useState(() => !isNarrowQuery().matches);
   const [fontOpen, setFontOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = isNarrowQuery();
+    const onChange = (e: MediaQueryListEvent) => {
+      setIsNarrow(e.matches);
+      // Crossing the breakpoint resets pane visibility to that layout's
+      // default: panes restored when wide, list closed (overlay) when narrow.
+      setListOpen(!e.matches);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
   const saveTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -104,11 +124,11 @@ export function NotesShell() {
     async (id: string) => {
       await flushPendingSave();
       selectNote(id);
-      if (typeof window !== "undefined" && window.innerWidth <= 640) {
+      if (isNarrow) {
         setListOpen(false);
       }
     },
-    [flushPendingSave, selectNote],
+    [flushPendingSave, selectNote, isNarrow],
   );
 
   const handleNewNote = useCallback(async () => {

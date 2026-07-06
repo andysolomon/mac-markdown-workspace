@@ -185,6 +185,10 @@ export const capacitorApi: AppApi = {
     return true;
   },
 
+  exportHtml: async (payload) => {
+    return writeAndShare("document.html", payload.html);
+  },
+
   exportDocx: async (payload) => {
     try {
       const htmlToDocx = (await import("html-to-docx")).default;

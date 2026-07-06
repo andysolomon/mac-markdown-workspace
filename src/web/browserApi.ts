@@ -173,8 +173,16 @@ export const browserApi: AppApi = {
     return true;
   },
 
-  exportPdf: async () => {
-    window.print();
+  // payload.html is a complete standalone document; print it in a hidden
+  // frame so only the note — not the app chrome — reaches the PDF (issue #3).
+  exportPdf: async (payload) => {
+    const { printStandaloneHtml } = await import("../services/exportHtml");
+    return printStandaloneHtml(payload.html);
+  },
+
+  exportHtml: async (payload) => {
+    const blob = new Blob([payload.html], { type: "text/html" });
+    downloadBlob(blob, "document.html");
     return true;
   },
 

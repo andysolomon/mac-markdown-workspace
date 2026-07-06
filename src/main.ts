@@ -295,18 +295,9 @@ const registerIpc = (): void => {
       webPreferences: { contextIsolation: true, nodeIntegration: false },
     });
 
-    const htmlDoc = `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8">
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-  pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow: auto; }
-  code { font-family: ui-monospace, Menlo, monospace; }
-  img { max-width: 100%; }
-</style>
-</head><body>${payload.html}</body></html>`;
-
-    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlDoc)}`);
+    // payload.html is a complete standalone document built by the renderer
+    // (src/services/exportHtml.ts), already carrying the active theme.
+    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(payload.html)}`);
     const pdfData = await printWin.webContents.printToPDF({
       printBackground: true,
       margins: { marginType: "default" },
@@ -337,6 +328,18 @@ const registerIpc = (): void => {
       console.error("DOCX export failed:", err);
       return false;
     }
+  });
+
+  // Export: HTML (payload.html is a complete standalone document)
+  ipcMain.handle("export:html", async (_event, payload: { html: string }) => {
+    const win = getFocusedWindow();
+    const result = await dialog.showSaveDialog(win ?? undefined, {
+      title: "Export as Web Page",
+      filters: [{ name: "Web Page", extensions: ["html"] }],
+    });
+    if (result.canceled || !result.filePath) return false;
+    await fs.writeFile(result.filePath, payload.html, "utf8");
+    return true;
   });
 
   // Notes library — a user-visible folder of .md files in Documents/Mac Markdown.
