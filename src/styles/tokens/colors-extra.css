@@ -1,0 +1,117 @@
+/* Extended palettes — Blue, Olive, Graphite, Red (issue #17 / W-000017),
+   modeled on the Bear Pro set from the author's reference screenshots.
+   NOT from the design kit (colors.css stays verbatim); each palette is
+   self-contained here with a light block and a data-mode="dark" block,
+   following the same semantic-variable contract. */
+
+[data-theme="blue"] {
+  --mm-bg: #f8fbfe;
+  --mm-panel: #edf3f9;
+  --mm-text: #32404c;
+  --mm-faint: #93a4b2;
+  --mm-accent: #3d8fd1;
+  --mm-link: #3d8fd1;
+  --mm-code: #c25e5e;
+  --mm-code-bg: #eef3f7;
+  --mm-border: #dfe9f1;
+  --mm-sel: #e6eef5;
+  --mm-swatch-bottom: #cfe4f4;
+}
+
+[data-theme="blue"][data-mode="dark"] {
+  --mm-bg: #10161c;
+  --mm-panel: #161e26;
+  --mm-text: #d5dde4;
+  --mm-faint: #7c8a96;
+  --mm-accent: #5aa5e0;
+  --mm-link: #5aa5e0;
+  --mm-code: #e07878;
+  --mm-code-bg: #1a232c;
+  --mm-border: #223039;
+  --mm-sel: #1c2831;
+  --mm-swatch-bottom: #1c3a57;
+}
+
+[data-theme="olive"] {
+  --mm-bg: #fbfbf4;
+  --mm-panel: #f2f2e4;
+  --mm-text: #3f4234;
+  --mm-faint: #9aa084;
+  --mm-accent: #7d9426;
+  --mm-link: #7d9426;
+  --mm-code: #b5642f;
+  --mm-code-bg: #f1f1de;
+  --mm-border: #e4e6cd;
+  --mm-sel: #ebecd7;
+  --mm-swatch-bottom: #dfe6b8;
+}
+
+[data-theme="olive"][data-mode="dark"] {
+  --mm-bg: #15170e;
+  --mm-panel: #1b1e13;
+  --mm-text: #d8dac4;
+  --mm-faint: #8b8f74;
+  --mm-accent: #a0bc3c;
+  --mm-link: #a0bc3c;
+  --mm-code: #d98a54;
+  --mm-code-bg: #1f2314;
+  --mm-border: #2a2e1c;
+  --mm-sel: #242817;
+  --mm-swatch-bottom: #3a4416;
+}
+
+[data-theme="graphite"] {
+  --mm-bg: #f9fafb;
+  --mm-panel: #eff1f3;
+  --mm-text: #3a3f44;
+  --mm-faint: #9aa1a8;
+  --mm-accent: #64707c;
+  --mm-link: #64707c;
+  --mm-code: #c05b5b;
+  --mm-code-bg: #eef0f2;
+  --mm-border: #e2e5e9;
+  --mm-sel: #e8ebee;
+  --mm-swatch-bottom: #cdd4da;
+}
+
+[data-theme="graphite"][data-mode="dark"] {
+  --mm-bg: #141619;
+  --mm-panel: #1a1d21;
+  --mm-text: #d7dade;
+  --mm-faint: #83898f;
+  --mm-accent: #93a1ae;
+  --mm-link: #93a1ae;
+  --mm-code: #de7d7d;
+  --mm-code-bg: #1e2226;
+  --mm-border: #282d33;
+  --mm-sel: #22272c;
+  --mm-swatch-bottom: #3c454e;
+}
+
+[data-theme="red"] {
+  --mm-bg: #fff9f8;
+  --mm-panel: #f9eeec;
+  --mm-text: #40332f;
+  --mm-faint: #b0968f;
+  --mm-accent: #d2453c;
+  --mm-link: #d2453c;
+  --mm-code: #d2453c;
+  --mm-code-bg: #f8efed;
+  --mm-border: #f0dcd8;
+  --mm-sel: #f4e2de;
+  --mm-swatch-bottom: #f6cdc9;
+}
+
+[data-theme="red"][data-mode="dark"] {
+  --mm-bg: #191212;
+  --mm-panel: #201717;
+  --mm-text: #e4d8d5;
+  --mm-faint: #a08883;
+  --mm-accent: #e5645b;
+  --mm-link: #e5645b;
+  --mm-code: #e5645b;
+  --mm-code-bg: #251a19;
+  --mm-border: #302120;
+  --mm-sel: #2a1d1c;
+  --mm-swatch-bottom: #571f1b;
+}

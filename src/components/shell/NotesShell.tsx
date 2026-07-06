@@ -55,6 +55,9 @@ export function NotesShell() {
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
   );
   const [panelsOpen, setPanelsOpen] = useState(() => !isNarrowQuery().matches);
+  // Bear-style page stack on narrow viewports: sidebar › list › editor
+  // (issue #16 / W-000016). Desktop keeps the panelsOpen split layout.
+  const [mobilePage, setMobilePage] = useState<"sidebar" | "list" | "editor">("list");
   const [fontOpen, setFontOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
@@ -107,9 +110,10 @@ export function NotesShell() {
     const mq = isNarrowQuery();
     const onChange = (e: MediaQueryListEvent) => {
       setIsNarrow(e.matches);
-      // Crossing the breakpoint resets pane visibility to that layout's
-      // default: panes restored when wide, list closed (overlay) when narrow.
+      // Crossing the breakpoint resets to that layout's default: panels
+      // restored when wide, the notes-list page when narrow.
       setPanelsOpen(!e.matches);
+      if (e.matches) setMobilePage("list");
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -176,7 +180,7 @@ export function NotesShell() {
       await flushPendingSave();
       selectNote(id);
       if (isNarrow) {
-        setPanelsOpen(false);
+        setMobilePage("editor");
       }
     },
     [flushPendingSave, selectNote, isNarrow],
@@ -185,6 +189,7 @@ export function NotesShell() {
   const handleNewNote = useCallback(async () => {
     await flushPendingSave();
     await createNote("");
+    if (isNarrowQuery().matches) setMobilePage("editor");
   }, [flushPendingSave, createNote]);
 
   const handleDeleteNote = useCallback(async (id: string) => {
@@ -194,12 +199,25 @@ export function NotesShell() {
     await useNotesStore.getState().deleteNote(id);
   }, []);
 
+  // Pane visibility: desktop = split panels (panelsOpen toggles both);
+  // narrow = one full-screen page at a time (Bear-style stack, issue #16).
+  const showSidebar = isNarrow ? mobilePage === "sidebar" : panelsOpen;
+  const showList = isNarrow ? mobilePage === "list" : panelsOpen;
+  const showEditor = isNarrow ? mobilePage === "editor" : true;
+
   return (
     <>
-      {panelsOpen && (
-        <Sidebar tags={tags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
+      {showSidebar && (
+        <Sidebar
+          tags={tags}
+          selectedTag={selectedTag}
+          onSelectTag={(tag) => {
+            setSelectedTag(tag);
+            if (isNarrow) setMobilePage("list");
+          }}
+        />
       )}
-      {panelsOpen && (
+      {showList && (
         <DocList
           notes={filteredNotes}
           activeNoteId={activeNoteId}
@@ -207,26 +225,43 @@ export function NotesShell() {
           onSearchChange={setSearchQuery}
           onSelectNote={handleSelectNote}
           onDeleteNote={handleDeleteNote}
+          header={
+            isNarrow
+              ? {
+                  title: selectedTag ? `#${selectedTag}` : "All Notes",
+                  onBack: () => setMobilePage("sidebar"),
+                  onNew: handleNewNote,
+                }
+              : undefined
+          }
         />
       )}
-      <section className="mm-editor">
-        <EditorChrome
-          onToggleList={() => setPanelsOpen((v) => !v)}
-          onFontClick={() => setFontOpen((v) => !v)}
-          onNewNote={handleNewNote}
-          onSettingsClick={() => setSettingsOpen((v) => !v)}
-        />
-        <FontPopover open={fontOpen} onClose={() => setFontOpen(false)} />
-        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-        {showToolbar ? <Toolbar /> : null}
-        <Workspace />
-        <StatusBar />
-        {isNarrow && !editorFocused ? (
-          <BottomBar onFontClick={() => setFontOpen((v) => !v)} onNewNote={handleNewNote} />
-        ) : null}
-        {isNarrow && editorFocused ? <MarkdownAccessoryBar /> : null}
-        {toast ? <div className="mm-toast">{toast}</div> : null}
-      </section>
+      {showEditor && (
+        <section className="mm-editor">
+          <EditorChrome
+            onToggleList={() =>
+              isNarrow ? setMobilePage("list") : setPanelsOpen((v) => !v)
+            }
+            onFontClick={() => setFontOpen((v) => !v)}
+            onNewNote={handleNewNote}
+            onSettingsClick={() => setSettingsOpen((v) => !v)}
+          />
+          <FontPopover open={fontOpen} onClose={() => setFontOpen(false)} />
+          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+          {showToolbar ? <Toolbar /> : null}
+          <Workspace />
+          <StatusBar />
+          {isNarrow && !editorFocused ? (
+            <BottomBar
+              onBack={() => setMobilePage("list")}
+              onFontClick={() => setFontOpen((v) => !v)}
+              onNewNote={handleNewNote}
+            />
+          ) : null}
+          {isNarrow && editorFocused ? <MarkdownAccessoryBar /> : null}
+        </section>
+      )}
+      {toast ? <div className="mm-toast">{toast}</div> : null}
     </>
   );
 }

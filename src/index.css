@@ -543,24 +543,23 @@ button.active:hover {
     display: flex;
   }
 
-  /* Three-pane collapse: sidebar hidden; the doc list (when open via the
-     list icon) overlays the editor as a full-width sheet. */
+  /* Bear-style page stack (issue #16): sidebar, list, and editor are
+     full-screen pages — NotesShell mounts exactly one at a time. */
   .mm-sidebar {
-    display: none;
+    width: 100%;
+    border-right: none;
   }
 
   .mm-doclist {
-    position: fixed;
-    top: calc(44px + env(safe-area-inset-top));
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 30;
     width: 100%;
     max-width: none;
     min-width: 0;
-    background: var(--mm-bg);
     border-right: none;
+  }
+
+  /* No toolbar on mobile — page navigation owns the chrome. */
+  .toolbar {
+    display: none;
   }
 
   .mm-topbar {

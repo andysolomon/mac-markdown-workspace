@@ -15,9 +15,12 @@ import {
 export function BottomBar({
   onFontClick,
   onNewNote,
+  onBack,
 }: {
   onFontClick: () => void;
   onNewNote: () => void;
+  /** Back to the notes list (mobile page navigation, issue #16). */
+  onBack?: () => void;
 }) {
   const content = useDocumentStore((s) => s.content);
   const [shareOpen, setShareOpen] = useState(false);
@@ -48,6 +51,11 @@ export function BottomBar({
 
   return (
     <div className="mm-bottombar">
+      {onBack ? (
+        <button type="button" className="mm-bb-btn mm-bb-back" aria-label="Back to notes" onClick={onBack}>
+          ‹
+        </button>
+      ) : null}
       <div className="mm-share-wrap" ref={shareRef}>
         <button
           type="button"

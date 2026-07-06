@@ -3,6 +3,7 @@ import { NotesShell } from "./shell/NotesShell";
 import {
   useThemeStore,
   FONT_OPTIONS,
+  PALETTES,
   MIN_EDITOR_SIZE,
   MAX_EDITOR_SIZE,
 } from "../services/themeStore";
@@ -43,8 +44,8 @@ export function App() {
   // Load saved appearance from settings
   useEffect(() => {
     window.appApi?.getSetting?.("palette").then((saved) => {
-      if (saved === "teal" || saved === "forest" || saved === "gold" || saved === "crimson") {
-        setPalette(saved);
+      if (typeof saved === "string" && (PALETTES as string[]).includes(saved)) {
+        setPalette(saved as (typeof PALETTES)[number]);
       }
     });
     window.appApi?.getSetting?.("mode").then((saved) => {

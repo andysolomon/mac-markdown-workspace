@@ -17,9 +17,7 @@ export const Toolbar = React.memo(function Toolbar() {
   const content = useDocumentStore((s) => s.content);
 
   const [exportOpen, setExportOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   // Rendered when the menu opens so a format tap can deliver synchronously
   // within its own gesture (iOS Safari, issue #12).
   const prepRef = useRef<PreparedExport | undefined>(undefined);
@@ -27,11 +25,6 @@ export const Toolbar = React.memo(function Toolbar() {
   const openExportMenu = (open: boolean) => {
     if (open) prepRef.current = prepareExport(content);
     setExportOpen(open);
-  };
-
-  const openHamburger = (open: boolean) => {
-    if (open) prepRef.current = prepareExport(content);
-    setMenuOpen(open);
   };
 
   // Close export dropdown on outside click
@@ -46,24 +39,10 @@ export const Toolbar = React.memo(function Toolbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [exportOpen]);
 
-  // Close hamburger menu on outside click
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
-
   const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
-  const mobileModes: ViewMode[] = ["source", "preview", "wysiwyg"];
 
   const handleExport = (format: "txt" | "pdf" | "docx" | "html") => {
     setExportOpen(false);
-    setMenuOpen(false);
     // Called synchronously from the click so iOS Safari's transient
     // activation is still live inside exportDocument (issue #12); the
     // payload was pre-rendered when the menu opened.
@@ -113,38 +92,8 @@ export const Toolbar = React.memo(function Toolbar() {
         </span>
       </div>
 
-      {/* Mobile layout */}
-      <div className="mobile-only mobile-toolbar">
-        <div className="hamburger-wrapper" ref={menuRef}>
-          <button className="hamburger-btn" onClick={() => openHamburger(!menuOpen)} aria-label="Menu">
-            &#9776;
-          </button>
-          {menuOpen && (
-            <div className="hamburger-menu">
-              <button onClick={() => { openFile(); setMenuOpen(false); }}>Import</button>
-              <button onClick={() => { saveFile(); setMenuOpen(false); }}>Save</button>
-              <button onClick={() => handleExport("html")}>Export HTML</button>
-              <button onClick={() => handleExport("pdf")}>Export PDF</button>
-              <button onClick={() => handleExport("txt")}>Export Text</button>
-              <button onClick={() => handleExport("docx")}>Export Word</button>
-              <hr />
-              {mobileModes.map((m) => (
-                <button
-                  key={m}
-                  className={viewMode === m ? "active" : ""}
-                  onClick={() => { setViewMode(m); setMenuOpen(false); }}
-                >
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <span className="mobile-filename">
-          {fileName}
-          {isDirty ? " *" : ""}
-        </span>
-      </div>
+      {/* Mobile has no toolbar — Bear-style page navigation owns the chrome
+          (issue #16 / W-000016); the whole bar is display:none under 640px. */}
     </header>
   );
 });

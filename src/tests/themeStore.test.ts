@@ -40,7 +40,17 @@ describe("themeStore", () => {
       useThemeStore.getState().cyclePalette();
       seen.push(useThemeStore.getState().palette);
     }
-    expect(seen).toEqual(["teal", "forest", "gold", "crimson", "teal"]);
+    expect(seen).toEqual([
+      "teal",
+      "forest",
+      "gold",
+      "crimson",
+      "blue",
+      "olive",
+      "graphite",
+      "red",
+      "teal",
+    ]);
   });
 
   it("setSize clamps to the 16-28 range and rounds", () => {

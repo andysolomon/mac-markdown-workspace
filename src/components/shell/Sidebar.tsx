@@ -22,7 +22,10 @@ export function Sidebar({
           className={`mm-all${selectedTag === null ? " sel" : ""}`}
           onClick={() => onSelectTag(null)}
         >
-          All
+          <span>All</span>
+          <span className="mm-chevron" aria-hidden="true">
+            ›
+          </span>
         </div>
         <div className="mm-hashhead">HASHTAGS</div>
         {tags.map((t) => (

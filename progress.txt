@@ -104,3 +104,7 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 13.2 - Popover trigger toggle race fixed (Aa + settings close on second tap; outside-close preserved)
     [x] 13.3 - Mobile chrome dedupe: topbar Aa/+ hidden at <=640px (bottom bar owns them)
     [~] 13.4 - Keyboard viewport (issue #14/W-000015): --mm-kb-inset published from visualViewport (+window scroll), editor scroller pads by it, caret re-revealed on inset changes and inserts — mechanics verified on web; real-keyboard geometry confirmation on device pending
+
+[x] 14.0 - Bear navigation + palette expansion (author feedback round 3, 2026-07-06)
+    [x] 14.1 - Mobile page stack (issue #16): sidebar > list > editor as full pages; chevrons on All/tag rows; list page header (back, title, +); bottom bar gains back; hamburger menu removed; toolbar hidden on mobile. Verified full flow at 390px; desktop split layout unchanged
+    [x] 14.2 - Four new palettes (issue #17): Blue, Olive, Graphite, Red in colors-extra.css (light + dark each); 8 swatches in Aa popover; App palette validation now list-driven. Verified all four resolve tokens in dark mode

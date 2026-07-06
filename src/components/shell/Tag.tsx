@@ -14,6 +14,10 @@ export function Tag({
     <div
       onClick={onClick}
       style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "8px",
         padding: "7px 15px",
         margin: "1px 11px",
         borderRadius: "var(--mm-radius-md)",
@@ -22,13 +26,15 @@ export function Tag({
         color: "var(--mm-accent)",
         cursor: "pointer",
         whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
         background: selected ? "var(--mm-sel)" : "transparent",
         fontFamily: "var(--mm-font-sans)",
       }}
     >
-      {label}
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      {/* Drill-in chevron; mobile-only via CSS (issue #16 / W-000016). */}
+      <span className="mm-chevron" aria-hidden="true">
+        ›
+      </span>
     </div>
   );
 }

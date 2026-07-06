@@ -9,6 +9,7 @@ export function DocList({
   onSearchChange,
   onSelectNote,
   onDeleteNote,
+  header,
 }: {
   notes: Note[];
   activeNoteId: string | null;
@@ -16,9 +17,22 @@ export function DocList({
   onSearchChange: (q: string) => void;
   onSelectNote: (id: string) => void;
   onDeleteNote: (id: string) => void;
+  /** Mobile page header: back chevron · title · + (issue #16 / W-000016). */
+  header?: { title: string; onBack: () => void; onNew: () => void };
 }) {
   return (
     <section className="mm-doclist">
+      {header ? (
+        <div className="mm-page-head">
+          <button type="button" className="mm-back" aria-label="Back" onClick={header.onBack}>
+            ‹
+          </button>
+          <span className="mm-page-title">{header.title}</span>
+          <button type="button" className="mm-page-new" aria-label="New note" onClick={header.onNew}>
+            +
+          </button>
+        </div>
+      ) : null}
       <div className="mm-search">
         <div className="mm-mag" />
         <input

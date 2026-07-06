@@ -1,10 +1,27 @@
 import { create } from "zustand";
 
-export type Palette = "teal" | "forest" | "gold" | "crimson";
+export type Palette =
+  | "teal"
+  | "forest"
+  | "gold"
+  | "crimson"
+  | "blue"
+  | "olive"
+  | "graphite"
+  | "red";
 export type ModeChoice = "light" | "dark" | "system";
 export type ResolvedMode = "light" | "dark";
 
-export const PALETTES: Palette[] = ["teal", "forest", "gold", "crimson"];
+export const PALETTES: Palette[] = [
+  "teal",
+  "forest",
+  "gold",
+  "crimson",
+  "blue",
+  "olive",
+  "graphite",
+  "red",
+];
 export const MODES: ModeChoice[] = ["light", "dark", "system"];
 
 /** Reader-selectable editor faces (the Aa popover). Each maps to a token
