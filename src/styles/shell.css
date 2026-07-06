@@ -537,3 +537,12 @@
   background: var(--mm-accent);
   box-shadow: -8px 0 8px -6px rgba(0, 0, 0, 0.25);
 }
+
+/* Mobile: the bottom bar owns Aa and + — don't duplicate them in the topbar
+   (issue #15 / W-000014). Settings ("…") and the list icon stay on top. */
+@media (max-width: 640px) {
+  .mm-topbar .mm-aa,
+  .mm-topbar .mm-plus {
+    display: none;
+  }
+}

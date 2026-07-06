@@ -37,6 +37,11 @@ export function FontPopover({ open, onClose }: { open: boolean; onClose: () => v
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
+      const target = e.target as Element;
+      // Ignore the Aa triggers: their own click toggles the popover closed —
+      // closing on their mousedown would make the click instantly reopen it
+      // (issue #15 / W-000014).
+      if (target.closest && target.closest(".mm-aa, .mm-bb-aa")) return;
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
     document.addEventListener("mousedown", handler);

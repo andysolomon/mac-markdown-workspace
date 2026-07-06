@@ -1,4 +1,4 @@
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 
 /**
  * Bridge to the live CodeMirror view so chrome outside SourceEditor (the
@@ -15,6 +15,24 @@ export function getEditorView(): EditorView | null {
   return activeView;
 }
 
+/** Refocus and keep the caret visible above the on-screen keyboard. */
+function focusAndReveal(view: EditorView): void {
+  view.focus();
+  view.dispatch({
+    effects: EditorView.scrollIntoView(view.state.selection.main.head, { y: "nearest" }),
+  });
+}
+
+/** Scroll the caret back into the visible area (called when the keyboard
+    inset changes and after accessory insertions — issue #14 / W-000015). */
+export function scrollCursorIntoView(): void {
+  const view = activeView;
+  if (!view) return;
+  view.dispatch({
+    effects: EditorView.scrollIntoView(view.state.selection.main.head, { y: "nearest" }),
+  });
+}
+
 /** Wrap the selection (or insert a pair and park the cursor inside). */
 export function wrapSelection(before: string, after = before): void {
   const view = activeView;
@@ -27,21 +45,30 @@ export function wrapSelection(before: string, after = before): void {
       ? { anchor: from, head: to + before.length + after.length }
       : { anchor: from + before.length },
   });
-  view.focus();
+  focusAndReveal(view);
 }
 
-/** Toggle a prefix at the start of the current line (e.g. "# ", "- [ ] "). */
+/** Toggle a prefix at the start of the current line (e.g. "# ", "- [ ] ").
+    The caret lands after the prefix so typing continues the construct
+    (issue #15 / W-000014: it previously stayed before the inserted text). */
 export function toggleLinePrefix(prefix: string): void {
   const view = activeView;
   if (!view) return;
   const { head } = view.state.selection.main;
   const line = view.state.doc.lineAt(head);
   if (line.text.startsWith(prefix)) {
-    view.dispatch({ changes: { from: line.from, to: line.from + prefix.length, insert: "" } });
+    const newHead = Math.max(line.from, head - prefix.length);
+    view.dispatch({
+      changes: { from: line.from, to: line.from + prefix.length, insert: "" },
+      selection: { anchor: newHead },
+    });
   } else {
-    view.dispatch({ changes: { from: line.from, insert: prefix } });
+    view.dispatch({
+      changes: { from: line.from, insert: prefix },
+      selection: { anchor: head + prefix.length },
+    });
   }
-  view.focus();
+  focusAndReveal(view);
 }
 
 /** Indent the current line by two spaces (list nesting step). */
@@ -50,8 +77,11 @@ export function indentLine(): void {
   if (!view) return;
   const { head } = view.state.selection.main;
   const line = view.state.doc.lineAt(head);
-  view.dispatch({ changes: { from: line.from, insert: "  " } });
-  view.focus();
+  view.dispatch({
+    changes: { from: line.from, insert: "  " },
+    selection: { anchor: head + 2 },
+  });
+  focusAndReveal(view);
 }
 
 /** Insert a markdown link around the selection. */
@@ -66,7 +96,7 @@ export function insertLink(): void {
     changes: { from, to, insert },
     selection: { anchor: urlStart, head: urlStart + 3 },
   });
-  view.focus();
+  focusAndReveal(view);
 }
 
 /** Dismiss the keyboard. */

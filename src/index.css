@@ -579,8 +579,15 @@ button.active:hover {
     max-height: 60vh;
   }
 
-  /* Editor content clears the fixed bottom bar. */
-  .mm-editor .cm-scroller,
+  /* Editor content clears the fixed bottom bar — and, while the keyboard is
+     open, the keyboard + accessory bar (--mm-kb-inset is published by
+     MarkdownAccessoryBar; issue #14 / W-000015). The caret is re-revealed on
+     inset changes so typed text stays visible instead of iOS panning the
+     whole app. */
+  .mm-editor .cm-scroller {
+    padding-bottom: calc(88px + var(--mm-kb-inset, 0px));
+  }
+
   .preview,
   .wysiwyg-body {
     padding-bottom: 88px;

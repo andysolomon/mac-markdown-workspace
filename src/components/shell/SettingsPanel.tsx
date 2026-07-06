@@ -25,6 +25,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
+      const target = e.target as Element;
+      // Ignore the "…" trigger — its click must toggle the panel closed
+      // instead of close-on-mousedown + reopen-on-click (issue #15).
+      if (target.closest && target.closest(".mm-more")) return;
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
     document.addEventListener("mousedown", handler);

@@ -98,3 +98,9 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 12.2 - Delete-note affordance on doc rows (hover x, faint on touch, confirm) — verified live
     [x] 12.3 - Export feedback toast ("Exported document.html" / "Opened print view" / "Export failed") — verified live; immediately caught 12.4
     [x] 12.4 - Build collision fixed: iOS build clobbered dist-web (both configs shared outDir), so local previews after ios:build served the Capacitor bundle. iOS now outputs dist-ios (capacitor webDir updated); verified bundles distinct
+
+[x] 13.0 - Device feedback round (author iPhone testing, 2026-07-06)
+    [x] 13.1 - Accessory bar: Done removed (iOS provides dismissal); # and other line prefixes leave the caret AFTER the prefix (verified: Col 1 -> Col 3)
+    [x] 13.2 - Popover trigger toggle race fixed (Aa + settings close on second tap; outside-close preserved)
+    [x] 13.3 - Mobile chrome dedupe: topbar Aa/+ hidden at <=640px (bottom bar owns them)
+    [~] 13.4 - Keyboard viewport (issue #14/W-000015): --mm-kb-inset published from visualViewport (+window scroll), editor scroller pads by it, caret re-revealed on inset changes and inserts — mechanics verified on web; real-keyboard geometry confirmation on device pending
