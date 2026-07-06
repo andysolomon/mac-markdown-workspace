@@ -51,6 +51,15 @@ describe("notesStore", () => {
     expect(activeNoteId).toBe(notes[0].id);
   });
 
+  it("seeds exactly once when loadLibrary is invoked twice concurrently (StrictMode)", async () => {
+    installFakeApi([]);
+    await Promise.all([
+      useNotesStore.getState().loadLibrary(),
+      useNotesStore.getState().loadLibrary(),
+    ]);
+    expect(useNotesStore.getState().notes).toHaveLength(1);
+  });
+
   it("loads and sorts existing notes newest-first, deriving title + tags", async () => {
     installFakeApi([
       { id: "a", body: "# Older\ntagged #x", updatedAt: 100 },

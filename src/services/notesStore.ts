@@ -44,6 +44,10 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   loaded: false,
 
   loadLibrary: async () => {
+    // Re-entry guard: React StrictMode double-invokes mount effects in dev;
+    // two concurrent loads both see an empty library and seed two welcome
+    // notes (observed on the Electron runtime pass).
+    if (get().loading || get().loaded) return;
     set({ loading: true });
     const raw = await window.appApi.listNotes();
     let notes = sortNotes(raw.map(buildNote));

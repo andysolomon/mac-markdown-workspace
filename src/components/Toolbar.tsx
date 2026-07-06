@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDocumentStore, selectIsDirty, type ViewMode } from "../services/documentStore";
+import { useNotesStore } from "../services/notesStore";
 import { useFileOperations } from "../hooks/useFileOperations";
 import { exportDocument } from "../services/exportActions";
 
@@ -51,13 +52,18 @@ export const Toolbar = React.memo(function Toolbar() {
     void exportDocument(format, content);
   };
 
-  const fileName = filePath ? filePath.split("/").pop() : "Unsaved document";
+  // Library-world: show the active note's derived title (filePath only
+  // survives legacy flows and is otherwise cleared on selection).
+  const noteTitle = useNotesStore(
+    (s) => s.notes.find((n) => n.id === s.activeNoteId)?.title ?? "",
+  );
+  const fileName = noteTitle || (filePath ? filePath.split("/").pop() : "Untitled");
 
   return (
     <header className="toolbar">
       {/* Desktop layout */}
       <div className="left-group desktop-only">
-        <button onClick={openFile}>Open</button>
+        <button onClick={openFile}>Import</button>
         <button onClick={saveFile}>Save</button>
         <div className="export-dropdown" ref={exportRef}>
           <button onClick={() => setExportOpen(!exportOpen)}>Export</button>
@@ -97,7 +103,7 @@ export const Toolbar = React.memo(function Toolbar() {
           </button>
           {menuOpen && (
             <div className="hamburger-menu">
-              <button onClick={() => { openFile(); setMenuOpen(false); }}>Open</button>
+              <button onClick={() => { openFile(); setMenuOpen(false); }}>Import</button>
               <button onClick={() => { saveFile(); setMenuOpen(false); }}>Save</button>
               <button onClick={() => handleExport("html")}>Export HTML</button>
               <button onClick={() => handleExport("pdf")}>Export PDF</button>

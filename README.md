@@ -1,18 +1,21 @@
 # Mac Markdown Workspace
 
-A polished, local-first Markdown workspace with source editing, live preview, and WYSIWYG mode — built as a **single React codebase that ships to macOS desktop, the browser, and iOS**.
+A Bear-inspired, local-first Markdown **notes workspace** — tag sidebar, document list, and a distraction-free editor — built as a **single React codebase that ships to macOS desktop, the browser, and iOS**.
 
 **[▶ Live demo](https://mac-markdown-workspace.vercel.app)**
 
+The design system's core rule: **structure is colored, prose is not.** Heading hashes, list bullets, checkboxes, quote bars, and link brackets render in the active theme's accent — in both the editor and the preview — while your words stay neutral and readable.
+
 ## Features
 
-- **Three editing modes** — source (CodeMirror 6), split preview, and WYSIWYG (Milkdown), plus a read-only preview mode.
-- **Rich rendering** — GitHub-Flavored Markdown, Mermaid diagrams, KaTeX math, emoji, and syntax-highlighted code blocks.
-- **Themes** — light / dark / system, applied via CSS variables.
-- **Exports** — TXT, PDF, and DOCX.
-- **Local-first** — open and save files directly; no account, no cloud.
-- **Cross-platform from one codebase** — desktop (Electron), web (File System Access API), and iOS (Capacitor), with a mobile-responsive UI.
-- **Keyboard-driven** — Cmd+S/Shift+S/O/N for files, Cmd+1/2/3 for modes, optional Vim keybindings in the source editor.
+- **Notes library** — multiple notes with autosave; titles, previews, and `#hashtags` derive live from content. Tag filtering and instant search across everything.
+- **Three-pane workspace** — traffic dots, "All" pill, and hashtag sidebar · document list with search · editor column. One tap on the list icon collapses both panels for a full-width, distraction-free editor.
+- **Structure-colored editing** — CodeMirror 6 with a custom theme keyed to the design tokens; source, split, preview, and WYSIWYG (Milkdown) modes. Opens in Source.
+- **Four palettes × light/dark** — Teal, Forest, Gold, Crimson, each with a derived dark variant, switched live from the **Aa** popover along with nine curated editor faces and a text-size stepper. Everything persists per platform.
+- **Exports** — standalone themed **HTML**, **PDF**, TXT, and DOCX. iOS Safari delivers through the native share sheet.
+- **Mobile editing kit** — Bear-style bottom tool strip (share · Aa · +) and a markdown helper bar that rides above the on-screen keyboard (#, bold, italic, lists, tasks, quotes, code, links, indent, Done).
+- **Settings** — toolbar visibility toggle; iOS notes storage location (iCloud Documents vs on-device, see `docs/ios-icloud.md`).
+- **Local-first storage** — Electron: a real folder of `.md` files in `~/Documents/Mac Markdown`; web: IndexedDB; iOS: Capacitor Filesystem under Documents.
 
 ## Tech stack
 
@@ -45,6 +48,8 @@ bun run ios:sync       # build the web bundle + sync into the iOS project
 bun run ios:open       # open in Xcode to run on a simulator/device
 ```
 
+For Files-app visibility and iCloud Drive syncing of the notes library, see [`docs/ios-icloud.md`](./docs/ios-icloud.md).
+
 ## Building
 
 ```bash
@@ -66,19 +71,17 @@ bun run test:e2e       # end-to-end (Playwright)
 
 ## Architecture
 
-The renderer and components are **platform-agnostic and UI-only** — they never call Electron, Capacitor, or the network directly. All host capability (file I/O, dialogs, exports, settings, native menu events) goes through a single typed interface, `window.appApi` (`AppApi` in `shared/types/ipc.ts`). Each target supplies its own implementation:
+The components are **platform-agnostic and UI-only** — all host capability (notes storage, file dialogs, exports, settings, menu events) goes through a single typed interface, `window.appApi` (`AppApi` in `shared/types/ipc.ts`). Each target supplies its own implementation:
 
-| Target   | Entry point         | `AppApi` implementation | Mechanism                                   |
+| Target   | Entry point         | `AppApi` implementation | Notes storage                              |
 |----------|---------------------|-------------------------|---------------------------------------------|
-| Electron | `src/renderer.tsx`  | `src/preload.ts`        | contextBridge over IPC to `src/main.ts`     |
-| Web      | `src/web/entry.tsx` | `src/web/browserApi.ts` | File System Access API, localStorage        |
-| iOS      | `src/ios/entry.tsx` | `src/ios/capacitorApi.ts` | Capacitor Filesystem / Share plugins      |
+| Electron | `src/renderer.tsx`  | `src/preload.ts` → IPC → `src/main.ts` | `.md` files in `~/Documents/Mac Markdown` |
+| Web      | `src/web/entry.tsx` | `src/web/browserApi.ts` | IndexedDB                                   |
+| iOS      | `src/ios/entry.tsx` | `src/ios/capacitorApi.ts` | Capacitor Filesystem (`Documents/notes`)  |
 
-The Electron main process owns all filesystem and dialog access; the renderer runs sandboxed (`contextIsolation`, no `nodeIntegration`) and is treated as untrusted. Document state is centralized in a Zustand store (`src/services/documentStore.ts`), where dirty state is derived by comparing current vs. last-saved content.
+Notes are raw markdown keyed by a stable id; titles, previews, and tags always **derive from content** (`src/services/notesModel.ts`), so the UI is identical everywhere. The design system lives as CSS custom properties in `src/styles/tokens/` (four palettes + derived dark variants + markdown role colors), applied via `data-theme` / `data-mode` on `<html>`.
 
-Adding a host capability means updating the `AppApi` type once and implementing it in all three shims.
-
-For deeper architectural notes and conventions, see [`CLAUDE.md`](./CLAUDE.md).
+For deeper architecture notes and conventions, see [`CLAUDE.md`](./CLAUDE.md).
 
 ## License
 
