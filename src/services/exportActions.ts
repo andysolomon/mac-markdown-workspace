@@ -37,13 +37,13 @@ export function prepareExport(content: string): PreparedExport {
   return prep;
 }
 
-/** Touch WebKit (iPad/iPhone Safari): iframe print is a no-op there, and
-    programmatic downloads are unreliable — PDF goes through a real tab. */
-function isTouchWebKit(): boolean {
+/** Safari family (desktop and iOS): printing a hidden 0x0 iframe silently
+    no-ops or prints blank there — PDF goes through a real tab instead.
+    Chromium/Firefox keep the invisible-iframe path. */
+function isSafariFamily(): boolean {
   return (
-    navigator.maxTouchPoints > 1 &&
     /AppleWebKit/.test(navigator.userAgent) &&
-    !/Chrome|CriOS/.test(navigator.userAgent)
+    !/Chrome|CriOS|Chromium|Edg/.test(navigator.userAgent)
   );
 }
 
@@ -53,7 +53,7 @@ export async function exportDocument(
   prep?: PreparedExport,
 ): Promise<void> {
   // MUST happen before any await, while transient activation is live.
-  const pdfTab = format === "pdf" && isTouchWebKit() ? window.open("", "_blank") : null;
+  const pdfTab = format === "pdf" && isSafariFamily() ? window.open("", "_blank") : null;
 
   if (format === "txt") {
     // No rendering: the shim's share/download runs inside the tap's stack.
