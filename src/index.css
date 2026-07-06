@@ -6,6 +6,10 @@
   font-family: var(--mm-font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Reader-adjustable editor face/size (the Aa picker writes these). */
+  --mm-font-editor: var(--mm-font-sans);
+  --mm-editor-size: var(--mm-text-base);
 }
 
 * {
@@ -116,11 +120,8 @@ body,
   max-width: 100%;
 }
 
-.pane.editor .cm-editor .cm-scroller {
-  font-family: var(--mm-font-mono);
-  font-size: 14px;
-  line-height: 1.5;
-}
+/* Editor face/size come from the theme extension (via --mm-font-editor /
+   --mm-editor-size); nothing to override here anymore. */
 
 .pane.editor .cm-editor .cm-content {
   max-width: 100%;
@@ -143,25 +144,149 @@ textarea {
 .preview {
   padding: var(--mm-space-6) var(--mm-space-7);
   background: var(--bg-preview);
-  color: var(--text-primary);
+  color: var(--md-body);
   min-width: 0;
   overflow-wrap: break-word;
-  font-size: var(--mm-text-base);
+  font-family: var(--mm-font-editor);
+  font-size: var(--mm-editor-size);
   line-height: var(--mm-lh-body);
 }
 
-.preview :is(h1, h2, h3) {
+/* Structure-colored read mode: markdown roles per tokens/markdown.css.
+   Structure takes the accent; prose stays neutral. The same rules apply to
+   the WYSIWYG (Milkdown/ProseMirror) surface. */
+.preview :is(h1, h2, h3),
+.wysiwyg-body :is(h1, h2, h3) {
   margin-top: 1.25rem;
   line-height: var(--mm-lh-heading);
+}
+
+.preview h1,
+.wysiwyg-body h1 {
+  color: var(--md-h1);
+  font-weight: var(--mm-w-black);
+  font-size: 1.9em;
+}
+
+.preview h2,
+.wysiwyg-body h2 {
+  color: var(--md-h2);
+  font-weight: var(--mm-w-black);
+  font-size: 1.5em;
+}
+
+.preview h3,
+.wysiwyg-body h3 {
+  color: var(--md-h3);
+  font-weight: var(--mm-w-black);
+  font-size: 1.25em;
+}
+
+.preview h4,
+.wysiwyg-body h4 {
+  color: var(--md-h4);
+  font-weight: var(--mm-w-black);
+  font-size: 1.1em;
+}
+
+.preview :is(h5, h6),
+.wysiwyg-body :is(h5, h6) {
+  color: var(--md-h5);
+  font-weight: var(--mm-w-black);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.9em;
+}
+
+.preview :is(ul, ol) li::marker,
+.wysiwyg-body :is(ul, ol) li::marker {
+  color: var(--md-marker);
+  font-weight: var(--mm-w-bold);
+}
+
+.preview input[type="checkbox"],
+.wysiwyg-body input[type="checkbox"] {
+  accent-color: var(--md-checkbox);
+}
+
+.preview strong,
+.wysiwyg-body strong {
+  font-weight: var(--md-bold-weight, 800);
+}
+
+.preview :is(del, s),
+.wysiwyg-body :is(del, s) {
+  color: var(--md-strike);
+}
+
+.preview a,
+.wysiwyg-body a {
+  color: var(--md-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.preview blockquote,
+.wysiwyg-body blockquote {
+  margin: 1em 0;
+  padding-left: var(--mm-space-4);
+  border-left: 3px solid var(--md-quote-bar);
+  color: var(--md-quote-text);
+  font-style: italic;
+}
+
+.preview code,
+.wysiwyg-body code {
+  font-family: var(--mm-font-mono);
+  color: var(--md-code);
+  background: var(--md-code-bg);
+  padding: 2px 6px;
+  border-radius: var(--mm-radius-sm);
+  font-size: 0.86em;
+}
+
+.preview hr,
+.wysiwyg-body hr {
+  border: none;
+  border-top: 1px solid var(--md-rule);
+  margin: var(--mm-space-6) 0;
+}
+
+.preview table,
+.wysiwyg-body table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.9em;
+}
+
+.preview th,
+.wysiwyg-body th {
+  text-align: left;
+  padding: var(--mm-space-2) var(--mm-space-3);
+  border-bottom: 2px solid var(--md-table-rule);
+  font-weight: var(--mm-w-black);
+  background: var(--md-code-bg);
+}
+
+.preview td,
+.wysiwyg-body td {
+  text-align: left;
+  padding: var(--mm-space-2) var(--mm-space-3);
+  border-bottom: 1px solid var(--md-table-border);
 }
 
 .preview pre {
   overflow: auto;
   padding: var(--mm-space-3) var(--mm-space-4);
   border-radius: var(--mm-radius-lg);
-  background: var(--bg-code);
-  color: var(--text-code);
+  background: var(--md-code-bg);
   max-width: 100%;
+}
+
+.preview pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--mm-text);
 }
 
 button {
@@ -286,7 +411,8 @@ button.active:hover {
   padding: var(--mm-space-6) var(--mm-space-7);
   min-width: 0;
   overflow-wrap: break-word;
-  font-size: var(--mm-text-base);
+  font-family: var(--mm-font-editor);
+  font-size: var(--mm-editor-size);
   line-height: var(--mm-lh-body);
 }
 
@@ -307,9 +433,14 @@ button.active:hover {
 .wysiwyg-body .ProseMirror code,
 .wysiwyg-body .milkdown pre,
 .wysiwyg-body .milkdown code {
-  background: var(--bg-code) !important;
-  color: var(--text-code) !important;
+  background: var(--md-code-bg) !important;
+  color: var(--md-code) !important;
   border-radius: var(--mm-radius-md);
+}
+
+.wysiwyg-body .ProseMirror pre code,
+.wysiwyg-body .milkdown pre code {
+  color: var(--mm-text) !important;
 }
 
 .wysiwyg-body .ProseMirror pre,
@@ -471,10 +602,10 @@ button.active:hover {
     padding: var(--mm-space-4);
   }
 
-  /* Prevent iOS auto-zoom on focus — inputs must be >= 16px */
-  .pane.editor .cm-editor .cm-scroller,
-  textarea,
-  .wysiwyg-body .ProseMirror {
+  /* Prevent iOS auto-zoom on focus — inputs must be >= 16px. The editor and
+     WYSIWYG surfaces sit at the 20px design base, so only the legacy textarea
+     needs the guard. */
+  textarea {
     font-size: 16px;
   }
 }

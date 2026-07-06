@@ -2,16 +2,14 @@ import React, { useCallback, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorView } from "@codemirror/view";
-import { oneDark } from "@codemirror/theme-one-dark";
 import type { ViewUpdate } from "@codemirror/view";
 import { useDocumentStore } from "../services/documentStore";
-import { useThemeStore } from "../services/themeStore";
+import { macMarkdownEditorTheme } from "../services/markdownEditorTheme";
 
 export const SourceEditor = React.memo(function SourceEditor() {
   const content = useDocumentStore((s) => s.content);
   const setContent = useDocumentStore((s) => s.setContent);
   const setCursorPosition = useDocumentStore((s) => s.setCursorPosition);
-  const resolvedMode = useThemeStore((s) => s.resolvedMode);
 
   const onChange = useCallback(
     (value: string) => {
@@ -34,13 +32,12 @@ export const SourceEditor = React.memo(function SourceEditor() {
     [setCursorPosition],
   );
 
-  const extensions = useMemo(() => {
-    const exts = [markdown(), EditorView.lineWrapping];
-    if (resolvedMode === "dark") {
-      exts.push(oneDark);
-    }
-    return exts;
-  }, [resolvedMode]);
+  // The structure-colored theme styles via CSS custom properties, so palette
+  // and light/dark switches restyle live — the extension never rebuilds.
+  const extensions = useMemo(
+    () => [markdown(), EditorView.lineWrapping, macMarkdownEditorTheme],
+    [],
+  );
 
   return (
     <CodeMirror
@@ -48,13 +45,14 @@ export const SourceEditor = React.memo(function SourceEditor() {
       onChange={onChange}
       onUpdate={onUpdate}
       extensions={extensions}
-      theme={resolvedMode === "dark" ? "dark" : "light"}
+      theme="none"
       basicSetup={{
-        lineNumbers: true,
+        // Distraction-free editing surface — no gutters (design system).
+        lineNumbers: false,
+        foldGutter: false,
+        highlightActiveLineGutter: false,
+        highlightActiveLine: false,
         bracketMatching: true,
-        foldGutter: true,
-        highlightActiveLineGutter: true,
-        highlightActiveLine: true,
       }}
       style={{ height: "100%", overflow: "auto" }}
     />

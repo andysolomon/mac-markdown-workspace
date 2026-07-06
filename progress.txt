@@ -49,11 +49,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 5.6 - Acceptance: verified live (create/edit/autosave/tags/filter/search/reload-persist); Teal/Light + Crimson/Dark screenshots match mockup; 46 tests, typecheck, lint, web + iOS builds pass
     Note: legacy toolbar remains temporarily inside the editor column (actions migrate in Phases 6-7); editor content colors are Phase 6; no delete-note UI yet
 
-[ ] 6.0 - Phase 6 - Structure-colored Markdown editor
-    [ ] 6.1 - CodeMirror decoration theme: syntax markers in accent, prose neutral (replace oneDark)
-    [ ] 6.2 - Read-mode rendering mapped to --md-* roles per tokens/markdown.css
-    [ ] 6.3 - Aa font popover swaps editor face + scales base size
-    [ ] 6.4 - Acceptance: markers/#/checkboxes/quote bars/table rules in accent, prose neutral, edit + read, all themes
+[x] 6.0 - Phase 6 - Structure-colored Markdown editor
+    [x] 6.1 - CodeMirror HighlightStyle (markdownEditorTheme.ts): all syntax marks (processingInstruction) in --md-marker, headings/links/code/quotes per --md-* roles, prose neutral; oneDark removed; gutters off (distraction-free); sans 20px editor via --mm-font-editor/--mm-editor-size vars
+    [x] 6.2 - Preview + WYSIWYG mapped to --md-* roles (accent H1/::marker bullets/checkbox accent-color, weight-carried bold, dimmed strike, quote bar, table header rule, themed code)
+    [>] 6.3 - Aa font popover -> moved to Phase 7 (duplicate of 7.2; the --mm-font-editor/--mm-editor-size hooks are in place)
+    [x] 6.4 - Acceptance: verified live in split view, Teal/Light + Gold/Dark — marks accent, prose neutral, edit + read consistent. Fixed CodeMirror duplicate-instance bug via vite resolve.dedupe (all 3 configs) + package.json overrides. 46 tests, typecheck, lint, web + iOS builds pass
 
 [ ] 7.0 - Phase 7 - Theme + font switcher UX
     [ ] 7.1 - ThemeSwatch two-tone picker (palette + light/dark)

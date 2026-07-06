@@ -64,9 +64,11 @@
     "@capacitor/ios": "^8.2.0",
     "@capacitor/share": "^8.0.1",
     "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/language": "^6.12.4",
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.40.0",
+    "@lezer/highlight": "^1.2.3",
     "@milkdown/core": "^7.19.0",
     "@milkdown/ctx": "^7.19.0",
     "@milkdown/plugin-listener": "^7.19.0",
@@ -95,5 +97,12 @@
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
-  "packageManager": "bun@1.2.19"
+  "packageManager": "bun@1.2.19",
+  "overrides": {
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.40.0",
+    "@lezer/common": "^1.2.0",
+    "@lezer/highlight": "^1.2.3"
+  }
 }

@@ -13,6 +13,15 @@ export default defineConfig({
     alias: {
       path: "path-browserify",
     },
+    // CodeMirror ships nested copies under lang-* packages; duplicate
+    // @codemirror/language instances silently break syntaxHighlighting.
+    dedupe: [
+      "@codemirror/language",
+      "@codemirror/state",
+      "@codemirror/view",
+      "@lezer/common",
+      "@lezer/highlight",
+    ],
   },
   server: {
     port: 3000,
