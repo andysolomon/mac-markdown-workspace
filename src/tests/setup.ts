@@ -15,3 +15,9 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       dispatchEvent: (): boolean => false,
     }) as unknown as MediaQueryList;
 }
+
+/* jsdom lacks WebCrypto subtle — vaultCrypto needs the real Node webcrypto. */
+import { webcrypto } from "node:crypto";
+if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
+  Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
+}

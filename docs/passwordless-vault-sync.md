@@ -1,0 +1,345 @@
+# Passwordless Vault Sync + iCloud Reality Check
+
+Design doc for cross-platform notes sync without login: one vault per library,
+end-to-end encrypted snapshots in S3, and how that relates to iOS iCloud storage.
+
+## Current state (what you already have)
+
+Notes are already keyed by stable UUIDs across all platforms:
+
+```typescript
+// src/services/notesModel.ts
+export interface RawNote {
+  id: string;
+  body: string;
+  updatedAt: number;
+}
+```
+
+| Platform | Local storage | Path / store |
+|----------|---------------|--------------|
+| Electron | `~/Documents/Mac Markdown/` | `{id}.md` |
+| Web | IndexedDB | `mmw-notes` store |
+| iOS | Capacitor Filesystem | `notes/{id}.md` in Documents or Data |
+
+There is **no cloud sync today**. Cloud sync is explicitly deferred in
+[IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) (section 5). The app is
+local-first; `AppApi` in [shared/types/ipc.ts](../shared/types/ipc.ts) only
+exposes CRUD against local storage.
+
+---
+
+## Part 1: S3 vault sync without login
+
+### Concept
+
+One **vault** = one encrypted copy of the entire notes library, addressable by a
+**Vault ID** the user copies between devices. A **passphrase** (never sent to
+the server) derives crypto keys client-side. The server/S3 only ever sees
+ciphertext.
+
+```mermaid
+flowchart LR
+  subgraph deviceA [Device A - Web]
+    LocalA[Local notesStore]
+    CryptoA[Encrypt bundle]
+    LocalA --> CryptoA
+  end
+  subgraph api [Vercel API]
+    Auth[Write-token check]
+  end
+  subgraph s3 [AWS S3]
+    Blob["vaults/{vaultId}/snapshot.enc"]
+    Meta["vaults/{vaultId}/meta.json"]
+  end
+  subgraph deviceB [Device B - iOS]
+    CryptoB[Decrypt bundle]
+    LocalB[Local notesStore]
+    CryptoB --> LocalB
+  end
+  CryptoA -->|"PUT snapshot"| Auth --> s3
+  s3 -->|"GET snapshot"| CryptoB
+```
+
+### Key design decisions
+
+**Two secrets, two jobs**
+
+| Secret | Purpose | Stored where |
+|--------|---------|--------------|
+| **Vault ID** (128-bit UUID, e.g. `vlt_…`) | Public address of the vault in S3; needed on every device | Settings (`syncVaultId`) — safe to display as “Sync code” |
+| **Passphrase** (user-chosen) | Derives encryption + write keys via Argon2id + HKDF | **Never persisted** — only held in memory during sync; user re-enters on new devices |
+
+From the passphrase (client-only):
+
+- `encryptionKey` → AES-256-GCM encrypt/decrypt the note bundle
+- `writeToken` → sent as `Authorization: Bearer …` on uploads; server stores **only** `SHA-256(writeToken)` at vault creation
+
+Anyone who discovers the Vault ID alone gets encrypted blobs they cannot read
+and cannot overwrite.
+
+**What gets uploaded**
+
+A single encrypted **snapshot** (simplest v1) rather than per-note S3 objects:
+
+```json
+// Plaintext inside the encrypted envelope (before AES-GCM)
+{
+  "version": 1,
+  "notes": [ { "id": "…", "body": "…", "updatedAt": 1730000000 } ],
+  "deletedIds": ["…"],
+  "syncedAt": 1730000000
+}
+```
+
+S3 layout:
+
+```
+s3://mmw-sync/
+  vaults/{vaultId}/
+    snapshot.enc          # ciphertext + nonce + tag
+    meta.json             # { updatedAt, size, schemaVersion }  (unencrypted, for cheap HEAD/list)
+```
+
+Per-note IDs remain the note primary keys **inside** the bundle — you do not
+need a separate “note sync ID.” The Vault ID is the cross-environment link.
+
+**Merge strategy (v1)**
+
+Last-write-wins per note `id` on merge (matches existing
+[capacitorApi.ts](../src/ios/capacitorApi.ts) merge logic). On sync:
+
+1. Decrypt remote snapshot → `remoteNotes`
+2. Read local via `listNotes()` → `localNotes`
+3. For each `id`: keep whichever has higher `updatedAt`; union `deletedIds`
+4. Write merged set locally via existing `writeNote` / `deleteNote`
+5. Re-encrypt merged snapshot and upload if local had changes or remote was newer
+
+**Where it lives in the codebase**
+
+Add a **sync service** (`src/services/vaultSync.ts`) that sits **above**
+platform shims — it does not replace `AppApi`. Extend settings + UI only:
+
+- New `AppApi` methods (optional, implemented on web + iOS first; Electron can follow):
+  - `createVault(): Promise<{ vaultId }>`
+  - `pullVault({ vaultId, writeToken }): Promise<void>`
+  - `pushVault({ vaultId, writeToken }): Promise<void>`
+- Or keep sync entirely in a service that calls `fetch('/api/vault/…')` directly
+  and uses existing `notesStore` for local CRUD — **prefer this** to avoid
+  bloating `AppApi` until Electron needs it.
+
+Settings keys (via existing `getSetting`/`setSetting`):
+
+- `syncVaultId` — the vault address
+- `syncEnabled` — boolean
+- `lastSyncedAt` — timestamp for UI
+
+**Backend (Vercel serverless + S3)**
+
+New `api/` routes (fits existing [vercel.json](../vercel.json) static deploy):
+
+| Route | Behavior |
+|-------|----------|
+| `POST /api/vault` | Create vault: generate `vaultId`, accept `writeTokenHash`, return `vaultId` |
+| `GET /api/vault/:id/meta` | Return `meta.json` (for “is remote newer?” checks) |
+| `GET /api/vault/:id/snapshot` | Stream `snapshot.enc` |
+| `PUT /api/vault/:id/snapshot` | Require `Authorization: Bearer {writeToken}`; write to S3 |
+
+Env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`,
+`S3_BUCKET`, `S3_PREFIX=mmw-sync`.
+
+**No AWS creds in the client** — all S3 access goes through the API.
+
+**UX flow**
+
+1. **Enable sync** (Settings): user sets passphrase → app derives keys → creates
+   vault → shows **Sync code** (`vaultId`) with copy button + warning to save
+   passphrase
+2. **Link device**: enter Sync code + passphrase → pull → merge → local library
+   updated
+3. **Ongoing**: manual “Sync now” button first; optional background sync on app
+   focus / interval later
+4. **Passphrase lost**: data is unrecoverable (by design for E2E) — surface this
+   clearly
+
+**Cost / abuse controls**
+
+- S3 lifecycle: no versioning v1 (overwrites are fine)
+- API rate limiting per `vaultId` + max snapshot size (e.g. 5–10 MB)
+- Optional: one-time vault creation captcha if abuse appears
+
+### What this does *not* solve (v1)
+
+- Real-time collaborative editing
+- Conflict UI (v1 is silent LWW)
+- Desktop Electron (local folder is separate unless you add the same sync service there)
+- Syncing *settings* (palette, font) — only notes library
+
+---
+
+## Part 2: iCloud — will iPad + iPhone stay in sync?
+
+### Short answer for **today’s build**
+
+**No — not reliably across devices.** The Settings “iCloud” pill does **not**
+yet write to an iCloud Drive ubiquity container.
+
+Current behavior in [capacitorApi.ts](../src/ios/capacitorApi.ts):
+
+```typescript
+/** Storage location follows the persisted setting (issue #8 / W-000008):
+    "icloud" -> Documents (iCloud-backed, Files-visible); "device" -> Data
+    (app-private). Reads merge BOTH locations so switching never hides
+    existing notes; writes go to the selected location; deletes cover both. */
+function selectedDirectory(): Directory {
+  return getSettings()["iosStorage"] === "device" ? Directory.Data : Directory.Documents;
+}
+```
+
+`Directory.Documents` = **app sandbox Documents**, which is:
+
+- Included in **device backup** (restore on a new device from backup)
+- Files-visible after Info.plist steps in [ios-icloud.md](./ios-icloud.md)
+- **Not** the same as iCloud Drive document sync between a live iPad and iPhone
+
+So two devices signed into the same Apple ID will **not** automatically see each
+other’s notes in real time with the current implementation.
+
+### After true iCloud Documents is implemented
+
+Per [ios-icloud.md](./ios-icloud.md), the intended layout is:
+
+| Setting | Location | Cross-device? |
+|---------|----------|---------------|
+| iCloud (with entitlement) | Ubiquity container `iCloud.com.andrewsolomon.macmarkdownworkspace` → `Documents/notes/` | **Yes**, via iCloud Drive (eventual consistency) |
+| On device | App-private `Data/notes/` | No |
+
+**Folder structure** (once the native bridge lands): all notes in a named app
+folder inside the ubiquity container, e.g.:
+
+```
+iCloud Drive/
+  Mac Markdown/          ← NSUbiquitousContainerName
+    notes/
+      {uuid}.md
+      {uuid}.md
+```
+
+**Caveats even with real iCloud:**
+
+- Same Apple ID + iCloud Drive enabled on both devices
+- Sync is **eventual**, not instant — edits can conflict; iOS picks a winner per file
+- Airplane mode / low power can delay sync
+- iCloud storage quota applies
+- Web app cannot participate in iCloud sync
+
+### iCloud vs S3 vault sync
+
+These are **orthogonal** paths:
+
+```mermaid
+flowchart TB
+  subgraph ios [iOS devices]
+    iPad[iPad notes/]
+    iPhone[iPhone notes/]
+    iPad <-->|"iCloud Drive (Apple ID)"| iPhone
+  end
+  subgraph web [Web browser]
+    IDB[IndexedDB]
+  end
+  subgraph cloud [Your S3 vault]
+    Vault[snapshot.enc]
+  end
+  iPad -->|"E2E vault sync"| Vault
+  iPhone -->|"E2E vault sync"| Vault
+  IDB -->|"E2E vault sync"| Vault
+```
+
+A user could theoretically enable both iCloud (iPad↔iPhone) **and** S3 vault
+(web↔iOS) — that risks **divergent copies** unless you pick one source of truth
+or add conflict detection. Recommendation: **market them as alternatives** in
+Settings copy.
+
+---
+
+## Part 3: Recommended implementation phases
+
+### Phase A — Crypto + sync service (client only, mocked API)
+
+- `src/services/vaultCrypto.ts` — Argon2id (or `@noble/hashes` scrypt), HKDF, AES-256-GCM envelope
+- `src/services/vaultSync.ts` — merge logic, snapshot pack/unpack
+- Unit tests for encrypt/decrypt round-trip and LWW merge
+
+### Phase B — Vercel API + S3 bucket
+
+- `api/vault/[id]/snapshot.ts`, `api/vault/index.ts`
+- Private S3 bucket, IAM user scoped to `mmw-sync/vaults/*`
+- Deploy alongside existing web app on Vercel
+
+### Phase C — Settings UI
+
+- Extend [SettingsPanel.tsx](../src/components/shell/SettingsPanel.tsx):
+  - “Cloud sync” section: Enable / Sync code display / Link vault / Sync now / Last synced
+  - Passphrase entry modal (not persisted)
+  - Strong copy: passphrase loss = data loss
+
+### Phase D — Platform wiring
+
+- Web: call vault sync from [browserApi.ts](../src/web/browserApi.ts) entry or `NotesShell` on load when `syncEnabled`
+- iOS: same from [capacitorApi.ts](../src/ios/capacitorApi.ts) / app init
+- Electron (optional): same service; local `~/Documents/Mac Markdown` remains canonical offline
+
+### Phase E — iCloud ubiquity (separate track)
+
+- Native Capacitor plugin or bridge to write `notes/` into the ubiquity container
+- Update [ios-icloud.md](./ios-icloud.md) when landed
+- Does not replace S3 vault for web
+
+---
+
+## Security checklist
+
+- Passphrase never leaves the device; never log keys or plaintext
+- `writeToken` transmitted only over HTTPS on upload
+- Store `writeTokenHash` server-side, not the token
+- Use random 96-bit nonce per snapshot encryption
+- Consider `@noble/ciphers` + `@noble/hashes` (small, auditable) over rolling crypto by hand
+- Document threat model: vault ID + passphrase = full access; no account recovery
+
+---
+
+## Open product decisions (minor, can default)
+
+- **Auto-sync on edit** vs manual “Sync now” only for v1 → default **manual** (simpler, fewer race conditions)
+- **Passphrase change** → re-encrypt and re-upload (v2)
+- **Vault deletion** → API endpoint + S3 delete (v2)
+
+---
+
+## Implementation checklist
+
+- [x] Add `vaultCrypto.ts`: scrypt/HKDF key derivation + AES-256-GCM snapshot envelope (Phase A, issue #19)
+- [x] Add `vaultSync.ts`: pack/unpack `RawNote[]`, LWW merge, pull/push orchestration (Phase A, issue #19)
+- [ ] Create Vercel API routes + private S3 bucket with write-token auth
+- [ ] Settings panel: enable sync, show vault ID, link device, sync now, passphrase modal
+- [ ] Hook vault sync into web and iOS app init / manual sync trigger
+- [ ] Separate track: native bridge for true iCloud Documents container ([ios-icloud.md](./ios-icloud.md) steps)
+
+---
+
+## Phase A implementation notes (security-review round, 2026-07-06)
+
+Decisions locked while addressing the Phase A security review:
+
+- **KDF**: scrypt `N=2^17, r=8, p=1` (~128MB memory-hard, OWASP tier) instead of Argon2id — comparable memory-hardness, zero WASM, ships in `@noble/hashes`. Params are baked into every vault's derivation; changing them means a new envelope version. The offline threat is explicit: anyone with vault id + ciphertext can brute-force the passphrase unthrottled, so `createVault` enforces a minimum length (8) and the Phase C UI should push far past it.
+- **AAD binding**: the AES-GCM envelope authenticates `mmw-v1:<vaultId>` as additional data — a snapshot can't be spliced into another vault or reinterpreted under a future envelope version.
+- **Deletions**: local deletes must record a `VaultTombstone {id, deletedAt}` via the platform adapter (`LocalNotesPort`), or they resurrect from the vault on the next sync. Tombstones fold into the snapshot's `deletedIds` on sync and are cleared after a confirmed push. An edit newer than the deletion resurrects the note, in both directions.
+- **Timestamps**: `LocalNotesPort.writeNote` persists the given `updatedAt` verbatim — re-stamping pulled notes with "now" corrupts LWW across 3+ devices.
+- **Concurrency**: `getSnapshot` returns an opaque `etag`; `putSnapshot` takes `ifMatch` and throws `VaultConflictError` on precondition failure (S3 conditional write / HTTP 412 in Phase B). `syncVault` re-pulls, re-merges, and retries up to 3 times.
+- **Schema**: clients refuse snapshots with `version > 1` rather than mis-merging them.
+- **Known limitation**: LWW compares wall-clock `updatedAt` across devices; clock skew can pick the "wrong" winner for near-simultaneous edits. Acceptable for manual sync; a logical version counter is the v2 fix.
+
+## Related docs
+
+- [visual-testing.md](./visual-testing.md) — Playwright screenshots, web/WebKit projects, iOS Simulator
+- [ios-icloud.md](./ios-icloud.md) — iOS storage and Files visibility

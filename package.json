@@ -78,6 +78,7 @@
     "@milkdown/react": "^7.19.0",
     "@milkdown/theme-nord": "^7.19.0",
     "@milkdown/transformer": "^7.19.0",
+    "@noble/hashes": "^2.2.0",
     "@replit/codemirror-vim": "^6.3.0",
     "@uiw/react-codemirror": "^4.25.8",
     "electron-squirrel-startup": "^1.0.1",

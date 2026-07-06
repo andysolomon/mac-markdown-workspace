@@ -115,3 +115,8 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 15.3 - Bottom bar normalized: four equal flex cells, uniform height/size/weight/accent color
     [x] 15.4 - Toolbar toggle hidden in mobile settings (desktop-only preference)
     [~] 15.5 - Native keyboard: @capacitor/keyboard added, resize "native" (webview shrinks -> accessory bar stays above keyboard), Keyboard.setStyle follows light/dark mode — REQUIRES bun run ios:sync (new pod); device confirmation pending with #14
+
+[~] 16.0 - Passwordless vault sync (docs/passwordless-vault-sync.md; issues #19/#20/#21)
+    [x] 16.1 - Phase A (issue #19/W-000019): vaultCrypto.ts (scrypt N=2^17 + HKDF domain separation + AES-256-GCM with vault-id AAD, @noble/hashes) and vaultSync.ts (LWW merge, two-sided tombstones with edit-resurrection, ETag optimistic concurrency with conflict retry, snapshot version guard, injectable LocalNotesPort/VaultTransport). 20 unit tests incl. delete-propagation, updatedAt preservation, 3-device convergence, concurrent-push conflict, tamper/AAD rejection. Survived an adversarial security review round: both HIGH findings (local deletes resurrected; pulled notes re-stamped updatedAt) fixed via port-contract changes before anything shipped
+    [ ] 16.2 - Phase B (issue #20/W-000020): Vercel api/vault routes + S3 (code can land; deploy blocked on user's AWS bucket/IAM/env vars)
+    [ ] 16.3 - Phase C/D (issue #21/W-000021): Settings "Cloud Sync" section + platform adapters (needs tombstone recording in delete paths and updatedAt-preserving writeNote per the Phase A port contract)

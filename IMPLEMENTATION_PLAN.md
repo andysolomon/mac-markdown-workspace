@@ -120,7 +120,7 @@ Each phase is independently reviewable and keeps the app runnable.
 
 ## 5. Out-of-scope / deferred
 - Nested tags (`#a/b`), note links/backlinks, pinned/archived notes.
-- Cloud sync, multi-device, collaboration, encryption/lock.
+- ~~Cloud sync, multi-device~~ — now its own track: [docs/passwordless-vault-sync.md](docs/passwordless-vault-sync.md) (issues #19–#21; Phase A crypto+sync engine landed). Collaboration and per-note lock remain out of scope.
 - Image/file attachments, in-note media.
 - Procuring a licensed Avenir Next webfont (stays on Nunito Sans fallback).
 - Full-text index optimization for very large libraries.

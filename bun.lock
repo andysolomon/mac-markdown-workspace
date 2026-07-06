@@ -23,6 +23,7 @@
         "@milkdown/react": "^7.19.0",
         "@milkdown/theme-nord": "^7.19.0",
         "@milkdown/transformer": "^7.19.0",
+        "@noble/hashes": "^2.2.0",
         "@replit/codemirror-vim": "^6.3.0",
         "@uiw/react-codemirror": "^4.25.8",
         "electron-squirrel-startup": "^1.0.1",
@@ -518,6 +519,8 @@
     "@milkdown/transformer": ["@milkdown/transformer@7.19.0", "", { "dependencies": { "@milkdown/exception": "7.19.0", "@milkdown/prose": "7.19.0", "remark": "^15.0.1", "unified": "^11.0.3" } }, "sha512-Ui1vwbyTd1nAaieTylI8ibNbXSAxygkiFjkwOPGO5w0Eu7leH+0hVrbeGUCSzYdJfjGsN537CYu/8kvLIR+lQg=="],
 
     "@milkdown/utils": ["@milkdown/utils@7.19.0", "", { "dependencies": { "@milkdown/core": "7.19.0", "@milkdown/ctx": "7.19.0", "@milkdown/exception": "7.19.0", "@milkdown/prose": "7.19.0", "@milkdown/transformer": "7.19.0", "nanoid": "^5.0.9" } }, "sha512-aIu8j7TypVn+4ZWgrIUjpljIulAVwNERWNZgkfYLQLOv+BbF1gIbpoB7t3w0RD2EeENrEu0P3J0Sl5LDMbyDRQ=="],
+
+    "@noble/hashes": ["@noble/hashes@2.2.0", "", {}, "sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 
