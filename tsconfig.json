@@ -15,5 +15,5 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "shared", "forge.env.d.ts"]
+  "include": ["src", "shared", "api", "forge.env.d.ts"]
 }

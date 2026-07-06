@@ -145,8 +145,10 @@ New `api/` routes (fits existing [vercel.json](../vercel.json) static deploy):
 | `GET /api/vault/:id/snapshot` | Stream `snapshot.enc` |
 | `PUT /api/vault/:id/snapshot` | Require `Authorization: Bearer {writeToken}`; write to S3 |
 
-Env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`,
-`S3_BUCKET`, `S3_PREFIX=mmw-sync`.
+Env vars: `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY`,
+`VAULT_S3_REGION`, `VAULT_S3_BUCKET`, `VAULT_S3_PREFIX=mmw-sync`.
+(Renamed from the original `AWS_*` draft — Vercel reserves the `AWS_*`
+names on its function runtime.)
 
 **No AWS creds in the client** — all S3 access goes through the API.
 
@@ -320,7 +322,7 @@ Settings copy.
 
 - [x] Add `vaultCrypto.ts`: scrypt/HKDF key derivation + AES-256-GCM snapshot envelope (Phase A, issue #19)
 - [x] Add `vaultSync.ts`: pack/unpack `RawNote[]`, LWW merge, pull/push orchestration (Phase A, issue #19)
-- [ ] Create Vercel API routes + private S3 bucket with write-token auth
+- [x] Create Vercel API routes + private S3 bucket with write-token auth (Phase B, issue #20)
 - [ ] Settings panel: enable sync, show vault ID, link device, sync now, passphrase modal
 - [ ] Hook vault sync into web and iOS app init / manual sync trigger
 - [ ] Separate track: native bridge for true iCloud Documents container ([ios-icloud.md](./ios-icloud.md) steps)
@@ -338,6 +340,15 @@ Decisions locked while addressing the Phase A security review:
 - **Concurrency**: `getSnapshot` returns an opaque `etag`; `putSnapshot` takes `ifMatch` and throws `VaultConflictError` on precondition failure (S3 conditional write / HTTP 412 in Phase B). `syncVault` re-pulls, re-merges, and retries up to 3 times.
 - **Schema**: clients refuse snapshots with `version > 1` rather than mis-merging them.
 - **Known limitation**: LWW compares wall-clock `updatedAt` across devices; clock skew can pick the "wrong" winner for near-simultaneous edits. Acceptable for manual sync; a logical version counter is the v2 fix.
+
+## Phase B implementation notes (2026-07-06)
+
+- **Routes** live in `api/vault/` (Vercel Node functions; `api/_lib/` is shared, non-routed code). The vault id is **client-generated** (Phase A's `generateVaultId`), so `POST /api/vault` registers rather than mints — the server validates the strict `vlt_<uuid>` shape and rejects re-registration with 409 (S3 `If-None-Match: *` on `auth.json`).
+- **`writeTokenHash` is stored in a private `auth.json`**, not in the publicly readable `meta.json`; the PUT handler compares SHA-256 of the presented bearer token in constant time.
+- **Optimistic concurrency end-to-end**: the snapshot's S3 ETag rides the `ETag` response header; clients send `If-Match` (or `If-None-Match: *` for first push), which maps onto S3 conditional writes → 412 → `VaultConflictError` → re-merge and retry.
+- **Caps**: snapshot bodies over 4MB are rejected (Vercel's own ceiling is 4.5MB); CORS is `*` because the iOS app calls from a `capacitor://` origin — content is ciphertext and writes are token-gated. Per-vault rate limiting is deferred until abuse appears (doc's "cost/abuse" note).
+- **Infra** (account 048674617441, us-east-1): private bucket `mmw-vault-sync-048674617441` (public access blocked, SSE-S3), IAM user `mmw-vault-sync` allowed only Get/Put/List under the `mmw-sync/` prefix. Env vars set in Vercel **production** (secret is write-only "sensitive"); preview deploys intentionally unconfigured.
+- **Client**: `src/services/vaultHttpTransport.ts` implements the Phase A `VaultTransport` port over `fetch`; web uses same-origin `""`, iOS must pass the absolute production origin.
 
 ## Related docs
 
