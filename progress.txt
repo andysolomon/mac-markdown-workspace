@@ -61,10 +61,29 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 7.3 - themeStore extended with {font, size}; App applies --mm-font-editor/--mm-editor-size; all four settings persist via AppApi (electron-store / localStorage per platform)
     [x] 7.4 - Acceptance: verified live on web — Forest/Dark/Georgia/23px round-trips across reload; rapid-click stepper stale-closure bug found+fixed; Electron/iOS persistence via same AppApi settings path (runtime pass in Phase 8). 46 tests, typecheck, lint, web + iOS builds pass
 
-[ ] 8.0 - Phase 8 - Cross-platform verification, migration, cleanup
-    [ ] 8.1 - Verify library persistence + UI on web, Electron, iOS
-    [ ] 8.2 - Keep file open/save/export as per-note import/export; remove dead v1 chrome
-    [ ] 8.3 - Update README.md + CLAUDE.md for the new architecture
-    [ ] 8.4 - Expand tests (notes store, tag parsing, theme switching); keep webEntry guard
-    [ ] 8.5 - Re-verify Open/Save in real Safari
-    [ ] 8.6 - Acceptance: typecheck, lint, tests, web + iOS builds, Playwright e2e all pass; screenshots match
+[ ] 8.0 - Phase 8 - Feedback round: export overhaul, save semantics, pane-collapse fix (author feedback 2026-07-05)
+    [ ] 8.1 - Fix pane collapse on window resize/zoom-restore (matchMedia breakpoint listener; sidebar reachable on narrow desktop; panes restore when wide again)
+    [ ] 8.2 - Add exportHtml to AppApi (3 shims): standalone themed HTML document download
+    [ ] 8.3 - Rebuild web exportPdf: print only the rendered note (print-scoped document), not the app chrome
+    [ ] 8.4 - Export menu offers HTML + PDF (+ TXT/DOCX); verified working on web
+    [ ] 8.5 - Save semantics: web Save = flush to library + saved feedback (no dialog); iOS Save = iCloud-backed Documents (entitlements documented)
+
+[ ] 9.0 - Phase 9 - Settings screen
+    [ ] 9.1 - Settings panel (gear in chrome, popover design language)
+    [ ] 9.2 - Toolbar show/hide toggle (persisted)
+    [ ] 9.3 - iOS save-location option (iCloud vs on-device), persisted
+    [ ] 9.4 - Acceptance: toggles persist + apply live on all platforms
+
+[ ] 10.0 - Phase 10 - Mobile editing kit: bottom bar + markdown keyboard accessory
+    [ ] 10.1 - Bottom tool strip (share/export, Aa, +) on mobile/tablet per Bear reference
+    [ ] 10.2 - Markdown keyboard accessory bar above on-screen keyboard (#, bold, italic, list, task, quote, code, link, indent, Done) inserting at CodeMirror cursor
+    [ ] 10.3 - visualViewport-aware positioning on iOS
+    [ ] 10.4 - Acceptance: verified on narrow web viewport + iOS build
+
+[ ] 11.0 - Phase 11 - Cross-platform verification, migration, cleanup
+    [ ] 11.1 - Verify library persistence + UI on web, Electron, iOS
+    [ ] 11.2 - Keep file open/save/export as per-note import/export; remove dead v1 chrome
+    [ ] 11.3 - Update README.md + CLAUDE.md for the new architecture
+    [ ] 11.4 - Expand tests (notes store, tag parsing, theme switching); keep webEntry guard
+    [ ] 11.5 - Re-verify Open/Save in real Safari
+    [ ] 11.6 - Acceptance: typecheck, lint, tests, web + iOS builds, Playwright e2e all pass; screenshots match

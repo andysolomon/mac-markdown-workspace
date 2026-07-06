@@ -91,10 +91,31 @@ Each phase is independently reviewable and keeps the app runnable.
 - **Dependencies:** Phases 1, 2, 6.
 - **Acceptance:** changing palette, mode, font, or size persists across reload on all three platforms.
 
-### Phase 8 — Cross-platform verification, migration, cleanup
-- **Goal:** Ship-ready parity and hygiene.
-- **Deliverables:** verify library persistence + UI on web, Electron, iOS; keep file open/save/export (TXT/PDF/DOCX) as per-note import/export; remove dead v1 chrome; update `README.md` + `CLAUDE.md` for the new architecture; expand tests (notes store, tag parsing, theme switching) and keep the `webEntry` guard; re-verify Open/Save in real Safari.
+### Phase 8 — Feedback round: export overhaul, save semantics, pane-collapse fix
+- **Goal:** Address author feedback from live use (2026-07-05).
+- **Deliverables:**
+  - **Pane-collapse fix** (reported: "green Mac zoom button closes all sidebars") — root cause: the ≤640px mobile breakpoint fires on desktop window resize/zoom-restore; `listOpen` samples width only at mount and `.mm-sidebar` is unconditionally `display:none` when narrow. Fix: track the breakpoint with a matchMedia listener, restore panes when crossing back to wide, keep the sidebar reachable on narrow desktop widths.
+  - **Export overhaul** — root cause of "export isn't working on web": web `exportPdf` is a bare `window.print()` (prints the app chrome, not the note) and HTML export doesn't exist. Add `exportHtml` to `AppApi` (all three shims) producing a standalone themed HTML document; rebuild web PDF export to print only the rendered note via a print-scoped document; export menu offers HTML + PDF (+ existing TXT/DOCX).
+  - **Save semantics per platform** — web: Save persists to the library (flush autosave + saved feedback; no file dialog); iOS: save into iCloud-backed Documents (entitlement steps documented), with a save-to-device option surfaced in Settings (Phase 9).
 - **Dependencies:** Phases 1–7.
+- **Acceptance:** HTML + PDF export verified working on web; Save behaves per platform; window resize/zoom no longer strands the panes.
+
+### Phase 9 — Settings screen
+- **Goal:** A settings surface in the design language.
+- **Deliverables:** gear entry point in the chrome → settings panel (same popover design language); **toolbar show/hide toggle** (persisted; hides the transitional toolbar); **iOS save-location option** (iCloud vs on-device), persisted via AppApi settings.
+- **Dependencies:** Phase 8.
+- **Acceptance:** toggles persist and apply live on all platforms.
+
+### Phase 10 — Mobile editing kit: bottom bar + markdown keyboard accessory
+- **Goal:** Bear-style mobile editing ergonomics (per author's iPad screenshots).
+- **Deliverables:** bottom tool strip (share/export · Aa · +) on mobile/tablet; a **markdown keyboard accessory bar** shown above the on-screen keyboard while editing (#, bold, italic, list, task, quote, code, link, indent, Done) inserting at the CodeMirror cursor; visualViewport-aware positioning on iOS.
+- **Dependencies:** Phases 5–8.
+- **Acceptance:** verified on a narrow web viewport and the iOS build; accessory inserts correct markdown at the cursor.
+
+### Phase 11 — Cross-platform verification, migration, cleanup
+- **Goal:** Ship-ready parity and hygiene.
+- **Deliverables:** verify library persistence + UI on web, Electron, iOS; keep file open/save/export as per-note import/export; remove dead v1 chrome; update `README.md` + `CLAUDE.md` for the new architecture; expand tests (notes store, tag parsing, theme switching) and keep the `webEntry` guard; re-verify Open/Save in real Safari.
+- **Dependencies:** Phases 1–10.
 - **Acceptance:** typecheck, lint, all Vitest tests, web + iOS builds, and Playwright e2e pass; Safari re-verified; screenshots match the design across all four themes + dark on all platforms.
 
 ## 5. Out-of-scope / deferred
