@@ -2,7 +2,7 @@
 
 A Bear-inspired, local-first Markdown **notes workspace** — tag sidebar, document list, and a distraction-free editor — built as a **single React codebase that ships to macOS desktop, the browser, and iOS**.
 
-**[▶ Live demo](https://mac-markdown-workspace.vercel.app)**
+**[▶ Live demo](https://mac-markdown-workspace.vercel.app)** · **[📖 Engineering docs](https://mac-markdown-docs.vercel.app)**
 
 The design system's core rule: **structure is colored, prose is not.** Heading hashes, list bullets, checkboxes, quote bars, and link brackets render in the active theme's accent — in both the editor and the preview — while your words stay neutral and readable.
 
