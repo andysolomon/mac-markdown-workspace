@@ -1,4 +1,4 @@
-import type { AppApi } from "../../shared/types/ipc";
+import type { AppApi, NoteTombstone } from "../../shared/types/ipc";
 import type { RawNote } from "../services/notesModel";
 
 /**
@@ -14,13 +14,22 @@ let fileHandle: FileSystemFileHandle | null = null;
 // --- IndexedDB-backed notes library ---
 const NOTES_DB = "mmw-notes";
 const NOTES_STORE = "notes";
+const TOMBSTONE_STORE = "tombstones"; // { id, deletedAt } — vault-sync bookkeeping
 let notesDbPromise: Promise<IDBDatabase> | null = null;
 
 function openNotesDb(): Promise<IDBDatabase> {
   if (!notesDbPromise) {
     notesDbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open(NOTES_DB, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore(NOTES_STORE, { keyPath: "id" });
+      // v2 adds the tombstone store; guards make the upgrade idempotent
+      // regardless of the version the client is coming from.
+      const req = indexedDB.open(NOTES_DB, 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(NOTES_STORE))
+          db.createObjectStore(NOTES_STORE, { keyPath: "id" });
+        if (!db.objectStoreNames.contains(TOMBSTONE_STORE))
+          db.createObjectStore(TOMBSTONE_STORE, { keyPath: "id" });
+      };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
@@ -38,6 +47,11 @@ function idbRequest<T>(req: IDBRequest<T>): Promise<T> {
 async function notesStore(mode: IDBTransactionMode): Promise<IDBObjectStore> {
   const db = await openNotesDb();
   return db.transaction(NOTES_STORE, mode).objectStore(NOTES_STORE);
+}
+
+async function tombstoneStore(mode: IDBTransactionMode): Promise<IDBObjectStore> {
+  const db = await openNotesDb();
+  return db.transaction(TOMBSTONE_STORE, mode).objectStore(TOMBSTONE_STORE);
 }
 
 function getSettings(): Record<string, unknown> {
@@ -247,15 +261,36 @@ export const browserApi: AppApi = {
     return note;
   },
 
-  writeNote: async ({ id, body }) => {
-    const note: RawNote = { id, body, updatedAt: Date.now() };
-    const store = await notesStore("readwrite");
-    await idbRequest(store.put(note));
+  writeNote: async ({ id, body, updatedAt }) => {
+    const note: RawNote = { id, body, updatedAt: updatedAt ?? Date.now() };
+    // Write the note AND drop any tombstone for this id in one transaction —
+    // a resurrected note must not carry a stale deletion that re-propagates.
+    const db = await openNotesDb();
+    const tx = db.transaction([NOTES_STORE, TOMBSTONE_STORE], "readwrite");
+    await Promise.all([
+      idbRequest(tx.objectStore(NOTES_STORE).put(note)),
+      idbRequest(tx.objectStore(TOMBSTONE_STORE).delete(id)),
+    ]);
     return note;
   },
 
   deleteNote: async ({ id }) => {
     const store = await notesStore("readwrite");
     await idbRequest(store.delete(id));
+  },
+
+  listTombstones: async () => {
+    const store = await tombstoneStore("readonly");
+    return (await idbRequest(store.getAll())) as NoteTombstone[];
+  },
+
+  recordTombstone: async ({ id, deletedAt }) => {
+    const store = await tombstoneStore("readwrite");
+    await idbRequest(store.put({ id, deletedAt }));
+  },
+
+  clearTombstones: async ({ ids }) => {
+    const store = await tombstoneStore("readwrite");
+    await Promise.all(ids.map((id) => idbRequest(store.delete(id))));
   },
 };

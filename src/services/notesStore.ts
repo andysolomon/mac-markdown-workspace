@@ -21,6 +21,7 @@ interface NotesState {
 
 interface NotesActions {
   loadLibrary: () => Promise<void>;
+  reloadLibrary: () => Promise<void>;
   createNote: (body?: string) => Promise<Note>;
   updateActiveNote: (body: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
@@ -70,8 +71,24 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((s) => ({ notes: sortNotes(s.notes.map((n) => (n.id === id ? updated : n))) }));
   },
 
+  // Re-read the whole library from storage without re-seeding a welcome note.
+  // Used after a vault sync applies remote edits/deletions underneath the store.
+  reloadLibrary: async () => {
+    const raw = await window.appApi.listNotes();
+    const notes = sortNotes(raw.map(buildNote));
+    set((s) => ({
+      notes,
+      activeNoteId: notes.some((n) => n.id === s.activeNoteId)
+        ? s.activeNoteId
+        : notes[0]?.id ?? null,
+    }));
+  },
+
   deleteNote: async (id) => {
     await window.appApi.deleteNote({ id });
+    // Record a tombstone so the deletion propagates on the next vault sync
+    // instead of the note resurrecting from the remote snapshot.
+    await window.appApi.recordTombstone?.({ id, deletedAt: Date.now() });
     set((s) => {
       const notes = s.notes.filter((n) => n.id !== id);
       const activeNoteId = s.activeNoteId === id ? notes[0]?.id ?? null : s.activeNoteId;

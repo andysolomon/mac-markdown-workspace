@@ -21,6 +21,9 @@ const api: AppApi = {
   createNote: (payload) => ipcRenderer.invoke("notes:create", payload),
   writeNote: (payload) => ipcRenderer.invoke("notes:write", payload),
   deleteNote: (payload) => ipcRenderer.invoke("notes:delete", payload),
+  listTombstones: () => ipcRenderer.invoke("notes:tombstones:list"),
+  recordTombstone: (payload) => ipcRenderer.invoke("notes:tombstones:record", payload),
+  clearTombstones: (payload) => ipcRenderer.invoke("notes:tombstones:clear", payload),
   onMenuAction: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, action: string) => callback(action);
     ipcRenderer.on("menu:action", handler);

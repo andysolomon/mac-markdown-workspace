@@ -352,6 +352,21 @@ const registerIpc = (): void => {
     return { id, body, updatedAt: stat.mtimeMs };
   };
 
+  // Vault-sync bookkeeping: a hidden tombstone sidecar (updatedAt rides on the
+  // file's mtime directly, set via utimes on write — no time sidecar needed).
+  const tombstonesPath = () => path.join(notesDir(), ".vault-tombstones.json");
+  const readTombstones = async (): Promise<Record<string, number>> => {
+    try {
+      return JSON.parse(await fs.readFile(tombstonesPath(), "utf8")) as Record<string, number>;
+    } catch {
+      return {};
+    }
+  };
+  const writeTombstones = async (map: Record<string, number>) => {
+    await ensureNotesDir();
+    await fs.writeFile(tombstonesPath(), JSON.stringify(map), "utf8");
+  };
+
   ipcMain.handle("notes:list", async () => {
     await ensureNotesDir();
     const entries = await fs.readdir(notesDir());
@@ -382,11 +397,26 @@ const registerIpc = (): void => {
     return readRawNote(id);
   });
 
-  ipcMain.handle("notes:write", async (_event, payload: { id: string; body: string }) => {
-    await ensureNotesDir();
-    await fs.writeFile(notePath(payload.id), payload.body, "utf8");
-    return readRawNote(payload.id);
-  });
+  ipcMain.handle(
+    "notes:write",
+    async (_event, payload: { id: string; body: string; updatedAt?: number }) => {
+      await ensureNotesDir();
+      await fs.writeFile(notePath(payload.id), payload.body, "utf8");
+      // Preserve a vault-pulled note's canonical timestamp by stamping mtime
+      // (Electron has full fs, unlike Capacitor) so listNotes reads it back.
+      if (payload.updatedAt !== undefined) {
+        const when = new Date(payload.updatedAt);
+        await fs.utimes(notePath(payload.id), when, when);
+      }
+      // A (re)written note must not keep a stale tombstone.
+      const map = await readTombstones();
+      if (payload.id in map) {
+        delete map[payload.id];
+        await writeTombstones(map);
+      }
+      return readRawNote(payload.id);
+    },
+  );
 
   ipcMain.handle("notes:delete", async (_event, payload: { id: string }) => {
     try {
@@ -394,6 +424,26 @@ const registerIpc = (): void => {
     } catch {
       /* already gone */
     }
+  });
+
+  ipcMain.handle("notes:tombstones:list", async () => {
+    const map = await readTombstones();
+    return Object.entries(map).map(([id, deletedAt]) => ({ id, deletedAt }));
+  });
+
+  ipcMain.handle(
+    "notes:tombstones:record",
+    async (_event, payload: { id: string; deletedAt: number }) => {
+      const map = await readTombstones();
+      map[payload.id] = payload.deletedAt;
+      await writeTombstones(map);
+    },
+  );
+
+  ipcMain.handle("notes:tombstones:clear", async (_event, payload: { ids: string[] }) => {
+    const map = await readTombstones();
+    for (const id of payload.ids) delete map[id];
+    await writeTombstones(map);
   });
 };
 

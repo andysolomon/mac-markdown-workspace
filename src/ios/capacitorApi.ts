@@ -1,10 +1,50 @@
-import type { AppApi } from "../../shared/types/ipc";
+import type { AppApi, NoteTombstone } from "../../shared/types/ipc";
 import type { RawNote } from "../services/notesModel";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 
 const NOTES_DIR = "notes";
 const notePath = (id: string) => `${NOTES_DIR}/${id}.md`;
+
+/**
+ * Sync bookkeeping sidecar (issue #21). Capacitor Filesystem exposes no
+ * utimes, so a pulled note's canonical updatedAt can't ride on file mtime —
+ * `times` stores it authoritatively (mtime is the fallback for notes imported
+ * outside the app). `tombstones` records local deletions so they propagate
+ * instead of resurrecting. Kept in Data (app-private, always writable, and
+ * off the user's iCloud Files view) rather than beside the .md notes.
+ */
+const META_PATH = `${NOTES_DIR}/.vault-meta.json`;
+const META_DIR = Directory.Data;
+
+interface VaultMeta {
+  times: Record<string, number>;
+  tombstones: Record<string, number>;
+}
+
+async function readMeta(): Promise<VaultMeta> {
+  try {
+    const res = await Filesystem.readFile({
+      path: META_PATH,
+      directory: META_DIR,
+      encoding: Encoding.UTF8,
+    });
+    const parsed = JSON.parse(res.data as string) as Partial<VaultMeta>;
+    return { times: parsed.times ?? {}, tombstones: parsed.tombstones ?? {} };
+  } catch {
+    return { times: {}, tombstones: {} };
+  }
+}
+
+async function writeMeta(meta: VaultMeta): Promise<void> {
+  await Filesystem.writeFile({
+    path: META_PATH,
+    data: JSON.stringify(meta),
+    directory: META_DIR,
+    encoding: Encoding.UTF8,
+    recursive: true,
+  });
+}
 
 /** Storage location follows the persisted setting (issue #8 / W-000008):
     "icloud" -> Documents (iCloud-backed, Files-visible); "device" -> Data
@@ -240,6 +280,13 @@ export const capacitorApi: AppApi = {
         /* directory not created yet */
       }
     }
+    // Overlay the authoritative updatedAt (a vault-pulled note keeps its
+    // canonical timestamp; mtime would otherwise read as the pull time).
+    const { times } = await readMeta();
+    for (const note of byId.values()) {
+      const canonical = times[note.id];
+      if (canonical !== undefined) note.updatedAt = canonical;
+    }
     return [...byId.values()];
   },
 
@@ -256,6 +303,7 @@ export const capacitorApi: AppApi = {
 
   createNote: async ({ body }) => {
     const id = crypto.randomUUID();
+    const updatedAt = Date.now();
     await Filesystem.writeFile({
       path: notePath(id),
       data: body ?? "",
@@ -263,10 +311,14 @@ export const capacitorApi: AppApi = {
       encoding: Encoding.UTF8,
       recursive: true,
     });
-    return { id, body: body ?? "", updatedAt: Date.now() };
+    const meta = await readMeta();
+    meta.times[id] = updatedAt;
+    await writeMeta(meta);
+    return { id, body: body ?? "", updatedAt };
   },
 
-  writeNote: async ({ id, body }) => {
+  writeNote: async ({ id, body, updatedAt }) => {
+    const stamp = updatedAt ?? Date.now();
     await Filesystem.writeFile({
       path: notePath(id),
       data: body,
@@ -274,7 +326,11 @@ export const capacitorApi: AppApi = {
       encoding: Encoding.UTF8,
       recursive: true,
     });
-    return { id, body, updatedAt: Date.now() };
+    const meta = await readMeta();
+    meta.times[id] = stamp;
+    delete meta.tombstones[id]; // resurrected note: drop any stale tombstone
+    await writeMeta(meta);
+    return { id, body, updatedAt: stamp };
   },
 
   deleteNote: async ({ id }) => {
@@ -286,5 +342,26 @@ export const capacitorApi: AppApi = {
         /* not present there */
       }
     }
+    const meta = await readMeta();
+    delete meta.times[id];
+    await writeMeta(meta);
+  },
+
+  listTombstones: async () => {
+    const { tombstones } = await readMeta();
+    return Object.entries(tombstones).map(([id, deletedAt]) => ({ id, deletedAt }) as NoteTombstone);
+  },
+
+  recordTombstone: async ({ id, deletedAt }) => {
+    const meta = await readMeta();
+    meta.tombstones[id] = deletedAt;
+    delete meta.times[id];
+    await writeMeta(meta);
+  },
+
+  clearTombstones: async ({ ids }) => {
+    const meta = await readMeta();
+    for (const id of ids) delete meta.tombstones[id];
+    await writeMeta(meta);
   },
 };

@@ -54,6 +54,7 @@
     "electron": "41.0.2",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^28.1.0",
     "typescript": "5.6.3",
     "vite": "^5.4.21",

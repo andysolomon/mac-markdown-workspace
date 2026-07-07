@@ -12,6 +12,11 @@ export type SaveAsFileResult = { filePath: string } | null;
 
 export type ConfirmDiscardResult = "save" | "discard" | "cancel";
 
+/** A recorded local deletion awaiting vault sync (id + when deleted).
+    Structurally the sync engine's VaultTombstone; kept inline here so the
+    shared IPC contract doesn't depend on the sync service. */
+export type NoteTombstone = { id: string; deletedAt: number };
+
 export type AppApi = {
   getVersion: () => Promise<string>;
   openFile: () => Promise<OpenFileResult>;
@@ -37,6 +42,14 @@ export type AppApi = {
   listNotes: () => Promise<RawNote[]>;
   readNote: (payload: { id: string }) => Promise<RawNote | null>;
   createNote: (payload: { body: string }) => Promise<RawNote>;
-  writeNote: (payload: { id: string; body: string }) => Promise<RawNote>;
+  /** `updatedAt` is preserved verbatim when supplied (vault sync pulls a note
+      with its canonical timestamp); omitted for local edits, which stamp now. */
+  writeNote: (payload: { id: string; body: string; updatedAt?: number }) => Promise<RawNote>;
   deleteNote: (payload: { id: string }) => Promise<void>;
+
+  // Vault-sync deletion bookkeeping — a local delete records a tombstone so it
+  // can propagate to other devices instead of the note resurrecting on pull.
+  listTombstones: () => Promise<NoteTombstone[]>;
+  recordTombstone: (payload: { id: string; deletedAt: number }) => Promise<void>;
+  clearTombstones: (payload: { ids: string[] }) => Promise<void>;
 };
