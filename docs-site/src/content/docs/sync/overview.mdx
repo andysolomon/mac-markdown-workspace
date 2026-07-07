@@ -1,0 +1,101 @@
+---
+title: Passwordless sync — concept & threat model
+description: One encrypted vault per library, addressed by a public code and unlocked by a passphrase that never leaves the device.
+---
+
+import Mermaid from "../../../components/Mermaid.astro";
+
+Cloud sync is **passwordless** and **end-to-end encrypted**. There are no
+accounts. One **vault** is a single encrypted copy of the entire notes library,
+living in S3 and addressed by a **vault code** the user copies between devices. A
+**passphrase** — never sent to the server — derives the crypto keys on-device. The
+server and S3 only ever see ciphertext.
+
+<Mermaid code={`flowchart TB
+  subgraph A [Device A]
+    direction LR
+    LA[Local library] --> EA[Encrypt snapshot]
+  end
+  EA -->|PUT snapshot + bearer token| AUTH[Vercel API — write-token check]
+  AUTH --> BLOB[(S3 — snapshot.enc)]
+  BLOB -->|GET snapshot| DC[Decrypt]
+  subgraph B [Device B]
+    direction LR
+    DC --> LB[Local library]
+  end`} />
+
+## Two secrets, two jobs
+
+| Secret          | Purpose                                                        | Stored where                                             |
+| --------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| **Vault ID**    | Public address of the vault in S3; needed on every device     | Settings (`syncVaultId`) — safe to display as "Sync code" |
+| **Passphrase**  | Derives the encryption + write keys via scrypt + HKDF          | **Never persisted** — held in memory only during a sync   |
+
+From the passphrase, entirely client-side:
+
+- an **encryption key** → AES-256-GCM encrypt/decrypt of the note bundle;
+- a **write token** → sent as a bearer token on uploads. The server stores only
+  `SHA-256(writeToken)`, set once at vault creation.
+
+Anyone who discovers the Vault ID alone gets ciphertext they cannot read and
+cannot overwrite.
+
+## What gets uploaded
+
+A single encrypted **snapshot** of the whole library, not per-note objects:
+
+```json
+{
+  "version": 1,
+  "notes": [{ "id": "…", "body": "…", "updatedAt": 1730000000 }],
+  "deletedIds": ["…"],
+  "syncedAt": 1730000000
+}
+```
+
+```text
+s3://…/vaults/{vaultId}/
+  snapshot.enc   # ciphertext + nonce + tag
+  meta.json      # advisory-only { updatedAt, size } for cheap HEAD
+  auth.json      # private: SHA-256(writeToken)
+```
+
+## Threat model
+
+- **Vault ID + passphrase = full access.** There is no account recovery: a lost
+  passphrase means unrecoverable data, by design. The UI states this plainly.
+- **Offline brute force is the real risk.** Anyone with the Vault ID and a copy of
+  the ciphertext can attack the passphrase unthrottled, so key derivation is
+  deliberately expensive (scrypt `N=2¹⁷`) and a minimum passphrase length is
+  enforced at vault creation.
+- **No cross-vault splicing.** The AES-GCM envelope authenticates `mmw-v1:<vaultId>`
+  as associated data, so a snapshot cannot be replayed into another vault or
+  reinterpreted under a future envelope version.
+- **The server is untrusted for confidentiality.** It never holds keys or
+  plaintext; it enforces only *write* authorization (the token hash) and integrity
+  (conditional writes).
+
+See [Crypto & sync engine](/sync/crypto-engine/) for the derivation and merge, and
+[API & storage](/sync/api-storage/) for the server side.
+
+## iCloud vs. the vault
+
+The encrypted vault is the chosen cross-device path — it covers iPad ↔ iPhone ↔
+web. A native iCloud-Drive container bridge was scoped but **intentionally
+deferred**: it would only add Apple-device ↔ Apple-device, cannot include the web
+app, and running both at once risks divergent copies.
+
+<Mermaid code={`flowchart TB
+  subgraph ios [Apple devices]
+    iPad -. iCloud Drive - deferred .-> iPhone
+  end
+  Web[Web / IndexedDB]
+  subgraph cloud [Encrypted S3 vault]
+    Vault[snapshot.enc]
+  end
+  iPad -->|E2E vault sync| Vault
+  iPhone -->|E2E vault sync| Vault
+  Web -->|E2E vault sync| Vault`} />
+
+See [iOS storage & iCloud](/platforms/ios-storage/) for why the native bridge is
+parked.

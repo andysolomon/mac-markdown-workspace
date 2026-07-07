@@ -1,0 +1,41 @@
+---
+// Build-safe Mermaid: the diagram source is emitted as the text content of a
+// <pre class="mermaid"> and rendered CLIENT-SIDE from the bundled mermaid
+// package. No headless browser at build time, so `astro build` stays
+// deterministic. `not-content` opts the block out of Starlight's prose styles.
+interface Props {
+  code: string;
+}
+const { code } = Astro.props;
+---
+
+<pre class="mermaid not-content">{code}</pre>
+
+<script>
+  import mermaid from "mermaid";
+
+  const theme = () =>
+    document.documentElement.dataset.theme === "dark" ? "dark" : "neutral";
+
+  const render = () => {
+    // Reset already-processed nodes so a theme flip can re-render.
+    document.querySelectorAll<HTMLElement>("pre.mermaid[data-processed]").forEach((el) => {
+      if (el.dataset.src) {
+        el.textContent = el.dataset.src;
+        el.removeAttribute("data-processed");
+      }
+    });
+    document.querySelectorAll<HTMLElement>("pre.mermaid:not([data-processed])").forEach((el) => {
+      if (!el.dataset.src) el.dataset.src = el.textContent ?? "";
+    });
+    mermaid.initialize({ startOnLoad: false, theme: theme(), securityLevel: "strict" });
+    void mermaid.run({ querySelector: "pre.mermaid" });
+  };
+
+  render();
+  // Re-render when Starlight's theme toggle flips data-theme on <html>.
+  new MutationObserver(render).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+</script>

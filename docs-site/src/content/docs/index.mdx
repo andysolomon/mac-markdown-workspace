@@ -1,0 +1,46 @@
+---
+title: Mac Markdown Workspace
+description: A local-first Markdown notes app that ships to macOS, web, and iOS from one React codebase — with passwordless, end-to-end-encrypted cloud sync.
+template: splash
+hero:
+  tagline: One React codebase → macOS, the browser, and iOS. Local-first notes, structure-colored Markdown, and passwordless end-to-end-encrypted sync.
+  actions:
+    - text: How the sync works
+      link: /sync/overview/
+      icon: right-arrow
+    - text: Live demo
+      link: https://mac-markdown-workspace.vercel.app
+      icon: external
+      variant: minimal
+    - text: Source
+      link: https://github.com/andrewsolomon/mac-markdown-workspace
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+These are the engineering docs for **Mac Markdown Workspace** — a Bear-inspired,
+local-first Markdown notes workspace. The interesting parts aren't the UI; they're
+the seams that let *one* component tree run natively on three very different hosts,
+and a cloud-sync design that never sees your notes.
+
+<CardGrid stagger>
+  <Card title="One tree, three hosts" icon="laptop">
+    Every component is UI-only and platform-agnostic. All host capability flows
+    through a single typed `window.appApi`. Electron, web, and iOS each supply
+    their own shim. [Read the abstraction →](/architecture/platform-abstraction/)
+  </Card>
+  <Card title="Zero-knowledge sync" icon="approve-check">
+    A passphrase never leaves the device. The server and S3 only ever store
+    ciphertext plus a hash of a write token. [Threat model →](/sync/overview/)
+  </Card>
+  <Card title="Structure is colored, prose is not" icon="pencil">
+    Heading hashes, bullets, quote bars, and link brackets carry the theme accent
+    in both editor and preview; your words stay neutral. [Design system →](/architecture/design-system/)
+  </Card>
+  <Card title="Verified, not assumed" icon="rocket">
+    Crypto round-trips, 3-device merge convergence, and the live API contract are
+    exercised by tests and adversarial review. [Crypto & engine →](/sync/crypto-engine/)
+  </Card>
+</CardGrid>

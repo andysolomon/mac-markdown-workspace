@@ -1,0 +1,10 @@
+# Astro / Starlight build artifacts and deps (docs site is its own package)
+node_modules/
+dist/
+.astro/
+.vercel/
+
+# environment / logs
+.env
+.env.production
+*.log
