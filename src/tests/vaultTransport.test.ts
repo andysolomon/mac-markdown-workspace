@@ -76,11 +76,13 @@ describe("vaultHttpTransport", () => {
     expect(headersOf(2)["x-vault-if-none-match"]).toBeUndefined();
   });
 
-  it("putSnapshot raises VaultConflictError on 412 and a clear error on 403", async () => {
+  it("putSnapshot maps each status to the right error and never loops on non-412", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(412, { error: "conflict" }))
-      .mockResolvedValueOnce(jsonResponse(403, { error: "bad token" }));
+      .mockResolvedValueOnce(jsonResponse(403, { error: "bad token" }))
+      .mockResolvedValueOnce(jsonResponse(413, { error: "too big" }))
+      .mockResolvedValueOnce(jsonResponse(404, { error: "gone" }));
     vi.stubGlobal("fetch", fetchMock);
     const t = createHttpVaultTransport();
     const envelope = { v: 1 as const, nonce: "bm9uY2U=", ct: "Y3Q=" };
@@ -89,6 +91,8 @@ describe("vaultHttpTransport", () => {
       VaultConflictError,
     );
     await expect(t.putSnapshot(VAULT_ID, "t", envelope)).rejects.toThrow(/write token/);
+    await expect(t.putSnapshot(VAULT_ID, "t", envelope)).rejects.toThrow(/too large/);
+    await expect(t.putSnapshot(VAULT_ID, "t", envelope)).rejects.toThrow(/no longer exists/);
   });
 });
 
@@ -105,10 +109,16 @@ describe("api vault validation helpers", () => {
     expect(isValidTokenHash("ab".repeat(32))).toBe(true);
     expect(isValidTokenHash("AB".repeat(32))).toBe(false);
     expect(isValidTokenHash("ab".repeat(31))).toBe(false);
-    expect(isValidEnvelope({ v: 1, nonce: "a", ct: "b" })).toBe(true);
-    expect(isValidEnvelope({ v: 2, nonce: "a", ct: "b" })).toBe(false);
-    expect(isValidEnvelope({ v: 1, nonce: 3, ct: "b" })).toBe(false);
+    expect(isValidEnvelope({ v: 1, nonce: "bm9uY2U=", ct: "Y3Q=" })).toBe(true);
+    expect(isValidEnvelope({ v: 2, nonce: "bm9uY2U=", ct: "Y3Q=" })).toBe(false);
+    expect(isValidEnvelope({ v: 1, nonce: 3, ct: "Y3Q=" })).toBe(false);
     expect(isValidEnvelope(null)).toBe(false);
+    // Reject markup / non-base64 in ct (the XSS vector) and extra keys.
+    expect(isValidEnvelope({ v: 1, nonce: "bm9uY2U=", ct: "</x><script>alert(1)</script>" })).toBe(
+      false,
+    );
+    expect(isValidEnvelope({ v: 1, nonce: "bm9uY2U=", ct: "Y3Q=", extra: "x" })).toBe(false);
+    expect(isValidEnvelope({ v: 1, nonce: "", ct: "Y3Q=" })).toBe(false);
   });
 
   it("matches write tokens against their stored hash in constant time", () => {

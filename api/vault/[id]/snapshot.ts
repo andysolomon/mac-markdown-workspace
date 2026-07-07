@@ -37,6 +37,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       }
       if (snapshot.etag) res.setHeader("ETag", snapshot.etag);
       res.setHeader("Cache-Control", "no-store");
+      // Set the type EXPLICITLY: @vercel/node's res.send() defaults a string
+      // body to text/html, which would let a crafted `ct` field execute as
+      // script on this origin. nosniff is belt-and-suspenders.
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("X-Content-Type-Options", "nosniff");
       res.status(200).send(snapshot.envelope);
       return;
     }

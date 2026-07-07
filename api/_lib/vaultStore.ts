@@ -40,13 +40,12 @@ export function isValidTokenHash(hash: unknown): hash is string {
 
 /** Constant-time check of a presented bearer token against the stored hash. */
 export function writeTokenMatches(presentedToken: string, storedHashHex: string): boolean {
+  // Reject a malformed stored hash outright: Buffer.from(..,"hex") doesn't
+  // throw on bad input, it silently drops chars and returns a short buffer,
+  // so the length check below is the real guard — make the intent explicit.
+  if (!isValidTokenHash(storedHashHex)) return false;
   const presented = createHash("sha256").update(presentedToken, "utf8").digest();
-  let stored: Buffer;
-  try {
-    stored = Buffer.from(storedHashHex, "hex");
-  } catch {
-    return false;
-  }
+  const stored = Buffer.from(storedHashHex, "hex");
   if (stored.length !== presented.length) return false;
   return timingSafeEqual(presented, stored);
 }
@@ -57,10 +56,27 @@ export interface EnvelopeShape {
   ct: string;
 }
 
+const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/;
+/** A 12-byte GCM nonce is 16 base64 chars; give a little slack but keep it
+    tight so it can't smuggle markup. */
+const MAX_NONCE_LEN = 32;
+/** ct is base64 of ciphertext+tag; MAX_SNAPSHOT_BYTES bounds the whole body,
+    this just rejects obviously-wrong shapes early. */
+const MAX_CT_LEN = MAX_SNAPSHOT_BYTES;
+
+function isBase64(value: string, maxLen: number): boolean {
+  return value.length > 0 && value.length <= maxLen && BASE64_PATTERN.test(value);
+}
+
+/** Strict shape check: exactly {v:1, nonce, ct}, both base64-shaped and
+    length-bounded, no extra keys. Defense in depth — the body is re-stringified
+    and stored, and later served, so junk/markup must never get in. */
 export function isValidEnvelope(body: unknown): body is EnvelopeShape {
   if (typeof body !== "object" || body === null) return false;
   const e = body as Record<string, unknown>;
-  return e.v === 1 && typeof e.nonce === "string" && typeof e.ct === "string";
+  if (Object.keys(e).length !== 3) return false;
+  if (e.v !== 1 || typeof e.nonce !== "string" || typeof e.ct !== "string") return false;
+  return isBase64(e.nonce, MAX_NONCE_LEN) && isBase64(e.ct, MAX_CT_LEN);
 }
 
 export interface VaultMetaRecord {
@@ -228,6 +244,11 @@ export function createVaultStore(): VaultStore {
         throw new VaultStoreError(403, "Invalid write token");
       }
       const etag = await putObject(env, key(env, vaultId, "snapshot.enc"), envelopeJson, conditions);
+      // meta.json is ADVISORY ONLY. The snapshot write above is the atomic,
+      // conditional source of truth; this second unconditional PUT is not
+      // ordered against concurrent writers, so meta.updatedAt can momentarily
+      // regress. Phase C must derive "is remote newer?" from the snapshot ETag
+      // (already round-tripped), never trust meta.updatedAt for skip decisions.
       const meta: VaultMetaRecord = {
         updatedAt: Date.now(),
         size: Buffer.byteLength(envelopeJson, "utf8"),

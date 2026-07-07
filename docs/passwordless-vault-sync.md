@@ -350,6 +350,13 @@ Decisions locked while addressing the Phase A security review:
 - **Infra** (account 048674617441, us-east-1): private bucket `mmw-vault-sync-048674617441` (public access blocked, SSE-S3), IAM user `mmw-vault-sync` allowed only Get/Put/List under the `mmw-sync/` prefix. Env vars set in Vercel **production** (secret is write-only "sensitive"); preview deploys intentionally unconfigured.
 - **Client**: `src/services/vaultHttpTransport.ts` implements the Phase A `VaultTransport` port over `fetch`; web uses same-origin `""`, iOS must pass the absolute production origin.
 
+### Phase B security-review round (2 passes, both addressed)
+
+- **Stored-XSS on the snapshot GET (HIGH, fixed)**: `@vercel/node`'s `res.send(string)` defaults to `Content-Type: text/html`. A crafted `ct` served from our own origin could execute script against the web app's IndexedDB. Fixed by setting `application/json` + `X-Content-Type-Options: nosniff` explicitly on the GET, and tightening `isValidEnvelope` to require exactly `{v,nonce,ct}` with base64-shaped, length-bounded fields (rejects markup and unknown keys before anything is stored).
+- **Unauthenticated create abuse (MEDIUM, mitigated)**: `POST /api/vault` is intentionally login-free, so a Vercel Firewall rate-limit rule caps it at **5 creations / minute / IP** (denies at the edge before any S3 write). Read paths stay open but are gated behind 122-bit unguessable vault ids. Firewall config lives in the Vercel project, not the repo — re-create it if the project is rebuilt.
+- **meta.json is advisory-only (LOW, documented in code)**: the snapshot's S3 conditional PUT is the atomic source of truth; the follow-up meta PUT is unordered and can transiently regress. Phase C must derive "is remote newer?" from the snapshot **ETag**, never `meta.updatedAt`.
+- Transport now maps 413 → "library too large" and 404 → "vault no longer exists"; the constant-time token check rejects a malformed stored hash explicitly rather than relying on `Buffer.from`'s silent truncation.
+
 ## Related docs
 
 - [visual-testing.md](./visual-testing.md) — Playwright screenshots, web/WebKit projects, iOS Simulator

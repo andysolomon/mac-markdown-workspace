@@ -63,6 +63,12 @@ export function createHttpVaultTransport(baseUrl = ""): VaultTransport {
       if (res.status === 401 || res.status === 403) {
         throw new Error("This device's write token was rejected — wrong passphrase?");
       }
+      if (res.status === 413) {
+        throw new Error("This library is too large to sync (snapshot exceeds the size limit).");
+      }
+      if (res.status === 404) {
+        throw new Error("This vault no longer exists on the server.");
+      }
       if (!res.ok) throw new Error(`Vault upload failed (${res.status})`);
     },
   };
