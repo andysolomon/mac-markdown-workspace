@@ -291,7 +291,12 @@ Settings copy.
 - iOS: same from [capacitorApi.ts](../src/ios/capacitorApi.ts) / app init
 - Electron (optional): same service; local `~/Documents/Mac Markdown` remains canonical offline
 
-### Phase E — iCloud ubiquity (separate track)
+### Phase E — iCloud ubiquity (separate track) — DEFERRED
+
+Parked by decision on 2026-07-06: S3 vault sync (A–D) is the shipped cross-device
+solution and covers iPad ↔ iPhone ↔ web. iCloud Drive would only add
+Apple-device ↔ Apple-device, excludes the web app, and running both risks
+divergent copies (Part 2). Not started; the plan below stands if it's ever revived.
 
 - Native Capacitor plugin or bridge to write `notes/` into the ubiquity container
 - Update [ios-icloud.md](./ios-icloud.md) when landed
@@ -325,7 +330,7 @@ Settings copy.
 - [x] Create Vercel API routes + private S3 bucket with write-token auth (Phase B, issue #20)
 - [x] Settings panel: enable sync, show vault ID, link device, sync now, passphrase modal (Phase C/D, issue #21)
 - [x] Hook vault sync into web and iOS app init / manual sync trigger (Phase C/D, issue #21)
-- [ ] Separate track: native bridge for true iCloud Documents container ([ios-icloud.md](./ios-icloud.md) steps)
+- [ ] Separate track: native bridge for true iCloud Documents container ([ios-icloud.md](./ios-icloud.md) steps) — **intentionally deferred (2026-07-06)**: the S3 vault (Phases A–D) already syncs iPad ↔ iPhone ↔ web, so the iCloud ubiquity bridge is redundant for the cross-device need; it also can't include the web app and would risk divergent copies if run alongside the vault (see Part 2). Revisit only if an Apple-only, no-account, offline-LAN sync path is wanted.
 
 ---
 
