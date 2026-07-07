@@ -1,37 +1,44 @@
 import React from "react";
 
 export function EditorChrome({
-  onToggleList,
+  onBack,
+  onForward,
+  canBack,
+  canForward,
   onFontClick,
   onNewNote,
   onSettingsClick,
 }: {
-  onToggleList: () => void;
+  onBack: () => void;
+  onForward: () => void;
+  canBack: boolean;
+  canForward: boolean;
   onFontClick: () => void;
   onNewNote: () => void;
   onSettingsClick: () => void;
 }) {
   return (
     <div className="mm-topbar">
-      <button
-        type="button"
-        className="mm-listicon"
-        aria-label="Toggle list"
-        onClick={onToggleList}
-      >
-        <div className="r">
-          <span />
-          <span />
-        </div>
-        <div className="r">
-          <span />
-          <span />
-        </div>
-        <div className="r">
-          <span />
-          <span />
-        </div>
-      </button>
+      <div className="mm-nav">
+        <button
+          type="button"
+          className="mm-nav-btn"
+          aria-label="Back"
+          onClick={onBack}
+          disabled={!canBack}
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          className="mm-nav-btn"
+          aria-label="Forward"
+          onClick={onForward}
+          disabled={!canForward}
+        >
+          ›
+        </button>
+      </div>
       <button type="button" className="mm-aa" onClick={onFontClick}>
         Aa
       </button>

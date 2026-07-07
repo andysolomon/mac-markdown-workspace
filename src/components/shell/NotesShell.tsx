@@ -255,9 +255,14 @@ export function NotesShell() {
       {showEditor && (
         <section className="mm-editor">
           <EditorChrome
-            onToggleList={() =>
-              isNarrow ? setMobilePage("list") : setPanelsOpen((v) => !v)
+            onBack={() =>
+              isNarrow ? setMobilePage("list") : setPanelsOpen(true)
             }
+            onForward={() =>
+              isNarrow ? setMobilePage("editor") : setPanelsOpen(false)
+            }
+            canBack={isNarrow ? mobilePage !== "sidebar" : !panelsOpen}
+            canForward={isNarrow ? mobilePage !== "editor" : panelsOpen}
             onFontClick={() => setFontOpen((v) => !v)}
             onNewNote={handleNewNote}
             onSettingsClick={() => setSettingsOpen((v) => !v)}

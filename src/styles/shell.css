@@ -118,7 +118,7 @@
   flex: none;
 }
 
-.mm-listicon,
+.mm-nav-btn,
 .mm-aa,
 .mm-plus,
 .mm-more {
@@ -129,30 +129,25 @@
   font-family: inherit;
 }
 
-.mm-listicon {
+/* Back/forward chevrons: step through library › list › editor. */
+.mm-nav {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  gap: 14px;
   color: var(--mm-accent);
 }
 
-.mm-listicon .r {
-  display: flex;
-  align-items: center;
-  gap: 7px;
+.mm-nav-btn {
+  font-size: 30px;
+  font-weight: var(--mm-w-bold);
+  line-height: 1;
+  color: var(--mm-accent);
 }
 
-.mm-listicon .r span:first-child {
-  width: 5px;
-  height: 5px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-.mm-listicon .r span:last-child {
-  width: 22px;
-  height: 2px;
-  background: currentColor;
+.mm-nav-btn:disabled {
+  color: var(--mm-faint);
+  opacity: 0.45;
+  cursor: default;
 }
 
 .mm-aa {
@@ -544,7 +539,7 @@
 }
 
 /* Mobile: the bottom bar owns Aa and + — don't duplicate them in the topbar
-   (issue #15 / W-000014). Settings ("…") and the list icon stay on top. */
+   (issue #15 / W-000014). Settings ("…") stays on top. */
 @media (max-width: 640px) {
   .mm-topbar .mm-aa,
   .mm-topbar .mm-plus {
@@ -670,9 +665,9 @@
 }
 
 @media (max-width: 640px) {
-  /* Editor page top stays quiet — back lives in the bottom bar; the list
-     icon read as a hamburger and duplicated navigation. */
-  .mm-topbar .mm-listicon {
+  /* Editor page top stays quiet — back lives in the bottom bar, so the
+     topbar chevrons would duplicate navigation. */
+  .mm-topbar .mm-nav {
     display: none;
   }
 
