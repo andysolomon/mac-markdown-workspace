@@ -246,7 +246,10 @@ export function createVaultStore(): VaultStore {
 export function applyCors(req: VercelRequest, res: VercelResponse): boolean {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, If-Match, If-None-Match");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Vault-If-Match, X-Vault-If-None-Match",
+  );
   res.setHeader("Access-Control-Expose-Headers", "ETag");
   if (req.method === "OPTIONS") {
     res.status(204).end();

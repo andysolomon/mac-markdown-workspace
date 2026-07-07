@@ -50,8 +50,9 @@ export function createHttpVaultTransport(baseUrl = ""): VaultTransport {
         authorization: `Bearer ${writeToken}`,
       };
       if (opts && opts.ifMatch !== undefined) {
-        if (opts.ifMatch === null) headers["if-none-match"] = "*";
-        else headers["if-match"] = opts.ifMatch;
+        // Custom names: Vercel's edge consumes standard conditional headers.
+        if (opts.ifMatch === null) headers["x-vault-if-none-match"] = "*";
+        else headers["x-vault-if-match"] = opts.ifMatch;
       }
       const res = await fetch(url(`/${vaultId}/snapshot`), {
         method: "PUT",

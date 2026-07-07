@@ -68,12 +68,12 @@ describe("vaultHttpTransport", () => {
     await t.putSnapshot(VAULT_ID, "token", envelope);
 
     const headersOf = (i: number) => (fetchMock.mock.calls[i][1] as RequestInit).headers as Record<string, string>;
-    expect(headersOf(0)["if-match"]).toBe('"rev-7"');
+    expect(headersOf(0)["x-vault-if-match"]).toBe('"rev-7"');
     expect(headersOf(0).authorization).toBe("Bearer token");
-    expect(headersOf(1)["if-none-match"]).toBe("*");
-    expect(headersOf(1)["if-match"]).toBeUndefined();
-    expect(headersOf(2)["if-match"]).toBeUndefined();
-    expect(headersOf(2)["if-none-match"]).toBeUndefined();
+    expect(headersOf(1)["x-vault-if-none-match"]).toBe("*");
+    expect(headersOf(1)["x-vault-if-match"]).toBeUndefined();
+    expect(headersOf(2)["x-vault-if-match"]).toBeUndefined();
+    expect(headersOf(2)["x-vault-if-none-match"]).toBeUndefined();
   });
 
   it("putSnapshot raises VaultConflictError on 412 and a clear error on 403", async () => {

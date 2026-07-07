@@ -13,8 +13,11 @@ import {
  * rides along in the ETag header as the optimistic-concurrency version tag.
  *
  * PUT /api/vault/:id/snapshot — requires `Authorization: Bearer <writeToken>`.
- * `If-Match: <etag>` / `If-None-Match: *` map onto S3 conditional writes, so
- * a concurrent device's push surfaces as 412 (client re-merges and retries).
+ * `X-Vault-If-Match: <etag>` / `X-Vault-If-None-Match: *` map onto S3
+ * conditional writes, so a concurrent device's push surfaces as 412 (client
+ * re-merges and retries). Custom header names because Vercel's edge proxy
+ * consumes the standard If-Match/If-None-Match itself (it 304'd a PUT and
+ * stripped the condition before the function ran).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (applyCors(req, res)) return;
@@ -54,8 +57,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         res.status(413).json({ error: "Snapshot too large" });
         return;
       }
-      const ifMatch = req.headers["if-match"];
-      const ifNoneMatch = req.headers["if-none-match"];
+      const ifMatch = req.headers["x-vault-if-match"];
+      const ifNoneMatch = req.headers["x-vault-if-none-match"];
       const conditions =
         ifNoneMatch === "*"
           ? { ifMatch: null }
