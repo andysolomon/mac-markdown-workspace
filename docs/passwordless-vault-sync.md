@@ -323,8 +323,8 @@ Settings copy.
 - [x] Add `vaultCrypto.ts`: scrypt/HKDF key derivation + AES-256-GCM snapshot envelope (Phase A, issue #19)
 - [x] Add `vaultSync.ts`: pack/unpack `RawNote[]`, LWW merge, pull/push orchestration (Phase A, issue #19)
 - [x] Create Vercel API routes + private S3 bucket with write-token auth (Phase B, issue #20)
-- [ ] Settings panel: enable sync, show vault ID, link device, sync now, passphrase modal
-- [ ] Hook vault sync into web and iOS app init / manual sync trigger
+- [x] Settings panel: enable sync, show vault ID, link device, sync now, passphrase modal (Phase C/D, issue #21)
+- [x] Hook vault sync into web and iOS app init / manual sync trigger (Phase C/D, issue #21)
 - [ ] Separate track: native bridge for true iCloud Documents container ([ios-icloud.md](./ios-icloud.md) steps)
 
 ---

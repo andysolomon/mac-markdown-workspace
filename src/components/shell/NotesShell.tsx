@@ -73,7 +73,8 @@ export function NotesShell() {
   useEffect(() => {
     const onOpen = (e: Event) => {
       const auto = (e as CustomEvent<{ auto?: boolean }>).detail?.auto ?? false;
-      setSyncModal({ open: true, auto });
+      // An auto nudge must never hijack a modal the user already has open.
+      setSyncModal((prev) => (prev.open ? prev : { open: true, auto }));
     };
     window.addEventListener(OPEN_SYNC_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_SYNC_EVENT, onOpen);

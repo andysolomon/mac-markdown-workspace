@@ -1,9 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSettingsStore } from "../../services/settingsStore";
 import { MIN_PASSPHRASE_LENGTH } from "../../services/vaultSync";
 import { enableSync, linkDevice, syncNow, disableSync } from "../../services/vaultSyncController";
 
 type View = "intro" | "enable" | "link" | "sync" | "manage";
+
+function isCapacitor(): boolean {
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  return cap?.isNativePlatform?.() === true;
+}
 
 function relativeTime(ts: number | null): string {
   if (!ts) return "never";
@@ -46,6 +51,7 @@ export function SyncModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Re-derive the entry view each time the modal opens; wipe secrets on close.
   useEffect(() => {
@@ -61,11 +67,43 @@ export function SyncModal({
     }
   }, [open, initialView]);
 
+  // Escape closes (never mid-operation); Tab is trapped within the dialog so
+  // focus can't wander into the app behind an aria-modal dialog.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, busy, onClose]);
+
   if (!open) return null;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
+    // Yield one frame so the "Encrypting…"/"Syncing…" label actually paints
+    // before scrypt (N=2^17, synchronous) blocks the main thread for ~1-2s.
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     try {
       await fn();
     } catch (e) {
@@ -120,18 +158,36 @@ export function SyncModal({
     }
   };
 
+  const onSubmit = (fn: () => void) => (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!busy) fn();
+  };
+
+  const errorNode = error ? (
+    <p className="mm-sync-error" aria-live="assertive">
+      {error}
+    </p>
+  ) : null;
+
   return (
-    <div className="mm-modal-scrim" onMouseDown={onClose}>
+    <div className="mm-modal-scrim" onMouseDown={() => !busy && onClose()}>
       <div
         className="mm-modal mm-sync-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Cloud Sync"
+        aria-labelledby="mm-sync-title"
+        ref={dialogRef}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <header className="mm-modal-head">
-          <h2>Cloud Sync</h2>
-          <button type="button" className="mm-modal-x" onClick={onClose} aria-label="Close">
+          <h2 id="mm-sync-title">Cloud Sync</h2>
+          <button
+            type="button"
+            className="mm-modal-x"
+            onClick={onClose}
+            disabled={busy}
+            aria-label="Close"
+          >
             ✕
           </button>
         </header>
@@ -142,11 +198,17 @@ export function SyncModal({
               Sync your notes across devices with end-to-end encryption. Your passphrase never
               leaves this device — the server only ever stores ciphertext.
             </p>
+            {isCapacitor() ? (
+              <p className="mm-sync-note">
+                Different from the <strong>iCloud</strong> storage option: iCloud only backs up
+                files within your Apple devices and isn't end-to-end encrypted by this app. Cloud
+                Sync works across web, desktop, and iOS, encrypted so that only your passphrase can
+                unlock it.
+              </p>
+            ) : null}
             <p className="mm-sync-note">
-              This is separate from the iOS <strong>iCloud</strong> storage option: iCloud keeps a
-              copy of your files in Apple's cloud, but doesn't reliably sync edits between an iPad
-              and iPhone. Cloud Sync does, on any platform — at the cost of a passphrase you must
-              remember, because <strong>lost passphrases can't be recovered</strong>.
+              The catch: your passphrase is the only key to your notes, and{" "}
+              <strong>a lost passphrase can't be recovered</strong>. Keep it somewhere safe.
             </p>
             <div className="mm-modal-actions">
               <button type="button" className="mm-btn-primary" onClick={() => setView("enable")}>
@@ -160,7 +222,7 @@ export function SyncModal({
         ) : null}
 
         {view === "enable" ? (
-          <div className="mm-modal-body">
+          <form className="mm-modal-body" onSubmit={onSubmit(doEnable)}>
             <p className="mm-sync-note">
               Choose a strong passphrase. It's the only key to your notes — write it down
               somewhere safe. It's never stored or sent anywhere.
@@ -185,25 +247,25 @@ export function SyncModal({
                 onChange={(e) => setConfirm(e.target.value)}
               />
             </label>
-            {error ? <p className="mm-sync-error">{error}</p> : null}
+            {errorNode}
             <div className="mm-modal-actions">
-              <button
-                type="button"
-                className="mm-btn-primary"
-                onClick={doEnable}
-                disabled={busy}
-              >
+              <button type="submit" className="mm-btn-primary" disabled={busy}>
                 {busy ? "Encrypting…" : "Create vault"}
               </button>
-              <button type="button" className="mm-btn-ghost" onClick={() => setView("intro")}>
+              <button
+                type="button"
+                className="mm-btn-ghost"
+                onClick={() => setView("intro")}
+                disabled={busy}
+              >
                 Back
               </button>
             </div>
-          </div>
+          </form>
         ) : null}
 
         {view === "link" ? (
-          <div className="mm-modal-body">
+          <form className="mm-modal-body" onSubmit={onSubmit(doLink)}>
             <p className="mm-sync-note">
               Enter the sync code from your other device, plus the passphrase you chose there.
             </p>
@@ -229,20 +291,25 @@ export function SyncModal({
                 onChange={(e) => setPassphrase(e.target.value)}
               />
             </label>
-            {error ? <p className="mm-sync-error">{error}</p> : null}
+            {errorNode}
             <div className="mm-modal-actions">
-              <button type="button" className="mm-btn-primary" onClick={doLink} disabled={busy}>
+              <button type="submit" className="mm-btn-primary" disabled={busy}>
                 {busy ? "Linking…" : "Link device"}
               </button>
-              <button type="button" className="mm-btn-ghost" onClick={() => setView("intro")}>
+              <button
+                type="button"
+                className="mm-btn-ghost"
+                onClick={() => setView("intro")}
+                disabled={busy}
+              >
                 Back
               </button>
             </div>
-          </div>
+          </form>
         ) : null}
 
         {view === "sync" ? (
-          <div className="mm-modal-body">
+          <form className="mm-modal-body" onSubmit={onSubmit(doSync)}>
             <p className="mm-sync-note">Enter your passphrase to sync this device.</p>
             <label className="mm-field">
               <span>Passphrase</span>
@@ -252,25 +319,23 @@ export function SyncModal({
                 autoComplete="current-password"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && passphrase && !busy) doSync();
-                }}
               />
             </label>
-            {error ? <p className="mm-sync-error">{error}</p> : null}
+            {errorNode}
             <div className="mm-modal-actions">
-              <button type="button" className="mm-btn-primary" onClick={doSync} disabled={busy}>
+              <button type="submit" className="mm-btn-primary" disabled={busy || !passphrase}>
                 {busy ? "Syncing…" : "Sync now"}
               </button>
               <button
                 type="button"
                 className="mm-btn-ghost"
                 onClick={enabled ? () => setView("manage") : onClose}
+                disabled={busy}
               >
                 {enabled ? "Back" : "Cancel"}
               </button>
             </div>
-          </div>
+          </form>
         ) : null}
 
         {view === "manage" ? (
@@ -288,7 +353,7 @@ export function SyncModal({
               Enter this code and your passphrase on another device to sync it. Last synced{" "}
               {relativeTime(lastSyncedAt)}.
             </p>
-            {error ? <p className="mm-sync-error">{error}</p> : null}
+            {errorNode}
             <div className="mm-modal-actions">
               <button type="button" className="mm-btn-primary" onClick={() => setView("sync")}>
                 Sync now

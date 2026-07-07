@@ -10,6 +10,7 @@ import {
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useNotesStore } from "../services/notesStore";
 import { useSettingsStore } from "../services/settingsStore";
+import { openSyncModal } from "./shell/SettingsPanel";
 
 const MD_EXTENSIONS = [".md", ".markdown", ".mdx", ".txt"];
 
@@ -98,23 +99,28 @@ export function App() {
     });
   }, [setPalette, setMode, setFont, setSize]);
 
-  // On-focus auto-sync nudge (issue #21). The passphrase is never stored, so
+  // On-return auto-sync nudge (issue #21). The passphrase is never stored, so
   // "auto" surfaces the passphrase prompt rather than syncing silently — and
-  // only when the vault is stale, throttled so it can't nag on every focus.
+  // only when the vault is stale, throttled so it can't nag. visibilitychange
+  // (not focus) fires consistently across web, Electron, and Capacitor and
+  // never on initial load. NotesShell ignores the nudge if the modal is
+  // already open, so it can't yank the view out from under an active user.
   useEffect(() => {
     const STALE_MS = 5 * 60 * 1000;
+    const BACKOFF_MS = 30 * 60 * 1000; // once nudged, back off well past the stale window
     let lastNudge = 0;
-    const onFocus = () => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
       const s = useSettingsStore.getState();
       if (!s.syncEnabled || !s.syncVaultId) return;
       const now = Date.now();
       if (now - (s.lastSyncedAt ?? 0) < STALE_MS) return;
-      if (now - lastNudge < STALE_MS) return;
+      if (now - lastNudge < BACKOFF_MS) return;
       lastNudge = now;
-      window.dispatchEvent(new CustomEvent("mm-open-sync", { detail: { auto: true } }));
+      openSyncModal(true);
     };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   // Listen for menu actions from main process

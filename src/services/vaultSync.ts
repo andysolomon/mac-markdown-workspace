@@ -302,7 +302,16 @@ async function syncOnce(
     return { pulled: 0, pushed: true, mergedCount: localNotes.length };
   }
 
-  const remote = parseSnapshot(await decryptSnapshot(encryptionKey, vaultId, snapshot.envelope));
+  let plaintext: string;
+  try {
+    plaintext = await decryptSnapshot(encryptionKey, vaultId, snapshot.envelope);
+  } catch {
+    // AES-GCM can't distinguish a wrong key from tampering; on a sync the
+    // overwhelmingly common cause is a mistyped passphrase, so say so plainly
+    // instead of surfacing a raw WebCrypto OperationError.
+    throw new Error("That passphrase doesn't match this vault.");
+  }
+  const remote = parseSnapshot(plaintext); // throws its own clear version error
   const result = mergeSnapshots(localNotes, tombstones, remote);
 
   let pulled = 0;

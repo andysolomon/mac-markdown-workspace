@@ -77,7 +77,8 @@ export async function syncNow(passphrase: string): Promise<SyncOutcome> {
 
 /** Stop syncing on THIS device. The vault and its data remain in the cloud;
     other devices are unaffected. The passphrase was never stored, so there's
-    nothing secret to clear. */
+    nothing secret to clear — and the local notes stay on disk by design
+    (this app is local-first; "turn off" is not a local wipe). */
 export async function disableSync(): Promise<void> {
   await persist({ syncEnabled: false, syncVaultId: null, lastSyncedAt: null });
   showToast("Cloud sync turned off on this device");

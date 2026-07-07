@@ -426,9 +426,10 @@ describe("vault end-to-end (fakes)", () => {
       const deviceA = fakeLocal([note("n1", "secret", 100)]);
       const { vaultId } = await createVault("right-passphrase", deviceA, transport, 100);
       const deviceB = fakeLocal([]);
+      // Surfaced as a friendly message, not a raw WebCrypto OperationError.
       await expect(
         syncVault("wrong-passphrase", vaultId, deviceB, transport, 200),
-      ).rejects.toThrow();
+      ).rejects.toThrow(/passphrase doesn't match/);
       expect(deviceB.state.size).toBe(0);
     },
     KDF_TIMEOUT,
