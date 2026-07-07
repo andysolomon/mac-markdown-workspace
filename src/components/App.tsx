@@ -84,7 +84,38 @@ export function App() {
         useSettingsStore.getState().setIosStorage(saved);
       }
     });
+    // Cloud sync (issue #21) — restore the non-secret sync config; the
+    // passphrase is never persisted, so it's re-collected at sync time.
+    void Promise.all([
+      window.appApi?.getSetting?.("syncEnabled"),
+      window.appApi?.getSetting?.("syncVaultId"),
+      window.appApi?.getSetting?.("lastSyncedAt"),
+    ]).then(([enabled, vaultId, lastSynced]) => {
+      const s = useSettingsStore.getState();
+      if (typeof enabled === "boolean") s.setSyncEnabled(enabled);
+      if (typeof vaultId === "string") s.setSyncVaultId(vaultId);
+      if (typeof lastSynced === "number") s.setLastSyncedAt(lastSynced);
+    });
   }, [setPalette, setMode, setFont, setSize]);
+
+  // On-focus auto-sync nudge (issue #21). The passphrase is never stored, so
+  // "auto" surfaces the passphrase prompt rather than syncing silently — and
+  // only when the vault is stale, throttled so it can't nag on every focus.
+  useEffect(() => {
+    const STALE_MS = 5 * 60 * 1000;
+    let lastNudge = 0;
+    const onFocus = () => {
+      const s = useSettingsStore.getState();
+      if (!s.syncEnabled || !s.syncVaultId) return;
+      const now = Date.now();
+      if (now - (s.lastSyncedAt ?? 0) < STALE_MS) return;
+      if (now - lastNudge < STALE_MS) return;
+      lastNudge = now;
+      window.dispatchEvent(new CustomEvent("mm-open-sync", { detail: { auto: true } }));
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Listen for menu actions from main process
   useEffect(() => {

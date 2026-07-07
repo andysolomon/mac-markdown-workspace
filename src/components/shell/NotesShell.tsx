@@ -3,7 +3,8 @@ import { Sidebar } from "./Sidebar";
 import { DocList } from "./DocList";
 import { EditorChrome } from "./EditorChrome";
 import { FontPopover } from "./FontPopover";
-import { SettingsPanel } from "./SettingsPanel";
+import { SettingsPanel, OPEN_SYNC_EVENT } from "./SettingsPanel";
+import { SyncModal } from "./SyncModal";
 import { BottomBar } from "./BottomBar";
 import { MarkdownAccessoryBar } from "./MarkdownAccessoryBar";
 import { useSettingsStore } from "../../services/settingsStore";
@@ -60,9 +61,23 @@ export function NotesShell() {
   const [mobilePage, setMobilePage] = useState<"sidebar" | "list" | "editor">("list");
   const [fontOpen, setFontOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [syncModal, setSyncModal] = useState<{ open: boolean; auto: boolean }>({
+    open: false,
+    auto: false,
+  });
   const [editorFocused, setEditorFocused] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const showToolbar = useSettingsStore((s) => s.showToolbar);
+
+  // Cloud Sync modal opens from the settings section and the on-focus nudge.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const auto = (e as CustomEvent<{ auto?: boolean }>).detail?.auto ?? false;
+      setSyncModal({ open: true, auto });
+    };
+    window.addEventListener(OPEN_SYNC_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SYNC_EVENT, onOpen);
+  }, []);
 
   // Quiet confirmation pill (export feedback etc.); auto-dismisses.
   useEffect(() => {
@@ -262,6 +277,11 @@ export function NotesShell() {
         </section>
       )}
       {toast ? <div className="mm-toast">{toast}</div> : null}
+      <SyncModal
+        open={syncModal.open}
+        autoSync={syncModal.auto}
+        onClose={() => setSyncModal({ open: false, auto: false })}
+      />
     </>
   );
 }

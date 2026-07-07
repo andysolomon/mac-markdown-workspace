@@ -14,9 +14,17 @@ function isCapacitor(): boolean {
  * Houses the toolbar visibility toggle (#7) and, on iOS, the notes storage
  * location (#8). Every change applies live and persists via AppApi settings.
  */
+/** Opens the Cloud Sync modal (rendered by NotesShell); `auto` jumps a
+    configured device straight to the passphrase prompt. */
+export const OPEN_SYNC_EVENT = "mm-open-sync";
+export function openSyncModal(auto = false): void {
+  window.dispatchEvent(new CustomEvent(OPEN_SYNC_EVENT, { detail: { auto } }));
+}
+
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const showToolbar = useSettingsStore((s) => s.showToolbar);
   const iosStorage = useSettingsStore((s) => s.iosStorage);
+  const syncEnabled = useSettingsStore((s) => s.syncEnabled);
   const setShowToolbar = useSettingsStore((s) => s.setShowToolbar);
   const setIosStorage = useSettingsStore((s) => s.setIosStorage);
 
@@ -93,6 +101,23 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </div>
       ) : null}
+
+      <div className="mm-pop-section">
+        <div className="mm-pop-label">Cloud Sync</div>
+        <button
+          type="button"
+          className="mm-setting-row mm-setting-action"
+          onClick={() => {
+            onClose();
+            openSyncModal(false);
+          }}
+        >
+          <span>{syncEnabled ? "Manage sync" : "Set up sync"}</span>
+          <span className={`mm-sync-status${syncEnabled ? " on" : ""}`}>
+            {syncEnabled ? "On" : "Off"}
+          </span>
+        </button>
+      </div>
 
       <div className="mm-build-id">Build {__BUILD_ID__}</div>
     </div>

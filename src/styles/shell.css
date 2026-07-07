@@ -700,3 +700,183 @@
   font-weight: var(--mm-w-bold);
   letter-spacing: -0.01em;
 }
+
+/* --- Settings: Cloud Sync section --- */
+.mm-setting-action {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--mm-text);
+  cursor: pointer;
+  padding: 6px 0;
+  font: inherit;
+}
+.mm-setting-action:hover {
+  color: var(--mm-accent);
+}
+.mm-sync-status {
+  font-size: var(--mm-ui-xs);
+  font-weight: var(--mm-w-bold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mm-faint);
+}
+.mm-sync-status.on {
+  color: var(--mm-accent);
+}
+
+/* --- Cloud Sync modal --- */
+.mm-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mm-space-4);
+  background: rgba(0, 0, 0, 0.42);
+  /* keep clear of the iOS keyboard/home indicator */
+  padding-bottom: max(var(--mm-space-4), env(safe-area-inset-bottom));
+}
+.mm-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--mm-panel);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-xl);
+  box-shadow: var(--mm-shadow-pop);
+  padding: var(--mm-space-5);
+}
+.mm-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--mm-space-4);
+}
+.mm-modal-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--mm-w-black);
+  color: var(--mm-text);
+}
+.mm-modal-x {
+  border: 0;
+  background: transparent;
+  color: var(--mm-faint);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--mm-radius-md);
+}
+.mm-modal-x:hover {
+  background: var(--mm-sel);
+  color: var(--mm-text);
+}
+.mm-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-3);
+}
+.mm-sync-lede {
+  margin: 0;
+  font-size: 15px;
+  color: var(--mm-text);
+  line-height: 1.5;
+}
+.mm-sync-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--mm-faint);
+  line-height: 1.5;
+}
+.mm-sync-error {
+  margin: 0;
+  font-size: 13px;
+  color: #d5573b;
+  line-height: 1.4;
+}
+.mm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mm-field > span {
+  font-size: var(--mm-ui-xs);
+  font-weight: var(--mm-w-bold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mm-faint);
+}
+.mm-field input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--mm-text);
+  background: var(--mm-bg);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-md);
+}
+.mm-field input:focus {
+  outline: none;
+  border-color: var(--mm-accent);
+}
+.mm-code-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-2);
+}
+.mm-sync-code {
+  flex: 1;
+  font-family: var(--mm-font-mono);
+  font-size: 13px;
+  color: var(--mm-text);
+  background: var(--mm-bg);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-md);
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.mm-modal-actions {
+  display: flex;
+  gap: var(--mm-space-2);
+  margin-top: var(--mm-space-2);
+}
+.mm-btn-primary,
+.mm-btn-ghost {
+  flex: 1;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: var(--mm-w-bold);
+  border-radius: var(--mm-radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.mm-btn-primary {
+  background: var(--mm-accent);
+  color: #fff;
+}
+.mm-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.mm-btn-ghost {
+  background: transparent;
+  color: var(--mm-text);
+  border-color: var(--mm-border);
+}
+.mm-btn-ghost:hover {
+  background: var(--mm-sel);
+}
+.mm-btn-small {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.mm-btn-danger {
+  color: #d5573b;
+}
