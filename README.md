@@ -14,12 +14,13 @@ The design system's core rule: **structure is colored, prose is not.** Heading h
 - **Four palettes × light/dark** — Teal, Forest, Gold, Crimson, each with a derived dark variant, switched live from the **Aa** popover along with nine curated editor faces and a text-size stepper. Everything persists per platform.
 - **Exports** — standalone themed **HTML**, **PDF**, TXT, and DOCX. iOS Safari delivers through the native share sheet.
 - **Mobile editing kit** — Bear-style bottom tool strip (share · Aa · +) and a markdown helper bar that rides above the on-screen keyboard (#, bold, italic, lists, tasks, quotes, code, links, indent, Done).
-- **Settings** — toolbar visibility toggle; iOS notes storage location (iCloud Documents vs on-device, see `docs/ios-icloud.md`).
+- **Cloud sync (optional)** — passwordless, end-to-end encrypted sync across devices. A passphrase (never sent anywhere) derives the keys on-device; the API and S3 only ever hold ciphertext. Link a new device by sharing a **vault code**. See [`docs/passwordless-vault-sync.md`](./docs/passwordless-vault-sync.md).
+- **Settings** — toolbar visibility toggle; Cloud Sync setup; iOS notes storage location (see `docs/ios-icloud.md`).
 - **Local-first storage** — Electron: a real folder of `.md` files in `~/Documents/Mac Markdown`; web: IndexedDB; iOS: Capacitor Filesystem under Documents.
 
 ## Tech stack
 
-React 19 · TypeScript · Vite · Zustand · CodeMirror 6 · Milkdown · Electron (Forge) · Capacitor · react-markdown (remark/rehype) · Vitest · Playwright. Package manager: **Bun**.
+React 19 · TypeScript · Vite · Zustand · CodeMirror 6 · Milkdown · Electron (Forge) · Capacitor · react-markdown (remark/rehype) · @noble crypto · Vercel Functions + AWS S3 (cloud sync) · Vitest · Playwright. Package manager: **Bun**.
 
 ## Getting started
 
@@ -48,7 +49,7 @@ bun run ios:sync       # build the web bundle + sync into the iOS project
 bun run ios:open       # open in Xcode to run on a simulator/device
 ```
 
-For Files-app visibility and iCloud Drive syncing of the notes library, see [`docs/ios-icloud.md`](./docs/ios-icloud.md).
+For Files-app visibility and on-device iOS storage options, see [`docs/ios-icloud.md`](./docs/ios-icloud.md). Cross-device syncing uses **Cloud sync** (above), not iCloud Drive — the native iCloud-container bridge is intentionally deferred in favor of the encrypted vault.
 
 ## Building
 
@@ -83,6 +84,10 @@ The components are **platform-agnostic and UI-only** — all host capability (no
 | iOS      | `src/ios/entry.tsx` | `src/ios/capacitorApi.ts` | Capacitor Filesystem (`Documents/notes`)  |
 
 Notes are raw markdown keyed by a stable id; titles, previews, and tags always **derive from content** (`src/services/notesModel.ts`), so the UI is identical everywhere. The design system lives as CSS custom properties in `src/styles/tokens/` (four palettes + derived dark variants + markdown role colors), applied via `data-theme` / `data-mode` on `<html>`.
+
+### Cloud sync
+
+An optional sync layer sits **above** the platform shims — it never replaces `AppApi`. A **vault** is one end-to-end-encrypted snapshot of the library in S3, addressed by a public **vault code** and unlocked by a passphrase that never leaves the device (scrypt + HKDF → AES-256-GCM, with the vault id bound as AEAD associated data). Merge is last-write-wins per note id with two-sided tombstones; the Vercel API stores only ciphertext and a hash of the write token, and conditional writes (S3 ETag ↔ `If-Match`) keep concurrent devices consistent. Full design, threat model, and hardening rounds: [`docs/passwordless-vault-sync.md`](./docs/passwordless-vault-sync.md).
 
 For deeper architecture notes and conventions, see [`CLAUDE.md`](./CLAUDE.md).
 
