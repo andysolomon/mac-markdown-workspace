@@ -4,10 +4,18 @@ import { commonmark } from "@milkdown/preset-commonmark";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
+import { $remark } from "@milkdown/utils";
 import { useDocumentStore } from "../services/documentStore";
+import { remarkSplitOrderedListRestarts } from "../services/remarkSplitOrderedListRestarts";
 import { WysiwygToolbar } from "./WysiwygToolbar";
 // eslint-disable-next-line import/no-unresolved
 import "@milkdown/theme-nord/style.css";
+
+/** Split blank-line `1.` restarts before Milkdown assigns list labels. */
+const remarkSplitOrderedListRestartsPlugin = $remark(
+  "remarkSplitOrderedListRestarts",
+  () => remarkSplitOrderedListRestarts,
+);
 
 function MilkdownEditorInner() {
   const initialContent = useRef(useDocumentStore.getState().content);
@@ -25,6 +33,7 @@ function MilkdownEditorInner() {
             setContent(markdown);
           });
         })
+        .use(remarkSplitOrderedListRestartsPlugin)
         .use(commonmark)
         .use(listener);
     },

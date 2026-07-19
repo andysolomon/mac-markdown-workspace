@@ -5,6 +5,7 @@ import remarkMath from "remark-math";
 import remarkEmoji from "remark-emoji";
 import rehypeKatex from "rehype-katex";
 import { MermaidBlock } from "./MermaidBlock";
+import { remarkSplitOrderedListRestarts } from "../services/remarkSplitOrderedListRestarts";
 import type { Components } from "react-markdown";
 
 interface PreviewProps {
@@ -32,7 +33,7 @@ const components: Components = {
 export const Preview = React.memo(function Preview({ content }: PreviewProps) {
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkMath, remarkEmoji]}
+      remarkPlugins={[remarkGfm, remarkSplitOrderedListRestarts, remarkMath, remarkEmoji]}
       rehypePlugins={[rehypeKatex]}
       components={components}
     >

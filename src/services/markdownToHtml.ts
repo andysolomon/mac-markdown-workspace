@@ -5,10 +5,11 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkEmoji from "remark-emoji";
 import rehypeKatex from "rehype-katex";
+import { remarkSplitOrderedListRestarts } from "./remarkSplitOrderedListRestarts";
 
 export function markdownToHtml(markdown: string): string {
   const element = React.createElement(ReactMarkdown, {
-    remarkPlugins: [remarkGfm, remarkMath, remarkEmoji],
+    remarkPlugins: [remarkGfm, remarkSplitOrderedListRestarts, remarkMath, remarkEmoji],
     rehypePlugins: [rehypeKatex],
     children: markdown,
   });

@@ -237,6 +237,24 @@ textarea {
   list-style-type: square;
 }
 
+/* Keep list body text at editor size/weight. ::marker font-weight can leak
+   into li text in some engines, and loose-list <p> wrappers were picking up
+   oversized/bold styling after Milkdown CSS loaded. */
+.preview :is(ul, ol) li,
+.wysiwyg-body :is(ul, ol) li {
+  font-size: inherit;
+  font-weight: var(--mm-w-regular, 400);
+  line-height: inherit;
+}
+
+.preview :is(ul, ol) li > p,
+.wysiwyg-body :is(ul, ol) li > p {
+  margin: 0.25em 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
 .preview :is(ul, ol) li::marker,
 .wysiwyg-body :is(ul, ol) li::marker {
   color: var(--md-marker);
