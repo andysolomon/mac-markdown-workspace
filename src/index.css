@@ -332,18 +332,50 @@ textarea {
   border-bottom: 1px solid var(--md-table-border);
 }
 
-.preview pre {
+.preview pre,
+.preview .mm-code-block pre,
+.preview .mm-code-block {
   overflow: auto;
   padding: var(--mm-space-3) var(--mm-space-4);
   border-radius: var(--mm-radius-lg);
   background: var(--md-code-bg);
   max-width: 100%;
+  /* Shiki css-variables theme */
+  --shiki-foreground: var(--md-code-plain);
+  --shiki-background: transparent;
+  --shiki-token-comment: var(--md-code-comment);
+  --shiki-token-string: var(--md-code-string);
+  --shiki-token-string-expression: var(--md-code-string);
+  --shiki-token-keyword: var(--md-code-keyword);
+  --shiki-token-constant: var(--md-code-number);
+  --shiki-token-function: var(--md-code-function);
+  --shiki-token-parameter: var(--md-code-property);
+  --shiki-token-punctuation: var(--md-code-punctuation);
+  --shiki-token-link: var(--md-link);
+  --shiki-token-inserted: var(--md-code-string);
+  --shiki-token-deleted: var(--md-code-comment);
+  --shiki-token-changed: var(--md-code-keyword);
 }
 
-.preview pre code {
+.preview .mm-code-block {
+  padding: 0;
+}
+
+.preview .mm-code-block pre {
+  margin: 0;
+}
+
+.preview pre code,
+.preview .mm-code-block code {
   background: transparent;
   padding: 0;
-  color: var(--mm-text);
+  color: var(--md-code-plain);
+  font-size: inherit;
+}
+
+.preview pre [data-line] {
+  display: inline-block;
+  width: 100%;
 }
 
 button {
@@ -486,31 +518,40 @@ button.active:hover {
   margin-top: 0.75em;
 }
 
-.wysiwyg-body .ProseMirror pre,
-.wysiwyg-body .ProseMirror code,
-.wysiwyg-body .milkdown pre,
-.wysiwyg-body .milkdown code {
+/* Inline code only — do not force color on Milkdown's CodeMirror code blocks. */
+.wysiwyg-body .ProseMirror :not(pre):not(.cm-editor) > code,
+.wysiwyg-body .milkdown :not(pre):not(.cm-editor) > code {
   background: var(--md-code-bg) !important;
   color: var(--md-code) !important;
   border-radius: var(--mm-radius-md);
-}
-
-.wysiwyg-body .ProseMirror pre code,
-.wysiwyg-body .milkdown pre code {
-  color: var(--mm-text) !important;
+  padding: 2px 4px;
+  font-size: 0.9em;
 }
 
 .wysiwyg-body .ProseMirror pre,
 .wysiwyg-body .milkdown pre {
+  background: var(--md-code-bg) !important;
   padding: var(--mm-space-3) var(--mm-space-4);
   overflow: auto;
   max-width: 100%;
+  border-radius: var(--mm-radius-md);
 }
 
-.wysiwyg-body .ProseMirror code,
-.wysiwyg-body .milkdown code {
-  padding: 2px 4px;
+/* Milkdown code-block node view (CodeMirror) — token colors from HighlightStyle. */
+.wysiwyg-body .milkdown-code-block,
+.wysiwyg-body [data-milkdown-code-block],
+.wysiwyg-body .cm-editor {
+  --shiki-foreground: var(--md-code-plain);
+  background: var(--md-code-bg);
+  color: var(--md-code-plain);
+  border-radius: var(--mm-radius-md);
+  font-family: var(--mm-font-mono);
   font-size: 0.9em;
+}
+
+.wysiwyg-body .cm-editor .cm-scroller {
+  font-family: var(--mm-font-mono);
+  line-height: var(--mm-lh-body);
 }
 
 /* Mobile / Desktop visibility */

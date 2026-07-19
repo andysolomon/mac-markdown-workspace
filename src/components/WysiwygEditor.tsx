@@ -4,8 +4,12 @@ import { commonmark } from "@milkdown/preset-commonmark";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
+// eslint-disable-next-line import/no-unresolved -- package exports subpath
+import { codeBlockComponent, codeBlockConfig } from "@milkdown/components/code-block";
 import { $remark } from "@milkdown/utils";
 import { useDocumentStore } from "../services/documentStore";
+import { languages } from "../services/codeLanguages";
+import { macMarkdownSyntaxHighlighting } from "../services/markdownEditorTheme";
 import { remarkSplitOrderedListRestarts } from "../services/remarkSplitOrderedListRestarts";
 import { WysiwygToolbar } from "./WysiwygToolbar";
 // eslint-disable-next-line import/no-unresolved
@@ -28,6 +32,13 @@ function MilkdownEditorInner() {
         .config((ctx) => {
           ctx.set(rootCtx, root);
           ctx.set(defaultValueCtx, initialContent.current);
+          ctx.update(codeBlockConfig.key, (defaultConfig) => ({
+            ...defaultConfig,
+            // Cast: language-data may resolve a nested @codemirror/language
+            // copy at typecheck time; Vite dedupes to one instance at runtime.
+            languages: languages as unknown as typeof defaultConfig.languages,
+            extensions: [macMarkdownSyntaxHighlighting],
+          }));
           const l = ctx.get(listenerCtx);
           l.markdownUpdated((_ctx, markdown) => {
             setContent(markdown);
@@ -35,6 +46,7 @@ function MilkdownEditorInner() {
         })
         .use(remarkSplitOrderedListRestartsPlugin)
         .use(commonmark)
+        .use(codeBlockComponent)
         .use(listener);
     },
     [setContent],

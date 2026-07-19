@@ -5,6 +5,7 @@ import remarkMath from "remark-math";
 import remarkEmoji from "remark-emoji";
 import rehypeKatex from "rehype-katex";
 import { MermaidBlock } from "./MermaidBlock";
+import { FencedCodeBlock } from "./FencedCodeBlock";
 import { remarkSplitOrderedListRestarts } from "../services/remarkSplitOrderedListRestarts";
 import type { Components } from "react-markdown";
 
@@ -12,21 +13,35 @@ interface PreviewProps {
   content: string;
 }
 
+function languageFromClassName(className?: string): string | undefined {
+  const match = /language-([\w#+-]+)/.exec(className || "");
+  return match?.[1];
+}
+
 const components: Components = {
   code({ className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || "");
-    const lang = match?.[1];
+    const lang = languageFromClassName(className);
+    const code = String(children).replace(/\n$/, "");
+
+    // react-markdown passes inline code without a language class and without newlines.
+    const inline = !className && !code.includes("\n");
+    if (inline) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
 
     if (lang === "mermaid") {
-      const code = String(children).replace(/\n$/, "");
       return <MermaidBlock code={code} />;
     }
 
-    return (
-      <code className={className} {...props}>
-        {children}
-      </code>
-    );
+    return <FencedCodeBlock code={code} language={lang} />;
+  },
+  // Avoid double <pre> wrappers: FencedCodeBlock already emits <pre>.
+  pre({ children }) {
+    return <>{children}</>;
   },
 };
 

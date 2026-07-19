@@ -30,6 +30,16 @@ const TOKEN_VARS = [
   "--md-table-rule",
   "--md-rule",
   "--md-bold-weight",
+  "--md-code-plain",
+  "--md-code-keyword",
+  "--md-code-string",
+  "--md-code-comment",
+  "--md-code-number",
+  "--md-code-type",
+  "--md-code-property",
+  "--md-code-operator",
+  "--md-code-punctuation",
+  "--md-code-function",
 ] as const;
 
 function resolvedTokens(): string {
@@ -68,8 +78,25 @@ del, s { color: var(--md-strike); }
 a { color: var(--mm-link); text-decoration: underline; text-underline-offset: 3px; }
 blockquote { margin: 1em 0; padding-left: 16px; border-left: 3px solid var(--md-quote-bar); color: var(--md-quote-text); font-style: italic; }
 code { font-family: var(--mm-font-mono); color: var(--mm-code); background: var(--mm-code-bg); padding: 2px 6px; border-radius: 5px; font-size: 0.86em; }
-pre { background: var(--mm-code-bg); border-radius: 10px; padding: 14px 20px; overflow-x: auto; }
-pre code { background: transparent; padding: 0; color: var(--mm-text); }
+pre, figure[data-rehype-pretty-code-figure] pre {
+  background: var(--mm-code-bg);
+  border-radius: 10px;
+  padding: 14px 20px;
+  overflow-x: auto;
+  --shiki-foreground: var(--md-code-plain, var(--mm-text));
+  --shiki-background: transparent;
+  --shiki-token-comment: var(--md-code-comment, var(--mm-faint));
+  --shiki-token-string: var(--md-code-string, var(--mm-code));
+  --shiki-token-string-expression: var(--md-code-string, var(--mm-code));
+  --shiki-token-keyword: var(--md-code-keyword, var(--mm-accent));
+  --shiki-token-constant: var(--md-code-number, var(--mm-code));
+  --shiki-token-function: var(--md-code-function, var(--mm-text));
+  --shiki-token-parameter: var(--md-code-property, var(--mm-text));
+  --shiki-token-punctuation: var(--md-code-punctuation, var(--mm-faint));
+  --shiki-token-link: var(--mm-link);
+}
+figure[data-rehype-pretty-code-figure] { margin: 1em 0; }
+pre code { background: transparent; padding: 0; color: var(--md-code-plain, var(--mm-text)); }
 hr { border: none; border-top: 1px solid var(--md-rule); margin: 2em 0; }
 table { border-collapse: collapse; margin: 1em 0; font-size: 0.9em; }
 th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--md-table-rule); font-weight: 800; background: var(--mm-code-bg); }

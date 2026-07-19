@@ -12,8 +12,8 @@ import type { Extension } from "@codemirror/state";
  * link brackets) carries the `processingInstruction` tag, so one rule colors
  * them all with `--md-marker`.
  *
- * Every color is a CSS custom property, so switching palette or light/dark
- * mode restyles the editor live — no extension rebuild needed.
+ * Nested fenced-code languages reuse the same `--md-code-*` roles as Preview
+ * (Shiki) and WYSIWYG so palette / light-dark switches restyle live.
  */
 const macMarkdownHighlight = HighlightStyle.define([
   // Structural marks — always accent. The one rule that defines the system.
@@ -36,8 +36,40 @@ const macMarkdownHighlight = HighlightStyle.define([
   { tag: t.link, color: "var(--md-link)", textDecoration: "underline", textUnderlineOffset: "3px" },
   { tag: t.url, color: "var(--md-link)" },
 
-  // Code: its own role color, in the mono face.
+  // Untagged monospace (inline code / unknown fence lang) — fallback role.
   { tag: t.monospace, color: "var(--md-code)", fontFamily: "var(--mm-font-mono)", fontSize: "0.86em" },
+
+  // Nested fenced-code tokens (when markdown({ codeLanguages }) is enabled).
+  { tag: t.keyword, color: "var(--md-code-keyword)" },
+  { tag: t.controlKeyword, color: "var(--md-code-keyword)" },
+  { tag: t.moduleKeyword, color: "var(--md-code-keyword)" },
+  { tag: t.definitionKeyword, color: "var(--md-code-keyword)" },
+  { tag: t.operatorKeyword, color: "var(--md-code-keyword)" },
+  { tag: t.string, color: "var(--md-code-string)" },
+  { tag: t.special(t.string), color: "var(--md-code-string)" },
+  { tag: t.comment, color: "var(--md-code-comment)", fontStyle: "italic" },
+  { tag: t.lineComment, color: "var(--md-code-comment)", fontStyle: "italic" },
+  { tag: t.blockComment, color: "var(--md-code-comment)", fontStyle: "italic" },
+  { tag: t.number, color: "var(--md-code-number)" },
+  { tag: t.bool, color: "var(--md-code-number)" },
+  { tag: t.null, color: "var(--md-code-number)" },
+  { tag: t.typeName, color: "var(--md-code-type)" },
+  { tag: t.className, color: "var(--md-code-type)" },
+  { tag: t.namespace, color: "var(--md-code-type)" },
+  { tag: t.propertyName, color: "var(--md-code-property)" },
+  { tag: t.attributeName, color: "var(--md-code-property)" },
+  { tag: t.variableName, color: "var(--md-code-plain)" },
+  { tag: t.definition(t.variableName), color: "var(--md-code-plain)" },
+  { tag: t.function(t.variableName), color: "var(--md-code-function)" },
+  { tag: t.function(t.propertyName), color: "var(--md-code-function)" },
+  { tag: t.operator, color: "var(--md-code-operator)" },
+  { tag: t.punctuation, color: "var(--md-code-punctuation)" },
+  { tag: t.bracket, color: "var(--md-code-punctuation)" },
+  { tag: t.paren, color: "var(--md-code-punctuation)" },
+  { tag: t.squareBracket, color: "var(--md-code-punctuation)" },
+  { tag: t.brace, color: "var(--md-code-punctuation)" },
+  { tag: t.meta, color: "var(--md-code-comment)" },
+  { tag: t.invalid, color: "var(--md-code-string)" },
 
   // Blocks.
   { tag: t.quote, color: "var(--md-quote-text)", fontStyle: "italic" },
@@ -45,6 +77,9 @@ const macMarkdownHighlight = HighlightStyle.define([
   { tag: t.labelName, color: "var(--mm-faint)" }, // ```lang info, [link labels]
   { tag: t.atom, color: "var(--md-checkbox)", fontWeight: "700" }, // [ ] / [x] task markers
 ]);
+
+/** Highlight extension shared by Source and Milkdown code-block editors. */
+export const macMarkdownSyntaxHighlighting: Extension = syntaxHighlighting(macMarkdownHighlight);
 
 /**
  * Editor chrome: flat theme surface, accent caret, neutral selection wash,
@@ -82,5 +117,5 @@ const macMarkdownChrome = EditorView.theme({
 
 export const macMarkdownEditorTheme: Extension = [
   macMarkdownChrome,
-  syntaxHighlighting(macMarkdownHighlight),
+  macMarkdownSyntaxHighlighting,
 ];

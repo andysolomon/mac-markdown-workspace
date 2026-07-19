@@ -23,8 +23,21 @@
   --md-italic: var(--mm-text);
   --md-strike: var(--mm-faint);         /* dimmed + line-through */
   --md-link: var(--mm-link);            /* underlined, accent */
-  --md-code: var(--mm-code);            /* inline + fenced text */
+  --md-code: var(--mm-code);            /* inline + fenced fallback */
   --md-code-bg: var(--mm-code-bg);
+
+  /* Fenced-code syntax roles — Source (CodeMirror), Preview (Shiki),
+     and WYSIWYG share these so palette / light-dark switches restyle live. */
+  --md-code-plain: var(--mm-text);
+  --md-code-keyword: var(--mm-accent);
+  --md-code-string: var(--mm-code);
+  --md-code-comment: var(--mm-faint);
+  --md-code-number: var(--mm-code);
+  --md-code-type: var(--mm-accent);
+  --md-code-property: var(--mm-text);
+  --md-code-operator: var(--mm-faint);
+  --md-code-punctuation: var(--mm-faint);
+  --md-code-function: var(--mm-text);
 
   /* Blocks */
   --md-quote-text: var(--mm-faint);     /* italic, dimmed */
