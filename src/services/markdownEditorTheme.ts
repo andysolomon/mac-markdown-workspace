@@ -78,7 +78,7 @@ const macMarkdownHighlight = HighlightStyle.define([
   { tag: t.atom, color: "var(--md-checkbox)", fontWeight: "700" }, // [ ] / [x] task markers
 ]);
 
-/** Highlight extension shared by Source and Milkdown code-block editors. */
+/** Highlight extension for Source fenced code blocks. */
 export const macMarkdownSyntaxHighlighting: Extension = syntaxHighlighting(macMarkdownHighlight);
 
 /**

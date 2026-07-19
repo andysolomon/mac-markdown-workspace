@@ -40,7 +40,7 @@ export function useKeyboardShortcuts() {
           break;
         case "3":
           e.preventDefault();
-          setViewMode("wysiwyg");
+          setViewMode("preview");
           break;
       }
     };
@@ -66,8 +66,8 @@ export function useKeyboardShortcuts() {
         case "mode-split":
           setViewMode("split");
           break;
-        case "mode-wysiwyg":
-          setViewMode("wysiwyg");
+        case "mode-preview":
+          setViewMode("preview");
           break;
         case "toggle-theme": {
           cycleMode();

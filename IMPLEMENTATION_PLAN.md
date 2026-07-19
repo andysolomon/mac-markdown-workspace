@@ -22,7 +22,7 @@
 
 - **Foundation shipped (v1):** React 19 single-document editor; one platform-agnostic component tree behind `window.appApi` (`AppApi` in `shared/types/ipc.ts`) with three shims — Electron (`preload.ts` + `main.ts` IPC), web (`src/web/browserApi.ts`), iOS (`src/ios/capacitorApi.ts`). Web entry wiring fixed + regression-tested (`src/tests/webEntry.test.ts`).
 - **State:** `documentStore` (Zustand) holds one doc (content/savedContent/filePath/viewMode/cursorPosition); dirty is derived. `themeStore` = light/dark/system via `data-theme`.
-- **Editing surfaces:** CodeMirror 6 source (oneDark theme), Milkdown WYSIWYG (nord theme), react-markdown preview (remark/rehype: gfm, math, emoji; KaTeX; Mermaid via `MermaidBlock`).
+- **Editing surfaces:** CodeMirror 6 source, react-markdown preview (remark/rehype: gfm, math, emoji; KaTeX; Mermaid via `MermaidBlock`).
 - **Styling:** `src/styles/themes.css` (color-only tokens, 33 lines) + `src/index.css` (426 lines, flat class selectors, hardcoded spacing/type/radii).
 - **File ops:** open/save/saveAs + TXT/PDF/DOCX export per platform. Checks: typecheck, lint, 19 Vitest tests, web + iOS builds, Playwright e2e (Electron).
 
@@ -80,9 +80,9 @@ Each phase is independently reviewable and keeps the app runnable.
 
 ### Phase 6 — Structure-colored Markdown editor
 - **Goal:** The core visual rule in both editing and reading.
-- **Deliverables:** **edit mode** — a CodeMirror 6 decoration/theme that colors syntax markers (`#`, `-`, `1.`, `>`, checkboxes, table rules) in `--md-marker`/accent while prose stays `--mm-text`, replacing oneDark; **read mode** — map the rendered pipeline (react-markdown or Milkdown) to the `--md-*` roles per `tokens/markdown.css` and the mockup; Aa font popover swaps the editor face and scales base size.
+- **Deliverables:** **edit mode** — a CodeMirror 6 decoration/theme that colors syntax markers (`#`, `-`, `1.`, `>`, checkboxes, table rules) in `--md-marker`/accent while prose stays `--mm-text`, replacing oneDark; **read mode** — map the react-markdown preview to the `--md-*` roles per `tokens/markdown.css` and the mockup; Aa font popover swaps the editor face and scales base size.
 - **Dependencies:** Phases 1, 5.
-- **Risks:** highest-effort phase — inline marker coloring in CM6 needs a custom decoration plugin; keeping edit and read renderings visually consistent; Milkdown vs react-markdown choice for read mode.
+- **Risks:** highest-effort phase — inline marker coloring in CM6 needs a custom decoration plugin; keeping edit and read renderings visually consistent.
 - **Acceptance:** markers, hashes, checkboxes, quote bars, table rules render in accent and prose stays neutral, in both edit and read modes, across all themes; matches the specimen.
 
 ### Phase 7 — Theme + font switcher UX

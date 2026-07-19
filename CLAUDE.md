@@ -65,7 +65,7 @@ Adding a host capability: extend the `AppApi` type, implement in **all three** s
 - **Tokens** (`src/styles/tokens/`): kit files verbatim (`colors/typography/spacing/markdown.css`) + `colors-dark.css` (derived dark variants, not from the kit). Four palettes (teal/forest/gold/crimson) × light/dark via `data-theme` + `data-mode` **on `<html>`** — the `--md-*` markdown roles resolve at `:root`, so theming a subtree silently breaks them.
 - **`themeStore`** — `{palette, mode, resolvedMode, font, size}`; App applies attributes + `--mm-font-editor`/`--mm-editor-size`. The Aa popover (`FontPopover`) and settings persist via AppApi settings keys: `palette`, `mode`, `font`, `size`, `showToolbar`, `iosStorage`.
 - **Editor** (`markdownEditorTheme.ts`): a CodeMirror `HighlightStyle` — all Lezer markdown marks share `processingInstruction` → one rule colors every structural mark `--md-marker`; prose stays neutral; bold is weight, not color. All values are CSS custom properties, so theme switches restyle live without extension rebuilds.
-- **Read modes**: `.preview`/`.wysiwyg-body` rules in `index.css` map to the same `--md-*` roles.
+- **Read modes**: `.preview` rules in `index.css` map to the same `--md-*` roles.
 - `compat.css` bridges legacy `--bg-*/--text-*` names for the remaining transitional toolbar chrome.
 
 ### CodeMirror gotcha (learned the hard way)

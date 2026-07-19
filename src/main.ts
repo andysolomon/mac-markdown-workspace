@@ -132,9 +132,9 @@ const buildAppMenu = () => {
           click: () => sendMenuAction("mode-split"),
         },
         {
-          label: "WYSIWYG Mode",
+          label: "Preview Mode",
           accelerator: "CmdOrCtrl+3",
-          click: () => sendMenuAction("mode-wysiwyg"),
+          click: () => sendMenuAction("mode-preview"),
         },
         { type: "separator" },
         {

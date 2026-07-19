@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ViewMode = "source" | "split" | "preview" | "wysiwyg";
+export type ViewMode = "source" | "split" | "preview";
 
 interface CursorPosition {
   line: number;

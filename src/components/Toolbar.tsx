@@ -39,7 +39,7 @@ export const Toolbar = React.memo(function Toolbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [exportOpen]);
 
-  const desktopModes: ViewMode[] = ["source", "split", "preview", "wysiwyg"];
+  const desktopModes: ViewMode[] = ["source", "split", "preview"];
 
   const handleExport = (format: "txt" | "pdf" | "docx" | "html") => {
     setExportOpen(false);

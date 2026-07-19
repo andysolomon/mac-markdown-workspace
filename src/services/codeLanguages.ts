@@ -1,5 +1,5 @@
 /**
- * Shared CodeMirror language registry for Source fences and Milkdown
+ * Shared CodeMirror language registry for Source fences
  * code blocks.
  *
  * Eager JS/TS (and a few common langs) avoid relying solely on

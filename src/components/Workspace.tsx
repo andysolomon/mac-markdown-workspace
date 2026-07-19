@@ -1,11 +1,7 @@
-import React, { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useDocumentStore } from "../services/documentStore";
 import { SourceEditor } from "./SourceEditor";
 import { Preview } from "./Preview";
-
-const WysiwygEditor = React.lazy(() =>
-  import("./WysiwygEditor").then((m) => ({ default: m.WysiwygEditor })),
-);
 
 function usePaneDrag(initialFraction: number) {
   const [fraction, setFraction] = useState(initialFraction);
@@ -91,14 +87,6 @@ export function Workspace() {
       {(isSplit || viewMode === "preview") && (
         <section className={`pane preview ${viewMode === "preview" ? "full" : ""}`}>
           <Preview content={debouncedContent} />
-        </section>
-      )}
-
-      {viewMode === "wysiwyg" && (
-        <section className="pane preview full">
-          <Suspense fallback={<div style={{ padding: 16 }}>Loading editor...</div>}>
-            <WysiwygEditor />
-          </Suspense>
         </section>
       )}
     </main>

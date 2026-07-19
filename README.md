@@ -10,7 +10,7 @@ The design system's core rule: **structure is colored, prose is not.** Heading h
 
 - **Notes library** — multiple notes with autosave; titles, previews, and `#hashtags` derive live from content. Tag filtering and instant search across everything.
 - **Three-pane workspace** — traffic dots, "All" pill, and hashtag sidebar · document list with search · editor column. One tap on the list icon collapses both panels for a full-width, distraction-free editor.
-- **Structure-colored editing** — CodeMirror 6 with a custom theme keyed to the design tokens; source, split, preview, and WYSIWYG (Milkdown) modes. Opens in Source.
+- **Structure-colored editing** — CodeMirror 6 with a custom theme keyed to the design tokens; source, split, and preview modes. Opens in Source.
 - **Four palettes × light/dark** — Teal, Forest, Gold, Crimson, each with a derived dark variant, switched live from the **Aa** popover along with nine curated editor faces and a text-size stepper. Everything persists per platform.
 - **Exports** — standalone themed **HTML**, **PDF**, TXT, and DOCX. iOS Safari delivers through the native share sheet.
 - **Mobile editing kit** — Bear-style bottom tool strip (share · Aa · +) and a markdown helper bar that rides above the on-screen keyboard (#, bold, italic, lists, tasks, quotes, code, links, indent, Done).
@@ -20,7 +20,7 @@ The design system's core rule: **structure is colored, prose is not.** Heading h
 
 ## Tech stack
 
-React 19 · TypeScript · Vite · Zustand · CodeMirror 6 · Milkdown · Electron (Forge) · Capacitor · react-markdown (remark/rehype) · @noble crypto · Vercel Functions + AWS S3 (cloud sync) · Vitest · Playwright. Package manager: **Bun**.
+React 19 · TypeScript · Vite · Zustand · CodeMirror 6 · Electron (Forge) · Capacitor · react-markdown (remark/rehype) · @noble crypto · Vercel Functions + AWS S3 (cloud sync) · Vitest · Playwright. Package manager: **Bun**.
 
 ## Getting started
 

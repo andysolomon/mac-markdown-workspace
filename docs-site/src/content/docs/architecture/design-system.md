@@ -23,7 +23,7 @@ themselves stay neutral and readable.
   paints them `--md-marker`; prose stays neutral and bold is carried by weight,
   not color. Because every value is a CSS variable, switching palette restyles the
   editor live with no extension rebuild.
-- **Read modes** (`.preview` / `.wysiwyg-body`) map to the same `--md-*` roles, so
+- **Read modes** (`.preview`) map to the same `--md-*` roles, so
   edit and read stay visually consistent.
 
 ## A gotcha worth remembering

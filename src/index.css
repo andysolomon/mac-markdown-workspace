@@ -157,44 +157,37 @@ textarea {
 }
 
 /* Structure-colored read mode: markdown roles per tokens/markdown.css.
-   Structure takes the accent; prose stays neutral. The same rules apply to
-   the WYSIWYG (Milkdown/ProseMirror) surface. */
-.preview :is(h1, h2, h3),
-.wysiwyg-body :is(h1, h2, h3) {
+   Structure takes the accent; prose stays neutral. */
+.preview :is(h1, h2, h3) {
   margin-top: 1.25rem;
   line-height: var(--mm-lh-heading);
 }
 
-.preview h1,
-.wysiwyg-body h1 {
+.preview h1 {
   color: var(--md-h1);
   font-weight: var(--mm-w-black);
   font-size: 1.9em;
 }
 
-.preview h2,
-.wysiwyg-body h2 {
+.preview h2 {
   color: var(--md-h2);
   font-weight: var(--mm-w-black);
   font-size: 1.5em;
 }
 
-.preview h3,
-.wysiwyg-body h3 {
+.preview h3 {
   color: var(--md-h3);
   font-weight: var(--mm-w-black);
   font-size: 1.25em;
 }
 
-.preview h4,
-.wysiwyg-body h4 {
+.preview h4 {
   color: var(--md-h4);
   font-weight: var(--mm-w-black);
   font-size: 1.1em;
 }
 
-.preview :is(h5, h6),
-.wysiwyg-body :is(h5, h6) {
+.preview :is(h5, h6) {
   color: var(--md-h5);
   font-weight: var(--mm-w-black);
   text-transform: uppercase;
@@ -202,89 +195,72 @@ textarea {
   font-size: 0.9em;
 }
 
-/* Restore list markers/padding. Milkdown nord's @layer base resets
-   `ol, ul { list-style: none }` globally once WYSIWYG CSS loads; these
-   unlayered rules beat that reset for Preview and the Milkdown surface. */
-.preview :is(ul, ol),
-.wysiwyg-body :is(ul, ol) {
+/* Restore list markers/padding for Preview. */
+.preview :is(ul, ol) {
   list-style-position: outside;
   padding-left: 1.5em;
   margin: 0.5em 0;
 }
 
-.preview ul,
-.wysiwyg-body ul {
+.preview ul {
   list-style-type: disc;
 }
 
-.preview ol,
-.wysiwyg-body ol {
+.preview ol {
   list-style-type: decimal;
 }
 
-.preview :is(ul, ol) :is(ul, ol),
-.wysiwyg-body :is(ul, ol) :is(ul, ol) {
+.preview :is(ul, ol) :is(ul, ol) {
   margin: 0.25em 0;
 }
 
-.preview ul ul,
-.wysiwyg-body ul ul {
+.preview ul ul {
   list-style-type: circle;
 }
 
-.preview ul ul ul,
-.wysiwyg-body ul ul ul {
+.preview ul ul ul {
   list-style-type: square;
 }
 
 /* Keep list body text at editor size/weight. ::marker font-weight can leak
-   into li text in some engines, and loose-list <p> wrappers were picking up
-   oversized/bold styling after Milkdown CSS loaded. */
-.preview :is(ul, ol) li,
-.wysiwyg-body :is(ul, ol) li {
+   into li text in some engines, and loose-list <p> wrappers need the same. */
+.preview :is(ul, ol) li {
   font-size: inherit;
   font-weight: var(--mm-w-regular, 400);
   line-height: inherit;
 }
 
-.preview :is(ul, ol) li > p,
-.wysiwyg-body :is(ul, ol) li > p {
+.preview :is(ul, ol) li > p {
   margin: 0.25em 0;
   font-size: inherit;
   font-weight: inherit;
   line-height: inherit;
 }
 
-.preview :is(ul, ol) li::marker,
-.wysiwyg-body :is(ul, ol) li::marker {
+.preview :is(ul, ol) li::marker {
   color: var(--md-marker);
   font-weight: var(--mm-w-bold);
 }
 
-.preview input[type="checkbox"],
-.wysiwyg-body input[type="checkbox"] {
+.preview input[type="checkbox"] {
   accent-color: var(--md-checkbox);
 }
 
-.preview strong,
-.wysiwyg-body strong {
+.preview strong {
   font-weight: var(--md-bold-weight, 800);
 }
 
-.preview :is(del, s),
-.wysiwyg-body :is(del, s) {
+.preview :is(del, s) {
   color: var(--md-strike);
 }
 
-.preview a,
-.wysiwyg-body a {
+.preview a {
   color: var(--md-link);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.preview blockquote,
-.wysiwyg-body blockquote {
+.preview blockquote {
   margin: 1em 0;
   padding-left: var(--mm-space-4);
   border-left: 3px solid var(--md-quote-bar);
@@ -293,8 +269,7 @@ textarea {
 }
 
 /* Inline code only — fenced blocks use Shiki/CodeMirror token colors. */
-.preview :not(pre) > code,
-.wysiwyg-body :not(pre) > code {
+.preview :not(pre) > code {
   font-family: var(--mm-font-mono);
   color: var(--md-code);
   background: var(--md-code-bg);
@@ -303,22 +278,19 @@ textarea {
   font-size: 0.86em;
 }
 
-.preview hr,
-.wysiwyg-body hr {
+.preview hr {
   border: none;
   border-top: 1px solid var(--md-rule);
   margin: var(--mm-space-6) 0;
 }
 
-.preview table,
-.wysiwyg-body table {
+.preview table {
   border-collapse: collapse;
   margin: 1em 0;
   font-size: 0.9em;
 }
 
-.preview th,
-.wysiwyg-body th {
+.preview th {
   text-align: left;
   padding: var(--mm-space-2) var(--mm-space-3);
   border-bottom: 2px solid var(--md-table-rule);
@@ -326,8 +298,7 @@ textarea {
   background: var(--md-code-bg);
 }
 
-.preview td,
-.wysiwyg-body td {
+.preview td {
   text-align: left;
   padding: var(--mm-space-2) var(--mm-space-3);
   border-bottom: 1px solid var(--md-table-border);
@@ -459,107 +430,6 @@ button.active:hover {
   background: var(--bg-button-hover);
 }
 
-/* WYSIWYG toolbar */
-.wysiwyg-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.wysiwyg-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 6px var(--mm-space-3);
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-toolbar);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  overflow: hidden;
-}
-
-.wysiwyg-toolbar button {
-  min-width: 32px;
-  height: 32px;
-  padding: var(--mm-space-1) var(--mm-space-2);
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  border-radius: var(--mm-radius-sm);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.wysiwyg-toolbar button:hover {
-  background: var(--bg-button-hover);
-  color: var(--text-primary);
-  border-color: var(--border-color);
-}
-
-.wysiwyg-body {
-  flex: 1;
-  overflow: auto;
-  padding: var(--mm-space-6) var(--mm-space-7);
-  min-width: 0;
-  overflow-wrap: break-word;
-  font-family: var(--mm-font-editor);
-  font-size: var(--mm-editor-size);
-  line-height: var(--mm-lh-body);
-}
-
-.wysiwyg-body .milkdown {
-  outline: none;
-}
-
-.wysiwyg-body .ProseMirror {
-  outline: none;
-  min-height: 100%;
-}
-
-.wysiwyg-body .ProseMirror > * + * {
-  margin-top: 0.75em;
-}
-
-/* Inline code only — do not force color on Milkdown's CodeMirror code blocks. */
-.wysiwyg-body .ProseMirror :not(pre):not(.cm-editor) > code,
-.wysiwyg-body .milkdown :not(pre):not(.cm-editor) > code {
-  background: var(--md-code-bg) !important;
-  color: var(--md-code) !important;
-  border-radius: var(--mm-radius-md);
-  padding: 2px 4px;
-  font-size: 0.9em;
-}
-
-.wysiwyg-body .ProseMirror pre,
-.wysiwyg-body .milkdown pre {
-  background: var(--md-code-bg) !important;
-  padding: var(--mm-space-3) var(--mm-space-4);
-  overflow: auto;
-  max-width: 100%;
-  border-radius: var(--mm-radius-md);
-}
-
-/* Milkdown code-block node view (CodeMirror) — token colors from HighlightStyle. */
-.wysiwyg-body .milkdown-code-block,
-.wysiwyg-body [data-milkdown-code-block],
-.wysiwyg-body .cm-editor {
-  --shiki-foreground: var(--md-code-plain);
-  background: var(--md-code-bg);
-  color: var(--md-code-plain);
-  border-radius: var(--mm-radius-md);
-  font-family: var(--mm-font-mono);
-  font-size: 0.9em;
-}
-
-.wysiwyg-body .cm-editor .cm-scroller {
-  font-family: var(--mm-font-mono);
-  line-height: var(--mm-lh-body);
-}
 
 /* Mobile / Desktop visibility */
 .mobile-only {
@@ -688,8 +558,7 @@ button.active:hover {
     padding-bottom: calc(88px + var(--mm-kb-inset, 0px));
   }
 
-  .preview,
-  .wysiwyg-body {
+  .preview {
     padding-bottom: 88px;
   }
 
@@ -725,14 +594,12 @@ button.active:hover {
   }
 
   /* Keep the reading panes comfortable but tighter on small screens */
-  .preview,
-  .wysiwyg-body {
+  .preview {
     padding: var(--mm-space-4);
   }
 
-  /* Prevent iOS auto-zoom on focus — inputs must be >= 16px. The editor and
-     WYSIWYG surfaces sit at the 20px design base, so only the legacy textarea
-     needs the guard. */
+  /* Prevent iOS auto-zoom on focus — inputs must be >= 16px. The editor sits
+     at the 20px design base, so only the legacy textarea needs the guard. */
   textarea {
     font-size: 16px;
   }
