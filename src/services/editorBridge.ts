@@ -1,4 +1,5 @@
 import { EditorView } from "@codemirror/view";
+import { applyListIndentCommand } from "./listIndentCommands";
 
 /**
  * Bridge to the live CodeMirror view so chrome outside SourceEditor (the
@@ -71,16 +72,27 @@ export function toggleLinePrefix(prefix: string): void {
   focusAndReveal(view);
 }
 
-/** Indent the current line by two spaces (list nesting step). */
+/** Indent the current list line by 4 spaces (list nesting step). */
 export function indentLine(): void {
   const view = activeView;
   if (!view) return;
-  const { head } = view.state.selection.main;
-  const line = view.state.doc.lineAt(head);
-  view.dispatch({
-    changes: { from: line.from, insert: "  " },
-    selection: { anchor: head + 2 },
-  });
+  if (!applyListIndentCommand(view, "indent")) {
+    // Non-list line: insert a 4-space indent at the line start.
+    const { head } = view.state.selection.main;
+    const line = view.state.doc.lineAt(head);
+    view.dispatch({
+      changes: { from: line.from, insert: "    " },
+      selection: { anchor: head + 4 },
+    });
+  }
+  focusAndReveal(view);
+}
+
+/** Outdent the current list line by 4 spaces. */
+export function outdentLine(): void {
+  const view = activeView;
+  if (!view) return;
+  applyListIndentCommand(view, "outdent");
   focusAndReveal(view);
 }
 

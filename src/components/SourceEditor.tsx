@@ -1,11 +1,32 @@
 import React, { useCallback, useEffect, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
-import { EditorView } from "@codemirror/view";
+import { indentUnit } from "@codemirror/language";
+import { indentMore, indentLess } from "@codemirror/commands";
+import { EditorView, keymap } from "@codemirror/view";
+import { Prec } from "@codemirror/state";
 import type { ViewUpdate } from "@codemirror/view";
 import { useDocumentStore } from "../services/documentStore";
 import { macMarkdownEditorTheme } from "../services/markdownEditorTheme";
 import { registerEditorView } from "../services/editorBridge";
+import { LIST_INDENT_UNIT } from "../services/listIndent";
+import { applyListIndentCommand } from "../services/listIndentCommands";
+
+const listTabKeymap = Prec.high(
+  keymap.of([
+    {
+      key: "Tab",
+      run: (view) => {
+        if (applyListIndentCommand(view, "indent")) return true;
+        return indentMore(view);
+      },
+      shift: (view) => {
+        if (applyListIndentCommand(view, "outdent")) return true;
+        return indentLess(view);
+      },
+    },
+  ]),
+);
 
 export const SourceEditor = React.memo(function SourceEditor() {
   const content = useDocumentStore((s) => s.content);
@@ -43,8 +64,16 @@ export const SourceEditor = React.memo(function SourceEditor() {
 
   // The structure-colored theme styles via CSS custom properties, so palette
   // and light/dark switches restyle live — the extension never rebuilds.
+  // indentUnit is set explicitly after markdown() so a nested
+  // @codemirror/language copy cannot leave Tab at the 2-space default.
   const extensions = useMemo(
-    () => [markdown(), EditorView.lineWrapping, macMarkdownEditorTheme],
+    () => [
+      markdown(),
+      indentUnit.of(LIST_INDENT_UNIT),
+      listTabKeymap,
+      EditorView.lineWrapping,
+      macMarkdownEditorTheme,
+    ],
     [],
   );
 
@@ -56,6 +85,7 @@ export const SourceEditor = React.memo(function SourceEditor() {
       onCreateEditor={onCreateEditor}
       extensions={extensions}
       theme="none"
+      indentWithTab={false}
       basicSetup={{
         // Distraction-free editing surface — no gutters (design system).
         lineNumbers: false,
@@ -63,6 +93,7 @@ export const SourceEditor = React.memo(function SourceEditor() {
         highlightActiveLineGutter: false,
         highlightActiveLine: false,
         bracketMatching: true,
+        tabSize: 4,
       }}
       style={{ height: "100%", overflow: "auto" }}
     />
