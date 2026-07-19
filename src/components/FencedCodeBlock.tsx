@@ -20,9 +20,13 @@ export const FencedCodeBlock = React.memo(function FencedCodeBlock({
   useEffect(() => {
     let cancelled = false;
     setHtml(null);
-    void highlightCode(code, language).then((next) => {
-      if (!cancelled) setHtml(next);
-    });
+    void highlightCode(code, language || "typescript")
+      .then((next) => {
+        if (!cancelled) setHtml(next);
+      })
+      .catch((err) => {
+        console.error("[FencedCodeBlock] highlight failed", err);
+      });
     return () => {
       cancelled = true;
     };

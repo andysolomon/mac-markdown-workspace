@@ -1,4 +1,9 @@
-import { createCssVariablesTheme, createHighlighter, type Highlighter } from "shiki";
+import {
+  createCssVariablesTheme,
+  createHighlighter,
+  createJavaScriptRegexEngine,
+  type Highlighter,
+} from "shiki";
 
 /** Shiki theme that paints via --shiki-* CSS vars (mapped to --md-code-* in index.css). */
 export const mmwCodeTheme = createCssVariablesTheme({
@@ -31,7 +36,10 @@ let highlighterPromise: Promise<Highlighter> | null = null;
 
 function getHighlighter(): Promise<Highlighter> {
   if (!highlighterPromise) {
+    // JS regex engine — no Oniguruma WASM fetch (avoids silent Preview
+    // failures when the wasm chunk 404s or fails to init in the browser).
     highlighterPromise = createHighlighter({
+      engine: createJavaScriptRegexEngine(),
       themes: [mmwCodeTheme],
       langs: [...CORE_LANGS],
     });
@@ -39,46 +47,44 @@ function getHighlighter(): Promise<Highlighter> {
   return highlighterPromise;
 }
 
+function normalizeLang(lang?: string): string {
+  const requested = (lang || "typescript").toLowerCase();
+  if (requested === "ts") return "typescript";
+  if (requested === "js" || requested === "mjs" || requested === "cjs") return "javascript";
+  if (requested === "sh" || requested === "shell" || requested === "zsh" || requested === "bash") {
+    return "shellscript";
+  }
+  if (requested === "text" || requested === "plain" || requested === "plaintext") {
+    return "text";
+  }
+  return requested;
+}
+
 /**
  * Highlight a fenced code body to an HTML string (`<pre class="shiki">…`).
- * Unknown languages fall back to plain text tokens (still themed).
+ * Missing/unknown languages fall back to TypeScript then plain text.
  */
 export async function highlightCode(code: string, lang?: string): Promise<string> {
   const highlighter = await getHighlighter();
-  const requested = (lang || "text").toLowerCase();
-  const alias =
-    requested === "ts"
-      ? "typescript"
-      : requested === "js"
-        ? "javascript"
-        : requested === "sh" || requested === "shell" || requested === "zsh" || requested === "bash"
-          ? "shellscript"
-          : requested;
+  let language = normalizeLang(lang);
 
-  let language = alias;
-  if (!highlighter.getLoadedLanguages().includes(language)) {
+  if (language !== "text" && !highlighter.getLoadedLanguages().includes(language)) {
     try {
       await highlighter.loadLanguage(language as Parameters<Highlighter["loadLanguage"]>[0]);
     } catch {
-      language = "text";
-      if (!highlighter.getLoadedLanguages().includes("text")) {
-        try {
-          await highlighter.loadLanguage("text");
-        } catch {
-          /* plaintext always available as last resort via empty lang */
-        }
-      }
+      language = "typescript";
     }
   }
 
+  const body = code.replace(/\n$/, "");
   try {
-    return highlighter.codeToHtml(code.replace(/\n$/, ""), {
-      lang: language,
+    return highlighter.codeToHtml(body, {
+      lang: language === "text" ? "typescript" : language,
       theme: "mmw-code",
     });
   } catch {
-    return highlighter.codeToHtml(code.replace(/\n$/, ""), {
-      lang: "text",
+    return highlighter.codeToHtml(body, {
+      lang: "typescript",
       theme: "mmw-code",
     });
   }

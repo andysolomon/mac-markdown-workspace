@@ -7,7 +7,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import type { ViewUpdate } from "@codemirror/view";
 import { useDocumentStore } from "../services/documentStore";
-import { languages } from "../services/codeLanguages";
+import { defaultCodeLanguage, resolveCodeLanguage } from "../services/codeLanguages";
 import { macMarkdownEditorTheme } from "../services/markdownEditorTheme";
 import { registerEditorView } from "../services/editorBridge";
 import { LIST_INDENT_UNIT } from "../services/listIndent";
@@ -69,7 +69,10 @@ export const SourceEditor = React.memo(function SourceEditor() {
   // @codemirror/language copy cannot leave Tab at the 2-space default.
   const extensions = useMemo(
     () => [
-      markdown({ codeLanguages: languages }),
+      markdown({
+        defaultCodeLanguage,
+        codeLanguages: resolveCodeLanguage,
+      }),
       indentUnit.of(LIST_INDENT_UNIT),
       listTabKeymap,
       EditorView.lineWrapping,

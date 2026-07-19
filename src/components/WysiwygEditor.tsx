@@ -8,7 +8,7 @@ import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { codeBlockComponent, codeBlockConfig } from "@milkdown/components/code-block";
 import { $remark } from "@milkdown/utils";
 import { useDocumentStore } from "../services/documentStore";
-import { languages } from "../services/codeLanguages";
+import { languages, defaultCodeLanguage } from "../services/codeLanguages";
 import { macMarkdownSyntaxHighlighting } from "../services/markdownEditorTheme";
 import { remarkSplitOrderedListRestarts } from "../services/remarkSplitOrderedListRestarts";
 import { WysiwygToolbar } from "./WysiwygToolbar";
@@ -37,7 +37,8 @@ function MilkdownEditorInner() {
             // Cast: language-data may resolve a nested @codemirror/language
             // copy at typecheck time; Vite dedupes to one instance at runtime.
             languages: languages as unknown as typeof defaultConfig.languages,
-            extensions: [macMarkdownSyntaxHighlighting],
+            // Eager JS/TS support + shared HighlightStyle (CSS var tokens).
+            extensions: [defaultCodeLanguage, macMarkdownSyntaxHighlighting],
           }));
           const l = ctx.get(listenerCtx);
           l.markdownUpdated((_ctx, markdown) => {

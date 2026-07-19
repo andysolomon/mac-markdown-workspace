@@ -292,8 +292,9 @@ textarea {
   font-style: italic;
 }
 
-.preview code,
-.wysiwyg-body code {
+/* Inline code only — fenced blocks use Shiki/CodeMirror token colors. */
+.preview :not(pre) > code,
+.wysiwyg-body :not(pre) > code {
   font-family: var(--mm-font-mono);
   color: var(--md-code);
   background: var(--md-code-bg);
@@ -369,8 +370,14 @@ textarea {
 .preview .mm-code-block code {
   background: transparent;
   padding: 0;
-  color: var(--md-code-plain);
+  /* Inherit from pre; token <span style="color: var(--shiki-…)"> win via inline styles. */
+  color: inherit;
   font-size: inherit;
+}
+
+.preview pre:not(:has(span[style])),
+.preview .mm-code-block pre:not(:has(span[style])) {
+  color: var(--md-code-plain);
 }
 
 .preview pre [data-line] {
