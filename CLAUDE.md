@@ -79,7 +79,7 @@ Duplicate `@codemirror/language` instances make `syntaxHighlighting()` silently 
 
 ## Shell components (`src/components/shell/`)
 
-`NotesShell` (container) · `Sidebar`/`Tag` · `DocList`/`DocListItem` · `EditorChrome` (list icon toggles BOTH panels → full-width editor; Aa; +; ⋯ settings) · `FontPopover` · `SettingsPanel` · `BottomBar` + `MarkdownAccessoryBar` (mobile, swap on editor focus; accessory inserts via `src/services/editorBridge.ts` — buttons use mousedown `preventDefault` to keep editor focus). Layout CSS in `src/styles/shell.css`; mobile collapse at the 640px breakpoint is tracked with a **live matchMedia listener** (never sample width once at mount).
+`NotesShell` (container) · `Sidebar`/`Tag` · `DocList`/`DocListItem` · `EditorChrome` (nav · Aa · optional inline Toolbar · + · ⋯; list icon toggles BOTH panels → full-width editor) · `FontPopover` · `SettingsPanel` · `BottomBar` + `MarkdownAccessoryBar` (mobile, swap on editor focus; accessory inserts via `src/services/editorBridge.ts` — buttons use mousedown `preventDefault` to keep editor focus). Layout CSS in `src/styles/shell.css`; mobile collapse at the 640px breakpoint is tracked with a **live matchMedia listener** (never sample width once at mount).
 
 ## Working conventions
 

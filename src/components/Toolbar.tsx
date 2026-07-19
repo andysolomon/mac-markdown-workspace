@@ -57,27 +57,41 @@ export const Toolbar = React.memo(function Toolbar() {
   const fileName = noteTitle || (filePath ? filePath.split("/").pop() : "Untitled");
 
   return (
-    <header className="toolbar">
-      {/* Desktop layout */}
-      <div className="left-group desktop-only">
-        <button onClick={openFile}>Import</button>
-        <button onClick={saveFile}>Save</button>
+    <div className="mm-toolbar-inline desktop-only">
+      <div className="left-group">
+        <button type="button" onClick={openFile}>
+          Import
+        </button>
+        <button type="button" onClick={saveFile}>
+          Save
+        </button>
         <div className="export-dropdown" ref={exportRef}>
-          <button onClick={() => openExportMenu(!exportOpen)}>Export</button>
+          <button type="button" onClick={() => openExportMenu(!exportOpen)}>
+            Export
+          </button>
           {exportOpen && (
             <div className="export-menu">
-              <button onClick={() => handleExport("html")}>Web Page (.html)</button>
-              <button onClick={() => handleExport("pdf")}>PDF (.pdf)</button>
-              <button onClick={() => handleExport("txt")}>Text (.txt)</button>
-              <button onClick={() => handleExport("docx")}>Word (.docx)</button>
+              <button type="button" onClick={() => handleExport("html")}>
+                Web Page (.html)
+              </button>
+              <button type="button" onClick={() => handleExport("pdf")}>
+                PDF (.pdf)
+              </button>
+              <button type="button" onClick={() => handleExport("txt")}>
+                Text (.txt)
+              </button>
+              <button type="button" onClick={() => handleExport("docx")}>
+                Word (.docx)
+              </button>
             </div>
           )}
         </div>
       </div>
-      <div className="center-group desktop-only">
+      <div className="center-group">
         {desktopModes.map((m) => (
           <button
             key={m}
+            type="button"
             className={viewMode === m ? "active" : ""}
             onClick={() => setViewMode(m)}
           >
@@ -85,15 +99,12 @@ export const Toolbar = React.memo(function Toolbar() {
           </button>
         ))}
       </div>
-      <div className="right-group desktop-only">
+      <div className="right-group">
         <span>
           {fileName}
           {isDirty ? " *" : ""}
         </span>
       </div>
-
-      {/* Mobile has no toolbar — Bear-style page navigation owns the chrome
-          (issue #16 / W-000016); the whole bar is display:none under 640px. */}
-    </header>
+    </div>
   );
 });

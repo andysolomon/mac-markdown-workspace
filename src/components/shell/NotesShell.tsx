@@ -266,10 +266,11 @@ export function NotesShell() {
             onFontClick={() => setFontOpen((v) => !v)}
             onNewNote={handleNewNote}
             onSettingsClick={() => setSettingsOpen((v) => !v)}
-          />
+          >
+            {showToolbar ? <Toolbar /> : null}
+          </EditorChrome>
           <FontPopover open={fontOpen} onClose={() => setFontOpen(false)} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-          {showToolbar ? <Toolbar /> : null}
           <Workspace />
           <StatusBar />
           {isNarrow && !editorFocused ? (

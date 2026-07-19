@@ -6,7 +6,7 @@ import { create } from "zustand";
 export type IosStorage = "icloud" | "device";
 
 interface SettingsState {
-  /** Show the transitional toolbar row inside the editor column. */
+  /** Show Import/Save/Export + view modes inline in the editor topbar. */
   showToolbar: boolean;
   /** iOS notes location: iCloud-backed Documents vs app-private storage. */
   iosStorage: IosStorage;

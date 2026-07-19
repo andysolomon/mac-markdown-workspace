@@ -18,7 +18,7 @@ test.describe("App Launch", () => {
     const window = await app.firstWindow();
     await window.waitForLoadState("domcontentloaded");
 
-    await expect(window.locator(".toolbar")).toBeVisible();
+    await expect(window.locator(".mm-toolbar-inline")).toBeVisible();
     await expect(window.locator(".workspace")).toBeVisible();
     await expect(window.locator(".status-bar")).toBeVisible();
 

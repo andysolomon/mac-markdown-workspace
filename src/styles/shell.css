@@ -112,10 +112,27 @@
 .mm-topbar {
   display: flex;
   align-items: center;
-  gap: 22px;
-  padding: 0 var(--mm-space-7);
+  gap: var(--mm-space-4);
+  padding: 0 var(--mm-space-5);
   height: var(--mm-topbar-h);
   flex: none;
+  border-bottom: 1px solid var(--mm-border);
+  min-width: 0;
+}
+
+/* Import / Save / Export + view modes — lives in the same row as Aa / + / ⋯. */
+.mm-toolbar-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mm-space-3);
+  flex: 1;
+  min-width: 0;
+  margin: 0 var(--mm-space-2);
+}
+
+.mm-topbar:has(.mm-toolbar-inline) .mm-plus {
+  margin-left: 0;
 }
 
 .mm-nav-btn,
@@ -133,12 +150,13 @@
 .mm-nav {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--mm-space-3);
   color: var(--mm-accent);
+  flex: none;
 }
 
 .mm-nav-btn {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: var(--mm-w-bold);
   line-height: 1;
   color: var(--mm-accent);
@@ -151,24 +169,27 @@
 }
 
 .mm-aa {
-  font-size: 30px;
+  font-size: 22px;
   font-weight: var(--mm-w-bold);
   color: var(--mm-text);
+  flex: none;
 }
 
 .mm-plus {
   margin-left: auto;
-  font-size: 42px;
+  font-size: 28px;
   line-height: 1;
   font-weight: 300;
   color: var(--mm-faint);
+  flex: none;
 }
 
 .mm-more {
-  font-size: 30px;
+  font-size: 22px;
   line-height: 1;
   font-weight: 700;
   color: var(--mm-faint);
+  flex: none;
 }
 
 /* Aa popover — the one floating, shadowed surface in the system. */

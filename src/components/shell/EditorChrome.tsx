@@ -8,6 +8,7 @@ export function EditorChrome({
   onFontClick,
   onNewNote,
   onSettingsClick,
+  children,
 }: {
   onBack: () => void;
   onForward: () => void;
@@ -16,6 +17,8 @@ export function EditorChrome({
   onFontClick: () => void;
   onNewNote: () => void;
   onSettingsClick: () => void;
+  /** Optional inline toolbar (Import/Save/Export + view modes) for desktop. */
+  children?: React.ReactNode;
 }) {
   return (
     <div className="mm-topbar">
@@ -42,6 +45,7 @@ export function EditorChrome({
       <button type="button" className="mm-aa" onClick={onFontClick}>
         Aa
       </button>
+      {children}
       <button
         type="button"
         className="mm-plus"
