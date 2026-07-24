@@ -445,6 +445,71 @@ const registerIpc = (): void => {
     for (const id of payload.ids) delete map[id];
     await writeTombstones(map);
   });
+
+  const isPathInsideRoot = (root: string, target: string): boolean => {
+    const rel = path.relative(root, target);
+    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  };
+
+  ipcMain.handle(
+    "tree:materialize",
+    async (
+      _event,
+      payload: { entries: Array<{ relativePath: string; kind: "file" | "dir" }> },
+    ) => {
+      const win = getFocusedWindow();
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title: "Choose scaffold folder",
+        properties: ["openDirectory", "createDirectory"],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { ok: false, canceled: true };
+      }
+
+      const rootPath = path.resolve(result.filePaths[0]);
+      const sorted = [...payload.entries].sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
+        const depthA = a.relativePath.split("/").length;
+        const depthB = b.relativePath.split("/").length;
+        return depthA - depthB || a.relativePath.localeCompare(b.relativePath);
+      });
+
+      try {
+        for (const entry of sorted) {
+          const segments = entry.relativePath.split("/").filter(Boolean);
+          if (segments.length === 0) continue;
+          if (segments.some((seg) => seg === ".." || seg === ".")) {
+            return { ok: false, error: "Invalid path in tree" };
+          }
+
+          const target =
+            entry.kind === "dir"
+              ? path.resolve(rootPath, ...segments)
+              : path.resolve(rootPath, ...segments);
+          if (!isPathInsideRoot(rootPath, target)) {
+            return { ok: false, error: "Path escapes scaffold root" };
+          }
+
+          if (entry.kind === "dir") {
+            await fs.mkdir(target, { recursive: true });
+            continue;
+          }
+
+          const dir = path.dirname(target);
+          await fs.mkdir(dir, { recursive: true });
+          try {
+            await fs.access(target);
+            continue;
+          } catch {
+            await fs.writeFile(target, "", "utf8");
+          }
+        }
+        return { ok: true, rootPath };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Scaffold failed" };
+      }
+    },
+  );
 };
 
 const setupCSP = () => {

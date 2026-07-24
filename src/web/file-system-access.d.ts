@@ -15,6 +15,15 @@ interface FileSystemFileHandle {
 interface FileSystemDirectoryHandle {
   kind: "directory";
   name: string;
+  getDirectoryHandle(
+    name: string,
+    options?: { create?: boolean },
+  ): Promise<FileSystemDirectoryHandle>;
+  getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
+}
+
+interface DirectoryPickerOptions {
+  mode?: "read" | "readwrite";
 }
 
 interface FilePickerAcceptType {
@@ -37,4 +46,5 @@ interface SaveFilePickerOptions {
 interface Window {
   showOpenFilePicker(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>;
   showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
+  showDirectoryPicker(options?: DirectoryPickerOptions): Promise<FileSystemDirectoryHandle>;
 }

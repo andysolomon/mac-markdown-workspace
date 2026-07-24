@@ -12,6 +12,8 @@ import { macMarkdownEditorTheme } from "../services/markdownEditorTheme";
 import { registerEditorView } from "../services/editorBridge";
 import { LIST_INDENT_UNIT } from "../services/listIndent";
 import { applyListIndentCommand } from "../services/listIndentCommands";
+import { useSettingsStore } from "../services/settingsStore";
+import { vim } from "@replit/codemirror-vim";
 
 const listTabKeymap = Prec.high(
   keymap.of([
@@ -33,6 +35,7 @@ export const SourceEditor = React.memo(function SourceEditor() {
   const content = useDocumentStore((s) => s.content);
   const setContent = useDocumentStore((s) => s.setContent);
   const setCursorPosition = useDocumentStore((s) => s.setCursorPosition);
+  const vimMode = useSettingsStore((s) => s.vimMode);
 
   const onChange = useCallback(
     (value: string) => {
@@ -74,11 +77,11 @@ export const SourceEditor = React.memo(function SourceEditor() {
         codeLanguages: resolveCodeLanguage,
       }),
       indentUnit.of(LIST_INDENT_UNIT),
-      listTabKeymap,
+      ...(vimMode ? [vim()] : [listTabKeymap]),
       EditorView.lineWrapping,
       macMarkdownEditorTheme,
     ],
-    [],
+    [vimMode],
   );
 
   return (

@@ -12,6 +12,7 @@ describe("app defaults", () => {
     const s = useSettingsStore.getState();
     expect(s.showToolbar).toBe(true);
     expect(s.iosStorage).toBe("icloud");
+    expect(s.vimMode).toBe(false);
   });
 });
 

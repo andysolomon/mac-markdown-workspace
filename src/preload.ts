@@ -24,6 +24,7 @@ const api: AppApi = {
   listTombstones: () => ipcRenderer.invoke("notes:tombstones:list"),
   recordTombstone: (payload) => ipcRenderer.invoke("notes:tombstones:record", payload),
   clearTombstones: (payload) => ipcRenderer.invoke("notes:tombstones:clear", payload),
+  materializeTree: (payload) => ipcRenderer.invoke("tree:materialize", payload),
   onMenuAction: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, action: string) => callback(action);
     ipcRenderer.on("menu:action", handler);

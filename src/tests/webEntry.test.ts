@@ -11,7 +11,7 @@ import { resolve } from "node:path";
  * Open/Save/Export threw "undefined is not an object (window.appApi.openFile)".
  *
  * These tests lock in the wiring chain that makes the browser shim ship:
- *   vite.web.config root="web"  ->  web/index.html  ->  src/web/entry.tsx  ->  window.appApi = browserApi
+ *   vite.web.config root="web"  ->  web/index.html  ->  web/main.tsx  ->  src/web/entry.tsx  ->  window.appApi = browserApi
  */
 
 // Vitest runs from the repo root; resolve config/entry files relative to it.
@@ -29,10 +29,16 @@ describe("web build entry wiring", () => {
     expect(config).toMatch(/root:\s*["']web["']/);
   });
 
-  it("web/index.html loads the browser entry, not the Electron renderer", () => {
+  it("web/index.html loads a shim inside the Vite root (not the Electron renderer)", () => {
     const src = scriptSrc(read("web/index.html"));
-    expect(src).toContain("src/web/entry");
+    expect(src).toMatch(/^\.\/main\.tsx$/);
     expect(src).not.toContain("renderer");
+  });
+
+  it("web/main.tsx forwards to the browser entry", () => {
+    const shim = read("web/main.tsx");
+    expect(shim).toMatch(/src\/web\/entry/);
+    expect(shim).not.toContain("renderer");
   });
 
   it("the web entry installs the window.appApi browser shim", () => {

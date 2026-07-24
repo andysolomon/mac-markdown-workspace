@@ -364,4 +364,57 @@ export const capacitorApi: AppApi = {
     for (const id of ids) delete meta.tombstones[id];
     await writeMeta(meta);
   },
+
+  materializeTree: async ({ entries }) => {
+    const scaffoldRoot = `scaffolds/${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    const directory = selectedDirectory();
+    const sorted = [...entries].sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
+      const depthA = a.relativePath.split("/").length;
+      const depthB = b.relativePath.split("/").length;
+      return depthA - depthB || a.relativePath.localeCompare(b.relativePath);
+    });
+
+    try {
+      for (const entry of sorted) {
+        const segments = entry.relativePath.split("/").filter(Boolean);
+        if (segments.length === 0) continue;
+        if (segments.some((seg) => seg === ".." || seg === ".")) {
+          return { ok: false, error: "Invalid path in tree" };
+        }
+
+        const relativePath =
+          entry.kind === "dir"
+            ? `${scaffoldRoot}/${segments.join("/")}`
+            : `${scaffoldRoot}/${segments.join("/")}`;
+
+        if (entry.kind === "dir") {
+          await Filesystem.mkdir({
+            path: relativePath,
+            directory,
+            recursive: true,
+          });
+          continue;
+        }
+
+        try {
+          await Filesystem.stat({ path: relativePath, directory });
+        } catch {
+          await Filesystem.writeFile({
+            path: relativePath,
+            data: "",
+            directory,
+            encoding: Encoding.UTF8,
+            recursive: true,
+          });
+        }
+      }
+      return { ok: true, rootPath: scaffoldRoot };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Scaffold failed",
+      };
+    }
+  },
 };

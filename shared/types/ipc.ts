@@ -52,4 +52,8 @@ export type AppApi = {
   listTombstones: () => Promise<NoteTombstone[]>;
   recordTombstone: (payload: { id: string; deletedAt: number }) => Promise<void>;
   clearTombstones: (payload: { ids: string[] }) => Promise<void>;
+
+  materializeTree: (payload: {
+    entries: Array<{ relativePath: string; kind: "file" | "dir" }>;
+  }) => Promise<{ ok: boolean; rootPath?: string; canceled?: boolean; error?: string }>;
 };

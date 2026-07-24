@@ -25,8 +25,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const showToolbar = useSettingsStore((s) => s.showToolbar);
   const iosStorage = useSettingsStore((s) => s.iosStorage);
   const syncEnabled = useSettingsStore((s) => s.syncEnabled);
+  const vimMode = useSettingsStore((s) => s.vimMode);
   const setShowToolbar = useSettingsStore((s) => s.setShowToolbar);
   const setIosStorage = useSettingsStore((s) => s.setIosStorage);
+  const setVimMode = useSettingsStore((s) => s.setVimMode);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -54,6 +56,12 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const chooseStorage = (storage: IosStorage) => {
     setIosStorage(storage);
     window.appApi?.setSetting?.("iosStorage", storage);
+  };
+
+  const toggleVimMode = () => {
+    const next = !vimMode;
+    setVimMode(next);
+    window.appApi?.setSetting?.("vimMode", next);
   };
 
   // The toolbar is desktop-only chrome (mobile uses page navigation), so its
@@ -101,6 +109,22 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </div>
       ) : null}
+
+      <div className="mm-pop-section">
+        <div className="mm-pop-label">Editor</div>
+        <div className="mm-setting-row">
+          <span>Vim keybindings</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={vimMode}
+            className={`mm-toggle${vimMode ? " on" : ""}`}
+            onClick={toggleVimMode}
+          >
+            <span className="mm-toggle-knob" />
+          </button>
+        </div>
+      </div>
 
       <div className="mm-pop-section">
         <div className="mm-pop-label">Cloud Sync</div>

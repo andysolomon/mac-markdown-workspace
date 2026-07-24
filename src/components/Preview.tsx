@@ -37,6 +37,10 @@ const components: Components = {
       return <MermaidBlock code={code} />;
     }
 
+    if (lang === "tree" || lang === "filesystem") {
+      return <FencedCodeBlock code={code} language={lang} />;
+    }
+
     return <FencedCodeBlock code={code} language={lang} />;
   },
   // Avoid double <pre> wrappers: FencedCodeBlock already emits <pre>.

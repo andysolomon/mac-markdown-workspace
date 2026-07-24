@@ -7,6 +7,7 @@ import {
   prepareExport,
   type PreparedExport,
 } from "../services/exportActions";
+import { scaffoldTreeFromNote } from "../services/scaffoldActions";
 
 export const Toolbar = React.memo(function Toolbar() {
   const filePath = useDocumentStore((s) => s.filePath);
@@ -82,6 +83,15 @@ export const Toolbar = React.memo(function Toolbar() {
               </button>
               <button type="button" onClick={() => handleExport("docx")}>
                 Word (.docx)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setExportOpen(false);
+                  void scaffoldTreeFromNote(content);
+                }}
+              >
+                Scaffold folders…
               </button>
             </div>
           )}

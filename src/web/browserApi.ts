@@ -293,4 +293,61 @@ export const browserApi: AppApi = {
     const store = await tombstoneStore("readwrite");
     await Promise.all(ids.map((id) => idbRequest(store.delete(id))));
   },
+
+  materializeTree: async ({ entries }) => {
+    if (!("showDirectoryPicker" in window)) {
+      return { ok: false, error: "Directory picker not supported in this browser" };
+    }
+
+    const sorted = [...entries].sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
+      const depthA = a.relativePath.split("/").length;
+      const depthB = b.relativePath.split("/").length;
+      return depthA - depthB || a.relativePath.localeCompare(b.relativePath);
+    });
+
+    try {
+      const rootHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+
+      for (const entry of sorted) {
+        const segments = entry.relativePath.split("/").filter(Boolean);
+        if (segments.length === 0) continue;
+        if (segments.some((seg) => seg === ".." || seg === ".")) {
+          return { ok: false, error: "Invalid path in tree" };
+        }
+
+        if (entry.kind === "dir") {
+          let dir = rootHandle;
+          for (const segment of segments) {
+            dir = await dir.getDirectoryHandle(segment, { create: true });
+          }
+          continue;
+        }
+
+        const fileName = segments[segments.length - 1];
+        let dir = rootHandle;
+        for (const segment of segments.slice(0, -1)) {
+          dir = await dir.getDirectoryHandle(segment, { create: true });
+        }
+        try {
+          await dir.getFileHandle(fileName);
+        } catch {
+          const fileHandle = await dir.getFileHandle(fileName, { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write("");
+          await writable.close();
+        }
+      }
+
+      return { ok: true, rootPath: rootHandle.name };
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") {
+        return { ok: false, canceled: true };
+      }
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Scaffold failed",
+      };
+    }
+  },
 };

@@ -4,7 +4,10 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   root: "web",
   plugins: [react()],
-  base: process.env.VITE_BASE ?? "/mac-markdown-workspace/",
+  // Default `/` matches Vercel (vercel.json sets VITE_BASE=/). A non-root
+  // base breaks dev: Vite rewrites web/index.html's `../src/web/entry.tsx`
+  // to `/src/web/entry.tsx` without the base prefix → blank page 404.
+  base: process.env.VITE_BASE ?? "/",
   define: {
     // Surfaced in the Settings panel so stale SPA tabs are diagnosable.
     __BUILD_ID__: JSON.stringify(

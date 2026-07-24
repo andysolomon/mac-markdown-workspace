@@ -15,6 +15,8 @@ interface SettingsState {
   syncEnabled: boolean;
   syncVaultId: string | null;
   lastSyncedAt: number | null;
+  /** CodeMirror Vim keybindings in the source editor. */
+  vimMode: boolean;
 }
 
 interface SettingsActions {
@@ -23,6 +25,7 @@ interface SettingsActions {
   setSyncEnabled: (enabled: boolean) => void;
   setSyncVaultId: (vaultId: string | null) => void;
   setLastSyncedAt: (ts: number | null) => void;
+  setVimMode: (enabled: boolean) => void;
 }
 
 export type SettingsStore = SettingsState & SettingsActions;
@@ -33,10 +36,12 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   syncEnabled: false,
   syncVaultId: null,
   lastSyncedAt: null,
+  vimMode: false,
 
   setShowToolbar: (showToolbar) => set({ showToolbar }),
   setIosStorage: (iosStorage) => set({ iosStorage }),
   setSyncEnabled: (syncEnabled) => set({ syncEnabled }),
   setSyncVaultId: (syncVaultId) => set({ syncVaultId }),
   setLastSyncedAt: (lastSyncedAt) => set({ lastSyncedAt }),
+  setVimMode: (vimMode) => set({ vimMode }),
 }));

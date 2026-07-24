@@ -85,6 +85,11 @@ export function App() {
         useSettingsStore.getState().setIosStorage(saved);
       }
     });
+    window.appApi?.getSetting?.("vimMode").then((saved) => {
+      if (typeof saved === "boolean") {
+        useSettingsStore.getState().setVimMode(saved);
+      }
+    });
     // Cloud sync (issue #21) — restore the non-secret sync config; the
     // passphrase is never persisted, so it's re-collected at sync time.
     void Promise.all([

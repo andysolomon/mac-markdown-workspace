@@ -6,6 +6,7 @@ import {
   type ExportFormat,
   type PreparedExport,
 } from "../../services/exportActions";
+import { scaffoldTreeFromNote } from "../../services/scaffoldActions";
 
 /**
  * BottomBar — Bear-style mobile tool strip (issue #9 / W-000009):
@@ -77,6 +78,15 @@ export function BottomBar({
             <button type="button" onClick={() => handleExport("pdf")}>PDF (.pdf)</button>
             <button type="button" onClick={() => handleExport("txt")}>Text (.txt)</button>
             <button type="button" onClick={() => handleExport("docx")}>Word (.docx)</button>
+            <button
+              type="button"
+              onClick={() => {
+                setShareOpen(false);
+                void scaffoldTreeFromNote(content);
+              }}
+            >
+              Scaffold folders…
+            </button>
           </div>
         ) : null}
       </div>
