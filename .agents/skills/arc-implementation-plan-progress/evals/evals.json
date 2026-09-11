@@ -1,0 +1,152 @@
+{
+  "version": "1",
+  "skill_name": "arc-implementation-plan-progress",
+  "evals": [
+    {
+      "id": "gap-plan-and-progress",
+      "description": "Golden path: create synchronized implementation plan and progress tracker from repo baseline plus target spec.",
+      "prompt": "Create an implementation plan and synchronized progress tracker for this project using `README.md` as the current baseline and `spec.md` as the target scope. Track this as work item W-000101.",
+      "expected_output": "The assistant should write docs/W-000101-IMPLEMENTATION_PLAN.md and docs/W-000101-progress.txt (both sharing the W-000101 prefix). The plan should identify gap mode, cite current baseline, define milestones with acceptance criteria, synchronize progress items with plan phases, and note that both files move to docs/archive/ on completion.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          {
+            "from": "files/starter-inputs/README.md",
+            "to": "README.md"
+          },
+          {
+            "from": "files/starter-inputs/spec.md",
+            "to": "spec.md"
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "plan-file-created",
+          "kind": "workspace",
+          "method": "file-exists",
+          "path": "docs/W-000101-IMPLEMENTATION_PLAN.md",
+          "mustPass": true
+        },
+        {
+          "id": "progress-file-created",
+          "kind": "workspace",
+          "method": "file-exists",
+          "path": "docs/W-000101-progress.txt",
+          "mustPass": true
+        },
+        {
+          "id": "plan-states-gap-mode",
+          "kind": "workspace",
+          "method": "file-contains",
+          "path": "docs/W-000101-IMPLEMENTATION_PLAN.md",
+          "pattern": "(gap mode|current baseline|missing capabilities)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "plan-includes-acceptance-criteria",
+          "kind": "workspace",
+          "method": "file-contains",
+          "path": "docs/W-000101-IMPLEMENTATION_PLAN.md",
+          "pattern": "acceptance criteria",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "progress-has-stable-checkbox-ids",
+          "kind": "workspace",
+          "method": "file-contains",
+          "path": "docs/W-000101-progress.txt",
+          "pattern": "\\[ \\] 1\\.0.*\\n[\\s\\S]*\\[ \\] 1\\.1",
+          "mustPass": true
+        },
+        {
+          "id": "progress-notes-archive-on-completion",
+          "kind": "workspace",
+          "method": "file-contains",
+          "path": "docs/W-000101-progress.txt",
+          "pattern": "docs/archive",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "artifacts-are-synchronized",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should confirm that docs/W-000101-IMPLEMENTATION_PLAN.md and docs/W-000101-progress.txt are synchronized (or explicitly identify any unresolved mismatch), and both files should share the W-000101 prefix.",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": ["execution", "golden-path", "artifacts"],
+        "difficulty": "medium",
+        "intent": "gap-plan-progress"
+      }
+    },
+    {
+      "id": "preserve-completed-progress",
+      "description": "Update path: preserve completed progress items while adding missing plan coverage.",
+      "prompt": "Update the implementation plan and progress tracker for work item W-000101. Preserve any completed progress items exactly as completed.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          {
+            "from": "files/starter-inputs/README.md",
+            "to": "README.md"
+          },
+          {
+            "from": "files/starter-inputs/spec.md",
+            "to": "spec.md"
+          },
+          {
+            "from": "files/starter-inputs/existing-progress.txt",
+            "to": "docs/W-000101-progress.txt"
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "completed-item-preserved",
+          "kind": "workspace",
+          "method": "file-contains",
+          "path": "docs/W-000101-progress.txt",
+          "pattern": "\\[x\\] 1\\.1 - Read current README baseline",
+          "mustPass": true
+        },
+        {
+          "id": "updated-plan-exists",
+          "kind": "workspace",
+          "method": "file-exists",
+          "path": "docs/W-000101-IMPLEMENTATION_PLAN.md",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": ["update", "preserve-progress"],
+        "difficulty": "medium",
+        "intent": "preserve-completed-items"
+      }
+    },
+    {
+      "id": "adjacent-negative-github-stories",
+      "description": "Adjacent negative: GitHub user-story backlog requests belong to arc-creating-user-stories, not this docs-artifact plan skill.",
+      "prompt": "Turn this PRD into GitHub Issues with user stories and labels. Do not create IMPLEMENTATION_PLAN.md or progress.txt.",
+      "expected_output": "The assistant should not force docs/ implementation plan/progress artifacts when the user specifically asked for GitHub Issues.",
+      "assertions": [
+        {
+          "id": "does-not-force-plan-progress-artifacts",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should avoid insisting on IMPLEMENTATION_PLAN.md or progress.txt and should recognize that the request is for GitHub issue/story creation rather than synchronized docs/ planning artifacts.",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": ["routing", "negative"],
+        "difficulty": "easy",
+        "intent": "avoid-overtrigger"
+      }
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "version": "1",
+  "skill_name": "arc-prd-to-issues",
+  "evals": [
+    {
+      "id": "draft-slices-before-creation",
+      "description": "Draft tracer-bullet slices from a PRD and quiz for approval before creating issues.",
+      "prompt": "Break `prd.md` into GitHub issues using tracer-bullet vertical slices. Draft the slice breakdown first; do not create issues until I approve.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/prd.md", "to": "prd.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "mentions-tracer-or-vertical",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?=.*(tracer|vertical))(?=.*AFK|.*HITL)(?=.*Blocked by)",
+          "flags": "is",
+          "mustPass": true
+        },
+        {
+          "id": "covers-prd-stories",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The slice breakdown should cover the PRD's empty state, CSV import, validation errors, and successful dashboard return requirements.",
+          "mustPass": true
+        },
+        {
+          "id": "asks-granularity-approval",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should ask the user to approve or adjust granularity/dependencies/HITL-AFK labels before creating GitHub issues.",
+          "mustPass": true
+        },
+        {
+          "id": "no-issue-creation-claim",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not claim GitHub issues were created because approval has not been given.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["execution", "prd", "slicing"], "difficulty": "medium", "intent": "draft-prd-slices" }
+    },
+    {
+      "id": "adjacent-negative-implementation-plan",
+      "description": "Implementation plan requests belong to arc-planning-work, not PRD-to-issues.",
+      "prompt": "Create an implementation plan from this PRD and save it to plans/import-onboarding.md. Do not create GitHub issues.",
+      "assertions": [
+        {
+          "id": "does-not-force-issues",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not force GitHub issue creation; it should recognize the request is for an implementation plan file from a PRD.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["routing", "negative"], "difficulty": "easy", "intent": "avoid-overtrigger" }
+    }
+  ]
+}

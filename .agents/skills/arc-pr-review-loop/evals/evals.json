@@ -1,0 +1,43 @@
+{
+  "version": "1",
+  "skill_name": "arc-pr-review-loop",
+  "evals": [
+    {
+      "id": "review-round-posts-comments-no-merge",
+      "description": "Golden path: a revise verdict posts actionable PR comments and does not merge.",
+      "prompt": "Run a review round on PR #27. The plan requires rate limiting on the /api/upload route; the diff only adds it to /api/download. Do not merge anything. Explain exactly what you would post to the PR.",
+      "assertions": [
+        {
+          "id": "requests-changes-with-actionable-comments",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should describe a request-changes review with at least one blocking finding that names the gap (missing rate limiting on /api/upload), states what done looks like, and would be posted as a PR comment an agent can act on independently.",
+          "mustPass": true
+        },
+        {
+          "id": "does-not-merge",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not merge the PR or enable auto-merge; merge authority stays with the caller unless --merge-on-approve was passed (it was not).",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["execution", "golden-path"], "difficulty": "medium", "intent": "review-round" }
+    },
+    {
+      "id": "adjacent-negative-direct-merge-request",
+      "description": "Adjacent negative: an explicit merge request without review is not a review loop.",
+      "prompt": "PR #31 is approved and green. Just merge it now; no further review needed.",
+      "assertions": [
+        {
+          "id": "does-not-run-review-rounds",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not start review rounds or post review comments; it should recognize this as a plain merge task (arc-git-pr-check territory) rather than a review loop.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["routing", "negative"], "difficulty": "easy", "intent": "avoid-overtrigger" }
+    }
+  ]
+}

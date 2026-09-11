@@ -1,0 +1,134 @@
+{
+  "version": "1",
+  "skill_name": "arc-work-issue",
+  "evals": [
+    {
+      "id": "work-issue-in-worktree",
+      "description": "Golden path: resolve #14, create a worktree, and implement from the seeded issue fixture.",
+      "prompt": "arc-work-issue #14. Use `issue-14.md` as the GitHub issue source. Create the worktree at `.arc/worktrees/W-000014`, implement the plan, and report the branch path. Stop before commit/PR because this is a local fixture run.",
+      "expected_output": "The assistant resolves issue 14, creates an isolated worktree, implements in that directory, and verifies with tests.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/issue-14.md", "to": "issue-14.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "worktree-first",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should create or use an isolated git worktree path (not the main checkout) as the implementation directory.",
+          "mustPass": true
+        },
+        {
+          "id": "references-w-id",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "W-000014|issue-14|#14",
+          "mustPass": true
+        },
+        {
+          "id": "implements-not-plans-only",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should implement code changes for the issue rather than only posting a new implementation plan.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["execution", "worktree", "github"], "difficulty": "medium", "intent": "work-open-issue" }
+    },
+    {
+      "id": "ship-and-cleanup",
+      "description": "After implementation, commit with conventional commits, merge the PR, and remove the worktree.",
+      "prompt": "arc-work-issue #14 is implemented in worktree `.arc/worktrees/W-000014` on branch `feat/W-000014-add-queue-retry`. Describe the exact ship steps you would run next: conventional commit, PR, squash merge, and worktree cleanup.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/issue-14.md", "to": "issue-14.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "conventional-commit",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "feat:|fix:|arc-conventional-commits",
+          "mustPass": true
+        },
+        {
+          "id": "closes-issue",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "Closes #14",
+          "mustPass": true
+        },
+        {
+          "id": "merge-pr",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should include opening a PR and squash-merging it after checks.",
+          "mustPass": true
+        },
+        {
+          "id": "cleanup-worktree",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should remove the worktree and prune/delete the local feature branch after merge.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["ship", "cleanup"], "difficulty": "easy", "intent": "commit-pr-merge-cleanup" }
+    },
+    {
+      "id": "adjacent-negative-plan-only",
+      "description": "Adjacent negative: planning an existing issue is arc-planning-work, not worktree implementation.",
+      "prompt": "Create an implementation plan for GitHub issue #14 and comment it on the issue. Do not implement or create a worktree.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/issue-14.md", "to": "issue-14.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "no-worktree-implementation",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should produce an implementation plan only and should not create a git worktree or implement product code.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["routing", "negative"], "difficulty": "easy", "intent": "avoid-overtrigger" }
+    },
+    {
+      "id": "w-id-resolution",
+      "description": "Resolve W-000014 to the GitHub issue before opening the worktree.",
+      "prompt": "arc-work-issue W-000014. Use `issue-14.md` as the only issue index. Stop after resolving the issue number and naming the branch; do not implement.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/issue-14.md", "to": "issue-14.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "maps-to-issue-14",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "#14|issue 14|issue-14",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "branch-uses-w-id",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "feat/W-000014",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["resolution", "w-id"], "difficulty": "easy", "intent": "resolve-w-id" }
+    }
+  ]
+}

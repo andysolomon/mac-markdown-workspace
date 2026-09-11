@@ -1,0 +1,84 @@
+{
+  "version": "1",
+  "skill_name": "arc-defining-work",
+  "evals": [
+    {
+      "id": "destination-first",
+      "description": "The skill must ask for destination before analysis or mutation when destination is absent.",
+      "prompt": "Create tracked stories for the product brief in `product-brief.md`.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/product-brief.md", "to": "product-brief.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "asks-destination",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should ask the user to choose a destination tracker (GitHub Issues, Linear, or Agile Accelerator) before creating stories or doing deep analysis.",
+          "mustPass": true
+        },
+        {
+          "id": "no-created-claim",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not claim that issues, records, labels, or work items were created because the destination was not chosen.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["destination", "gating"], "difficulty": "easy", "intent": "destination-first" }
+    },
+    {
+      "id": "routes-github-to-specialist",
+      "description": "After GitHub destination is chosen for a codebase/ideas source, the router hands off to arc-creating-user-stories and its story contract.",
+      "prompt": "Destination: GitHub Issues. Draft tracked work items for `product-brief.md`, but do not create issues until I approve.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          { "from": "files/starter-inputs/product-brief.md", "to": "product-brief.md" }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "hands-off-to-user-stories-skill",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should state that it is continuing with the arc-creating-user-stories skill (or its STORY_FORMAT contract) for GitHub Issues backlog creation, rather than inventing its own story format.",
+          "mustPass": true
+        },
+        {
+          "id": "drafts-verifiable-stories",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "Any drafted work items should use a job-story sentence ('When ..., I want ..., so that ...') and checklist acceptance criteria where each criterion names a verification method (a test, command, or observable check). Given/When/Then Gherkin scenarios should not be used.",
+          "mustPass": true
+        },
+        {
+          "id": "no-mutation-before-approval",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not claim that GitHub issues were created because the user asked for a draft before approval.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["routing", "github", "draft"], "difficulty": "medium", "intent": "route-to-specialist" }
+    },
+    {
+      "id": "adjacent-negative-existing-issue-plan",
+      "description": "Existing issue implementation planning belongs to arc-planning-work.",
+      "prompt": "Issue #42 already exists. Create an implementation plan for it; do not create any new stories or work items.",
+      "assertions": [
+        {
+          "id": "does-not-create-work-items",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not create or draft new stories/work items; it should recognize this as implementation planning for existing work.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["routing", "negative"], "difficulty": "easy", "intent": "avoid-overtrigger" }
+    }
+  ]
+}

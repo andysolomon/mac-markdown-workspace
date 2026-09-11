@@ -1,0 +1,55 @@
+{
+  "version": "1",
+  "skill_name": "arc-git-pr-check",
+  "evals": [
+    {
+      "id": "merge-update-main-cleanup",
+      "description": "Describe the explicit merge workflow that synchronizes the default branch and cleans only the current linked worktree after proof of merge.",
+      "prompt": "I am in a clean linked feature worktree with a pushed branch and an open PR. Run the reusable shipping workflow with a conventional commit if needed, create or reuse the PR, squash-merge it after checks, update local main, and clean up only this worktree. Use the explicit safe option and describe what must be verified before cleanup.",
+      "expected_output": "The assistant uses arc-git-pr-check with --ship merge --update-main, waits for or verifies a successful merge, fast-forwards the default branch, and removes only the current clean linked worktree and its local feature branch.",
+      "assertions": [
+        {
+          "id": "uses-explicit-update-main",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "--ship merge.*--update-main|--update-main.*--ship merge",
+          "mustPass": true
+        },
+        {
+          "id": "proves-merge-before-cleanup",
+          "kind": "judge",
+          "prompt": "The response should require confirmed PR merge metadata and fetched default-branch evidence before removing the current worktree or branch.",
+          "mustPass": true
+        },
+        {
+          "id": "protects-unrelated-worktrees",
+          "kind": "judge",
+          "prompt": "The response should preserve unrelated worktrees and refuse cleanup when the default or current worktree is dirty or the update is not fast-forwardable.",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["ship", "merge", "main-sync", "cleanup"], "difficulty": "medium", "intent": "finish-linked-worktree" }
+    },
+    {
+      "id": "do-not-cleanup-unmerged-work",
+      "description": "Adjacent negative: PR-first and auto-merge modes do not perform post-merge main synchronization or worktree cleanup.",
+      "prompt": "The PR is still open and I want to use arc-git-pr-check --ship pr or --ship auto. Should the workflow update local main or delete the feature worktree now? Explain the safe behavior.",
+      "expected_output": "The assistant leaves the worktree and branch in place, does not use --update-main without --ship merge, and does not clean up before a confirmed merge.",
+      "assertions": [
+        {
+          "id": "no-premature-cleanup",
+          "kind": "judge",
+          "prompt": "The response should explicitly refuse to update main or remove the feature worktree while the PR is open or auto-merge is merely enabled.",
+          "mustPass": true
+        },
+        {
+          "id": "preserves-pr-modes",
+          "kind": "regex",
+          "pattern": "--ship pr|--ship auto|--update-main requires --ship merge",
+          "mustPass": true
+        }
+      ],
+      "metadata": { "tags": ["negative", "ship", "safety"], "difficulty": "easy", "intent": "avoid-premature-cleanup" }
+    }
+  ]
+}

@@ -1,0 +1,869 @@
+{
+  "version": "1",
+  "skill_name": "arc-parallel-implement",
+  "evals": [
+    {
+      "id": "native-pi-capability-selection",
+      "description": "Offline positive native-Pi capability-selection probe: the parent exposes the complete in-process subagent surface.",
+      "prompt": "Conditional offline specification probe only: do not invoke extension tools, subagents, shell commands, GitHub, or require a Git repository. Treat this capability matrix as hypothetical, not as a claim that the isolated evaluator exposes these tools: the Arc Pi parent exposes subagent_spawn and subagent_wait, with subagent_list, subagent_check, and subagent_cancel available; the external fallback need not be inspected. If the actual evaluator does not expose the native tools, say so truthfully in a brief unavailable-tool note and do not claim a dispatch occurred. Still state the conditional rule and plan. Repository matrix: four independent planned stories have known plans and intended isolated worktree paths, but no repository or worktree setup is available in this probe. Return a compact checklist covering capability-based runtime selection, one bounded child contract and distinct isolated worktree per story, returned child IDs, and parent-owned planning, acceptance, review, and shipping before any ship operation.",
+      "expected_output": "The response gives an offline conditional specification. It may truthfully note that native tools are unavailable in the isolated evaluator, but it still states that the complete subagent_spawn plus subagent_wait pair selects native Arc Pi, assigns one bounded contract and isolated worktree per story, records child IDs, and keeps planning, acceptance, review, and shipping with the parent without claiming live dispatch.",
+      "assertions": [
+        {
+          "id": "native-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "native-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "native-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "native-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "native-pair-selection-rule",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "subagent_spawn[\\s\\S]{0,400}subagent_wait|subagent_wait[\\s\\S]{0,400}subagent_spawn",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "one-contract-worktree-per-story",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:bounded\\s+child\\s+contract[\\s\\S]{0,300}(?:isolated|distinct|separate|own)[\\s\\S]{0,120}worktree|(?:distinct|isolated|separate)[\\s\\S]{0,200}worktree[\\s\\S]{0,200}(?:per|each)\\s+story|(?:per|each)\\s+story[\\s\\S]{0,300}worktree)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "parent-retains-judgment-and-shipping",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "parent[\\s\\S]{0,240}(?:planning|acceptance|review)[\\s\\S]{0,240}(?:shipping|ship)|(?:planning|acceptance|review)[\\s\\S]{0,240}parent[\\s\\S]{0,240}(?:shipping|ship)",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "routing",
+          "native-pi",
+          "positive",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "select-native-surface"
+      }
+    },
+    {
+      "id": "non-pi-external-fallback",
+      "description": "Offline positive fallback probe: native child tools are absent but the external orchestrator is available.",
+      "prompt": "Offline specification probe only: do not invoke extension tools, external workers, shell commands, GitHub, or require a Git repository. Capability matrix: the parent has no subagent_spawn or subagent_wait, while the existing arc-orchestrator/arc_delegate integration advertises a usable bounded dispatch-and-result surface. Repository matrix: three independent planned stories have intended separate story worktrees, but no repository or worktree setup is available in this probe. State the compatible route and parent/worker boundaries without executing it.",
+      "expected_output": "The offline response retains the non-Pi external-orchestrator fallback, assigns a separate isolated story worktree to each story, and does not attempt unavailable native subagent calls.",
+      "assertions": [
+        {
+          "id": "fallback-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "fallback-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "fallback-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "fallback-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "external-fallback-route",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:arc-orchestrator|arc_delegate)[\\s\\S]{0,240}(?:fallback|external|dispatch)|(?:fallback|external|dispatch)[\\s\\S]{0,240}(?:arc-orchestrator|arc_delegate)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "native-pair-absent",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:no|lacks?|missing|without)[\\s\\S]{0,40}subagent_(?:spawn|wait)|subagent_(?:spawn|wait)[\\s\\S]{0,100}(?:absent|unavailable|missing|unusable|not\\s+available)|native[\\s\\S]{0,180}(?:absent|unavailable|not\\s+available|unusable|not\\s+compatible|lacks?)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "one-isolated-worktree-per-story",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:one|separate|distinct|isolated|per[-\\s]+story)[\\s\\S]{0,160}worktree|(?:per|each)\\s+story[\\s\\S]{0,160}worktree|worktree[\\s\\S]{0,160}per[-\\s]+story",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "routing",
+          "fallback",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "preserve-external-route"
+      }
+    },
+    {
+      "id": "partial-native-capability-fallback",
+      "description": "Offline boundary probe: the native capability pair is incomplete but the external parallel surface is usable.",
+      "prompt": "Conditional offline specification probe only: do not invoke extension tools, external workers, shell commands, GitHub, or require a Git repository. Treat this capability matrix as hypothetical. If the isolated evaluator does not expose native or external tools, say so truthfully in a brief unavailable-tool note and do not claim dispatch; still apply the conditional rule: subagent_spawn is present but subagent_wait is absent, so the native pair is unusable, while the installed non-Pi arc-orchestrator/arc_delegate integration advertises a usable bounded dispatch-and-result surface with its own capability or route IDs. Repository matrix: three independent planned stories have intended distinct isolated worktrees, but no repository or worktree setup is available in this probe. Return a compact checklist with the runtime decision, no partial-native call, the advertised fallback capability, parent-owned acceptance and shipping, and this explicit line: `isolated worktrees: .arc/worktrees/story-1, .arc/worktrees/story-2, .arc/worktrees/story-3`.",
+      "expected_output": "The response is an offline conditional specification. It may truthfully note unavailable tools, but it still treats the incomplete native pair as unusable, selects the advertised non-Pi external capability surface, gives each story a distinct isolated worktree such as the listed repo-local paths, and preserves parent-owned acceptance and shipping.",
+      "assertions": [
+        {
+          "id": "partial-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "partial-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "partial-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "partial-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "partial-native-unusable",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "subagent_spawn[\\s\\S]{0,160}subagent_wait[\\s\\S]{0,160}(?:absent|missing|unavailable|unusable|not\\s+usable)|subagent_wait[\\s\\S]{0,160}(?:absent|missing|unavailable)[\\s\\S]{0,160}subagent_spawn",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "external-fallback-and-parent-boundary",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:arc-orchestrator|arc_delegate)[\\s\\S]{0,600}(?:parent|acceptance|shipping|ship)|parent[\\s\\S]{0,500}(?:acceptance|shipping|integration)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "partial-fallback-worktrees-are-isolated",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "isolated\\s+worktrees?\\s*:\\s*[^\\n]*\\.arc/worktrees/story-1[^\\n]*\\.arc/worktrees/story-2[^\\n]*\\.arc/worktrees/story-3",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "routing",
+          "partial",
+          "fallback",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "handle-incomplete-native-surface"
+      }
+    },
+    {
+      "id": "no-usable-parallel-runtime",
+      "description": "Offline negative boundary probe: neither a complete native pair nor an external parallel capability surface is available.",
+      "prompt": "Conditional offline negative boundary probe only: do not invoke extension tools, external workers, shell commands, GitHub, or require a Git repository. Treat this capability matrix as hypothetical. If the actual isolated evaluator does not expose the named tools, say so truthfully in a brief unavailable-tool note and do not claim a runtime call; still apply the conditional rule. Matrix: subagent_wait is present but subagent_spawn is absent, and the installed arc-orchestrator/arc_delegate integration is present but does not advertise a usable bounded parallel dispatch-and-result surface. Repository matrix: two independent planned stories are described, but no .arc/, .arc/worktrees/, Git worktree, or .git/info/exclude setup is available or allowed in this probe. Treat runtime preflight as Step 0 and return a refusal checklist stating what the parent must do without fan-out or setup.",
+      "expected_output": "The response gives an offline conditional Step 0 refusal. It may truthfully note unavailable tools, but it still reports the incomplete native pair and unusable external surface and states that the parent performs no .arc/ or .arc/worktrees/ setup, git worktree add, .git/info/exclude mutation, or fan-out.",
+      "assertions": [
+        {
+          "id": "no-runtime-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "no-runtime-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "no-runtime-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "step-0-runtime-blocker",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "Step\\s*0[\\s\\S]{0,500}(?:refuse|stop|block|incomplete|unusable)|(?:subagent_spawn|subagent_wait)[\\s\\S]{0,300}(?:absent|missing|incomplete|unusable|refuse|stop)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "external-surface-unusable",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:arc-orchestrator|arc_delegate|external)[\\s\\S]{0,500}(?:unusable|not\\s+usable|does\\s+not\\s+advertise|no\\s+usable|not[\\s\\S]{0,40}(?:expose|advertise|usable)|lacks?|not\\s+available)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "no-setup-or-fanout-output",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:no|do\\s+not|never)[\\s\\S]{0,300}(?:fan-?out|dispatch|workers|\\.arc|\\.git/info/exclude|git\\s+worktree|setup)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "no-worktree-setup-command",
+          "kind": "behavior",
+          "method": "command-forbidden",
+          "match": "git\\s+worktree\\s+add",
+          "matchKind": "regex",
+          "mustPass": true
+        },
+        {
+          "id": "no-exclude-or-directory-setup",
+          "kind": "behavior",
+          "method": "command-forbidden",
+          "match": "(?:mkdir[^\\n]*\\.arc|\\.git/info/exclude)",
+          "matchKind": "regex",
+          "mustPass": true
+        },
+        {
+          "id": "no-runtime-filesystem-mutation",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "routing",
+          "negative",
+          "partial",
+          "no-runtime",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "stop-with-runtime-blocker"
+      }
+    },
+    {
+      "id": "invalid-story-key-boundary",
+      "description": "Offline negative worktree-safety probe: reject an unsafe story key before constructing a target or setting up the filesystem.",
+      "prompt": "Offline worktree-safety specification probe only: do not invoke extension tools, shell commands, GitHub, or require a Git repository. Capability matrix: no child dispatch is performed or needed for this validation probe. Repository matrix: a canonical project root is only an input fact; .arc/worktrees/ and .git/info/exclude are not available to mutate. Return a refusal checklist: validate the story key before target construction; reject these concrete keys, `issue-14/../../escape`, `../outside`, `/tmp/absolute-story`, and `story with spaces`; reject any outside target such as `/tmp/arc-outside/W-000014`; and perform no directory, exclude, or git worktree setup.",
+      "expected_output": "The offline response returns a checklist that rejects each unsafe story-key example before constructing a target, rejects an absolute or outside target such as /tmp/arc-outside/W-000014, and explicitly states that no directory, exclude, or git worktree setup occurs.",
+      "assertions": [
+        {
+          "id": "invalid-key-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "invalid-key-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "invalid-key-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "rejects-all-invalid-keys",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "issue-14/\\.\\./\\.\\./escape[\\s\\S]{0,500}\\.\\./outside[\\s\\S]{0,500}/tmp/absolute-story[\\s\\S]{0,500}story with spaces",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "validates-before-target-and-rejects-outside",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?=[\\s\\S]*before[\\s\\S]{0,120}(?:target|construct))(?=[\\s\\S]*/tmp/arc-outside/W-000014)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "invalid-key-no-setup-output",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:no|do\\s+not|never)[\\s\\S]{0,500}(?:directory|mkdir|exclude|worktree|setup)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "invalid-key-no-worktree-command",
+          "kind": "behavior",
+          "method": "command-forbidden",
+          "match": "git\\s+worktree\\s+add",
+          "matchKind": "regex",
+          "mustPass": true
+        },
+        {
+          "id": "invalid-key-no-filesystem-setup",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "worktree",
+          "safety",
+          "negative",
+          "path-boundary",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "reject-invalid-story-key"
+      }
+    },
+    {
+      "id": "outside-worktree-path-boundary",
+      "description": "Offline negative worktree-safety probe: reject a worktree root or target that realpath resolves outside the project.",
+      "prompt": "Offline worktree-safety specification probe only: do not invoke extension tools, shell commands, GitHub, or require a Git repository. Capability matrix: no child dispatch is performed and no extension tool is available to this probe. Repository matrix: use canonical project root `/workspace/project`; `.arc/worktrees` is a symlink resolving outside it to `/tmp/arc-outside/worktrees`, and an existing target for valid key W-000014 resolves outside it to `/tmp/other-repo/W-000014`; no filesystem setup is available. Return a refusal checklist covering canonicalization, root and target containment, the concrete absolute/outside paths, and why no worktree or exclude setup may run.",
+      "expected_output": "The offline response returns a checklist requiring canonical project, root, and target containment, rejects the concrete outside-resolving paths /tmp/arc-outside/worktrees and /tmp/other-repo/W-000014, and explicitly states that no worktree or exclude setup occurs.",
+      "assertions": [
+        {
+          "id": "outside-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "outside-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "outside-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "realpath-containment-required",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:realpath|canonical)[\\s\\S]{0,400}(?:containment|outside)|(?:containment|outside)[\\s\\S]{0,400}(?:realpath|canonical)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "rejects-concrete-outside-paths",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "/tmp/arc-outside/worktrees[\\s\\S]{0,500}/tmp/other-repo/W-000014|/tmp/other-repo/W-000014[\\s\\S]{0,500}/tmp/arc-outside/worktrees",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "outside-path-no-setup-output",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:no|do\\s+not|never)[\\s\\S]{0,300}(?:worktree|\\.git/info/exclude|setup)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "outside-path-no-worktree-command",
+          "kind": "behavior",
+          "method": "command-forbidden",
+          "match": "git\\s+worktree\\s+add",
+          "matchKind": "regex",
+          "mustPass": true
+        },
+        {
+          "id": "outside-path-no-filesystem-setup",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "worktree",
+          "safety",
+          "negative",
+          "path-boundary",
+          "realpath",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "reject-outside-worktree-path"
+      }
+    },
+    {
+      "id": "four-child-batching",
+      "description": "Offline native concurrency-cap and batching specification probe for more stories than one wave can hold.",
+      "prompt": "Conditional offline specification probe only: do not invoke subagent tools, shell commands, GitHub, or require a Git repository. Treat this capability matrix as hypothetical, not as a claim that the isolated evaluator exposes native tools: the complete Arc Pi pair subagent_spawn and subagent_wait is available, with native child inspection available; the external fallback is not selected. If the actual evaluator lacks native tools, say so truthfully in a brief unavailable-tool note and do not claim calls occurred; still state the conditional batching rule. Repository matrix: seven independent planned stories have known contracts and seven intended disjoint repo-local worktree paths, but no worktree creation is available in this probe. Return a compact plan with at most four active in wave 1 (stories 1-4), an explicit ID-to-story mapping with entries such as `arc-sub-story-1 -> story-1 -> .arc/worktrees/story-1` through story 7, exactly one bounded subagent_wait for wave-1 IDs between the waves, inspection/acceptance before dispatching wave 2 (stories 5-7), and parent-owned shipping.",
+      "expected_output": "The response gives an offline conditional batching specification. It may truthfully note unavailable native tools, but it still states at most four active children, an explicit ID-to-story-to-worktree mapping for all seven stories, exactly one bounded wait between wave 1 and wave 2, inspection before the second dispatch, and parent-owned shipping; children do not ship.",
+      "assertions": [
+        {
+          "id": "batch-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "batch-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "batch-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "batch-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "four-child-cap-is-explicit",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:at\\s+most\\s+four|max(?:imum)?\\s*4|four\\s+active|4\\s+active|no\\s+more\\s+than\\s+four)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "wave-1-before-wave-2",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:wave\\s*1|stories?\\s*1\\s*[–-]\\s*4)[\\s\\S]{0,800}subagent_wait[\\s\\S]{0,800}(?:wave\\s*2|stories?\\s*5\\s*[–-]\\s*7)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "arc-sub-id-worktree-mapping",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "arc-sub-story-1[\\s\\S]{0,120}story-1[\\s\\S]{0,120}\\.arc/worktrees/story-1[\\s\\S]{0,1200}arc-sub-story-7[\\s\\S]{0,120}story-7[\\s\\S]{0,120}\\.arc/worktrees/story-7",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "parent-ships-children-do-not",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "parent[\\s\\S]{0,300}(?:ship|commit|PR|release)|(?:shipping|ship)[\\s\\S]{0,300}parent|children[\\s\\S]{0,120}(?:do not|never)\\s+ship",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "native-pi",
+          "concurrency",
+          "batching",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "bound-parallelism"
+      }
+    },
+    {
+      "id": "worktree-cwd-safety",
+      "description": "Offline Arc Pi cwd-safety specification probe with repository-local worktrees and clone-local excludes.",
+      "prompt": "Conditional offline worktree/cwd specification probe only: do not invoke native tools, shell commands, GitHub, or require a Git repository. Treat the complete native subagent_spawn plus subagent_wait pair as a hypothetical capability matrix; if the actual isolated evaluator lacks those tools, say so truthfully in a brief unavailable-tool note and do not claim a child was spawned. Still state the conditional native child contract. Return a checklist: use project root `/workspace/project`; use the existing repo-local relative cwd `.arc/worktrees/W-000014`; describe the clone-local `.git/info/exclude` entry; require realpath containment; and reject absolute `/tmp/arc-outside/W-000014`, parent escape `../outside/W-000014`, missing directories, and a symlink resolving to `/tmp/arc-outside/W-000014`. No setup or file edit is available in this probe.",
+      "expected_output": "The response gives an offline conditional checklist. It may truthfully note unavailable native tools, but it still specifies an existing relative `.arc/worktrees/W-000014` cwd under `/workspace/project`, a clone-local `.git/info/exclude` entry, realpath containment, rejection of the concrete absolute/escape/outside examples, and parent-owned boundaries.",
+      "assertions": [
+        {
+          "id": "cwd-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "cwd-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "cwd-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "cwd-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "repo-local-cwd-and-exclude",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "\\.arc/worktrees/W-000014[\\s\\S]{0,300}\\.git/info/exclude|\\.git/info/exclude[\\s\\S]{0,300}\\.arc/worktrees/W-000014",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "realpath-containment-and-project-root",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:/workspace/project|project\\s+root)[\\s\\S]{0,500}(?:realpath|containment)|(?:realpath|containment)[\\s\\S]{0,500}(?:/workspace/project|project\\s+root)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "rejects-unsafe-cwds",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "/tmp/arc-outside/W-000014[\\s\\S]{0,500}\\.\\./outside/W-000014[\\s\\S]{0,500}(?:missing|symlink)",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "worktree",
+          "native-pi",
+          "safety",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "protect-child-cwd"
+      }
+    },
+    {
+      "id": "child-lifecycle-dashboard",
+      "description": "Offline child-lifecycle specification probe covering IDs, bounded inspection, wait claims, dashboard controls, and session lifetime.",
+      "prompt": "Conditional offline specification probe only: do not invoke subagent tools, shell commands, GitHub, or require a Git repository. Treat this capability matrix as hypothetical: Arc Pi exposes subagent_spawn and subagent_wait plus subagent_list, subagent_check, and subagent_cancel; the external fallback is irrelevant. If the actual isolated evaluator lacks native tools, say so truthfully in a brief unavailable-tool note and do not claim live child activity; still state the conditional lifecycle rule. Repository matrix: two independent stories have intended isolated worktree paths and two conceptual children, but no child or repository is actually available. Return a compact checklist covering session-scoped IDs such as arc-sub-story-1 and arc-sub-story-2, bounded status/list/check controls, one bounded wait before acceptance, cancellation and settled results, the /subagents or /sub dashboard, and parent-session shutdown.",
+      "expected_output": "The response gives an offline conditional lifecycle specification. It may truthfully note unavailable native tools, but it still describes session-scoped arc-sub IDs, bounded status/list/check controls, a wait claim before acceptance, the /subagents dashboard, settled-child behavior, and shutdown cancellation of active children.",
+      "assertions": [
+        {
+          "id": "lifecycle-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "lifecycle-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "lifecycle-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "lifecycle-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "arc-sub-ids-and-status-controls",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?=[\\s\\S]*arc-sub-story-1)(?=[\\s\\S]*arc-sub-story-2)(?=[\\s\\S]*(?:subagent_(?:list|check|wait)|bounded\\s+(?:list|check|wait)))",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "bounded-wait-before-acceptance",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:bounded\\s+)?subagent_wait[\\s\\S]{0,500}(?:accept|settled|result)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "dashboard-and-shutdown-lifecycle",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "/(?:subagents|sub)\\b[\\s\\S]{0,1200}(?:shutdown|shut\\s+down|session)|(?:shutdown|shut\\s+down|session)[\\s\\S]{0,500}(?:cancel|settled)",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "native-pi",
+          "lifecycle",
+          "dashboard",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "manage-child-lifecycle"
+      }
+    },
+    {
+      "id": "parent-only-shipping-boundary",
+      "description": "Offline parent-owned commit, PR, merge, and explicit ship-mode specification probe after child acceptance.",
+      "prompt": "Offline shipping-boundary specification probe only: do not invoke child tools, shell commands, GitHub, or require a Git repository. Treat the capability and repository matrix as conceptual facts: four Arc Pi child sessions have completed with clean verification, but child sessions have no commit, GitHub, or shipping authority; only the parent can ship. Four accepted isolated worktree diffs are conceptually ready at `.arc/worktrees/story-1`, `.arc/worktrees/story-2`, `.arc/worktrees/story-3`, and `.arc/worktrees/story-4`; no actual repository or GitHub operation is available. Return a compact parent-only checklist: inspect and accept each diff, preserve one story/branch/commit/PR per story, include the exact boundary phrase `children never ship`, honor the caller's explicit --ship auto request, and compare --ship pr, --ship auto, and --ship merge.",
+      "expected_output": "The offline response has the parent inspect and accept each conceptual diff, perform one story-scoped commit and PR per story, honor only the explicitly selected ship mode, include an isolated worktree path, and explicitly state `children never ship`; it does not claim a live operation.",
+      "assertions": [
+        {
+          "id": "shipping-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "shipping-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "shipping-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "shipping-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "children-have-no-shipping-authority",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "children\\s+never\\s+ship",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "parent-inspects-accepts-ships",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "parent[\\s\\S]{0,180}(?:inspect|review)[\\s\\S]{0,180}accept[\\s\\S]{0,240}(?:commit|PR|push|ship)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "one-story-branch-commit-pr",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "one[\\s\\S]{0,120}story[\\s\\S]{0,120}branch[\\s\\S]{0,120}commit[\\s\\S]{0,120}PR|per\\s+story[\\s\\S]{0,160}(?:branch|commit|PR)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "ship-modes-are-explicit",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "--ship\\s+pr[\\s\\S]{0,300}--ship\\s+auto[\\s\\S]{0,300}--ship\\s+merge|--ship\\s+merge[\\s\\S]{0,300}--ship\\s+auto[\\s\\S]{0,300}--ship\\s+pr",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "shipping-worktree-isolation-is-explicit",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "\\.arc/worktrees/story-1[\\s\\S]{0,800}\\.arc/worktrees/story-4|(?:isolated|separate|distinct)[\\s\\S]{0,300}worktree",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "shipping",
+          "parent-boundary",
+          "offline"
+        ],
+        "difficulty": "medium",
+        "intent": "protect-shipping-authority"
+      }
+    },
+    {
+      "id": "adjacent-negative-single-story",
+      "description": "Offline adjacent negative: one issue belongs to the single-story workflow, not parallel fan-out.",
+      "prompt": "Offline routing probe only: do not invoke extension tools, shell commands, GitHub, or require a Git repository. Capability matrix: no parallel runtime is requested or invoked. Repository matrix: one issue has one intended isolated worktree, with no batch and no repository setup available. According to the attached ARC skill's single-story rule, choose explicitly between `arc-work-issue` and `arc-parallel-implement` for GitHub issue #42, name the selected workflow, and state that no parallel fan-out is used.",
+      "expected_output": "The response routes the single issue to arc-work-issue and does not spawn parallel children or invent a batch workflow.",
+      "assertions": [
+        {
+          "id": "adjacent-no-spawn-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_spawn",
+          "mustPass": true
+        },
+        {
+          "id": "adjacent-no-wait-call",
+          "kind": "behavior",
+          "method": "tool-call-forbidden",
+          "value": "subagent_wait",
+          "mustPass": true
+        },
+        {
+          "id": "adjacent-no-live-external-call",
+          "kind": "safety",
+          "method": "no-live-external-calls",
+          "mustPass": true
+        },
+        {
+          "id": "adjacent-no-worktree-files-touched",
+          "kind": "safety",
+          "method": "no-forbidden-files-touched",
+          "config": {
+            "paths": [
+              ".arc",
+              ".git/info/exclude"
+            ]
+          },
+          "mustPass": true
+        },
+        {
+          "id": "routes-single-story",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "arc-work-issue",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "avoids-parallel-fanout",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(?:no|not|avoid|without)[\\s\\S]{0,160}(?:fan-?out|parallel|subagent|children|batch)",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": [
+          "routing",
+          "negative",
+          "offline"
+        ],
+        "difficulty": "easy",
+        "intent": "avoid-overtrigger"
+      }
+    }
+  ]
+}

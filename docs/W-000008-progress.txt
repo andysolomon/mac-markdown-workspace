@@ -1,0 +1,36 @@
+W-000008 - iOS storage-location choice - Progress
+Generated: 2026-09-11 12:22:20 EDT
+On completion, move this file and the plan to docs/archive/.
+
+[x] 1.0 - Storage semantics and compatibility (2026-09-11)
+    [x] 1.1 - Canonical "documents" | "private" (default "documents") in settingsStore; normalizeStoredPreference in src/ios/notesStorage.ts: icloud->documents, device->documents + upgrade migration, unknown->default
+    [x] 1.2 - directoryFor: documents->Directory.Documents, private->Directory.LibraryNoCloud; Directory.Data removed from all notes/metadata paths (it aliases Documents on iOS)
+    [x] 1.3 - openFile/readFile/saveFile/saveFileAs/exports unchanged (Documents/Cache); only notes CRUD, tombstones, and materializeTree follow the setting
+[x] 2.0 - Safe migration and serialized notes I/O (2026-09-11)
+    [x] 2.1 - Explicit-directory helpers (readNoteFrom/writeNoteTo/deleteNoteFrom/listNoteIds/readMetaFrom/writeMetaTo/snapshotLibrary/listNotesIn) — no mutable global read mid-operation
+    [x] 2.2 - createNotesStorageController: promise-chain mutex; ready()/withActive()/setStorage(); every AppApi notes op + getSetting/setSetting("iosStorage") queue behind init/migration
+    [x] 2.3 - copyAndVerify: reconcile target exactly (overwrite/write/delete stale), write meta, read back and compare count/ids/bodies/meta; preference + cleanup marker persisted atomically only after verify
+    [x] 2.4 - Snapshot carries ids, bodies, meta.times, meta.tombstones; missing/partial times are completed from source mtimes before copy
+    [x] 2.5 - iosStorageMigration marker {from,to,phase: copy|cleanup}; post-activation cleanup is best-effort, keeps the target active, resolves, and retries on relaunch; copy-phase recovery keeps source authoritative
+    [x] 2.6 - listNotes/readNote read the active root only; deleteNote also clears the inactive root defensively; parseMeta strict (migration fails closed on corrupt sidecar; CRUD path lenient)
+    [x] 2.7 - Legacy device cleanup failure cannot reset to partially deleted Documents; a cleanup marker deletes its source only when the persisted preference names its target (a mismatched marker is discarded, nothing deleted); a legacy device upgrade interrupted mid-copy is retried
+[x] 3.0 - Transactional settings UX (2026-09-11)
+    [x] 3.1 - switchIosStorage() writes the active note's pending buffer via updateActiveNote before setSetting
+    [x] 3.2 - Pills disabled + role=radiogroup aria-busy while awaiting; store updated only after setSetting resolves; repeat taps ignored
+    [x] 3.3 - reloadLibrary() after success (same ids -> active note preserved)
+    [x] 3.4 - Copy: "Documents & Backup" / "On device" + hint pointing cross-device sync at Cloud Sync; failure shows role=alert error, previous pill stays selected, retry allowed
+    [x] 3.5 - App.tsx hydrates only canonical values (isIosStorage); shim's getSetting("iosStorage") and listNotes both await the controller's ready() so hydration and library load cannot race migration
+[x] 4.0 - Automated regression coverage (2026-09-11)
+    [x] 4.1 - src/tests/iosNotesStorage.test.ts: stateful Filesystem mock; routing per mode, Data never used, default/canonical persistence, icloud + device upgrades (incl. failed upgrade fallback)
+    [x] 4.2 - Both directions, exact reconciliation, full updatedAt/tombstone preservation, atomic activation failure, best-effort explicit + legacy cleanup, relaunch recovery (repeat cleanup failure, mismatched marker, legacy mid-copy), concurrent-write serialization (33 tests)
+    [x] 4.3 - src/tests/SettingsPanel.test.tsx: native-only vs absent global vs non-native shim, no-iCloud copy, busy/repeat-tap/success, rejection rollback + retry, no-op reselect, flush-before-migrate order (8 tests)
+    [x] 4.4 - typecheck, lint (1 pre-existing warning), vitest 166/166, web:build, ios:build all green on 2026-09-11; Playwright suite not run in this pass
+[~] 5.0 - Documentation and native verification
+    [x] 5.1 - README, docs/ios-icloud.md (rewritten: roots, migration, legacy upgrade, verification recipe), docs/passwordless-vault-sync.md Part 2 corrected
+    [ ] 5.2 - Verify fresh installs and legacy upgrades in an iOS simulator — NOT DONE (no Xcode/iOS runtime on the Linux implementation host)
+    [ ] 5.3 - Inspect Documents/notes and Library/NoCloud/notes across switches and relaunches — NOT DONE (see 5.2)
+    [ ] 5.4 - Repeat Files/backup-sensitive checks on a signed physical device — NOT DONE (see 5.2)
+[ ] 6.0 - Ship and archive
+    [ ] 6.1 - Record migration behavior and native evidence in issue #8 and the PR
+    [ ] 6.2 - Open the shipping PR with Closes #8 after verification
+    [ ] 6.3 - On merge: move docs/W-000008-IMPLEMENTATION_PLAN.md + docs/W-000008-progress.txt to docs/archive/

@@ -569,7 +569,12 @@ button.active:hover {
      inset changes so typed text stays visible instead of iOS panning the
      whole app. */
   .mm-editor .cm-scroller {
-    padding-bottom: calc(88px + var(--mm-kb-inset, 0px));
+    /* Leave enough trailing content for CodeMirror to scroll the caret above
+       the fixed bottom chrome. The scroll-margin facet supplies the
+       asymmetric visible-area boundary; this padding supplies the scroll
+       range for the final line. */
+    padding-bottom: max(88px, var(--mm-kb-inset, 0px));
+    scroll-padding-bottom: max(88px, var(--mm-kb-inset, 0px));
   }
 
   .preview {

@@ -96,13 +96,13 @@ Each phase is independently reviewable and keeps the app runnable.
 - **Deliverables:**
   - **Pane-collapse fix** (reported: "green Mac zoom button closes all sidebars") — root cause: the ≤640px mobile breakpoint fires on desktop window resize/zoom-restore; `listOpen` samples width only at mount and `.mm-sidebar` is unconditionally `display:none` when narrow. Fix: track the breakpoint with a matchMedia listener, restore panes when crossing back to wide, keep the sidebar reachable on narrow desktop widths.
   - **Export overhaul** — root cause of "export isn't working on web": web `exportPdf` is a bare `window.print()` (prints the app chrome, not the note) and HTML export doesn't exist. Add `exportHtml` to `AppApi` (all three shims) producing a standalone themed HTML document; rebuild web PDF export to print only the rendered note via a print-scoped document; export menu offers HTML + PDF (+ existing TXT/DOCX).
-  - **Save semantics per platform** — web: Save persists to the library (flush autosave + saved feedback; no file dialog); iOS: save into iCloud-backed Documents (entitlement steps documented), with a save-to-device option surfaced in Settings (Phase 9).
+  - **Save semantics per platform** — web: Save persists to the library (flush autosave + saved feedback; no file dialog); iOS: save into the app Documents directory (backup/Files behavior documented), with a genuinely private on-device option surfaced in Settings (Phase 9).
 - **Dependencies:** Phases 1–7.
 - **Acceptance:** HTML + PDF export verified working on web; Save behaves per platform; window resize/zoom no longer strands the panes.
 
 ### Phase 9 — Settings screen
 - **Goal:** A settings surface in the design language.
-- **Deliverables:** gear entry point in the chrome → settings panel (same popover design language); **toolbar show/hide toggle** (persisted; hides the transitional toolbar); **iOS save-location option** (iCloud vs on-device), persisted via AppApi settings.
+- **Deliverables:** gear entry point in the chrome → settings panel (same popover design language); **toolbar show/hide toggle** (persisted; hides the transitional toolbar); **iOS save-location option** (Documents/backup vs private on-device), persisted via AppApi settings with safe migration between `Directory.Documents` and `Directory.LibraryNoCloud` (issue #8 plan: `docs/W-000008-IMPLEMENTATION_PLAN.md`).
 - **Dependencies:** Phase 8.
 - **Acceptance:** toggles persist and apply live on all platforms.
 
