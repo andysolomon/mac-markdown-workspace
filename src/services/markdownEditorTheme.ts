@@ -82,7 +82,7 @@ const macMarkdownHighlight = HighlightStyle.define([
 export const macMarkdownSyntaxHighlighting: Extension = syntaxHighlighting(macMarkdownHighlight);
 
 /**
- * Editor chrome: flat theme surface, accent caret, neutral selection wash,
+ * Editor chrome: flat theme surface, accent caret, high-contrast selection,
  * prose-first type. The editor face/size are indirected through
  * `--mm-font-editor` / `--mm-editor-size` so the Aa picker can swap them.
  */
@@ -104,8 +104,12 @@ const macMarkdownChrome = EditorView.theme({
     borderLeftColor: "var(--mm-accent)",
     borderLeftWidth: "2px",
   },
-  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
-    backgroundColor: "var(--mm-sel)",
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground": {
+    backgroundColor: "var(--mm-selection-bg) !important",
+  },
+  ".cm-line::selection, .cm-line ::selection": {
+    color: "var(--mm-selection-text) !important",
+    WebkitTextFillColor: "var(--mm-selection-text) !important",
   },
   ".cm-activeLine": {
     backgroundColor: "transparent",

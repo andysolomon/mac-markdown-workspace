@@ -1,68 +1,20 @@
-import type { AppApi, NoteTombstone } from "../../shared/types/ipc";
-import type { RawNote } from "../services/notesModel";
+import type { AppApi } from "../../shared/types/ipc";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
-
-const NOTES_DIR = "notes";
-const notePath = (id: string) => `${NOTES_DIR}/${id}.md`;
-
-/**
- * Sync bookkeeping sidecar (issue #21). Capacitor Filesystem exposes no
- * utimes, so a pulled note's canonical updatedAt can't ride on file mtime —
- * `times` stores it authoritatively (mtime is the fallback for notes imported
- * outside the app). `tombstones` records local deletions so they propagate
- * instead of resurrecting. Kept in Data (app-private, always writable, and
- * off the user's iCloud Files view) rather than beside the .md notes.
- */
-const META_PATH = `${NOTES_DIR}/.vault-meta.json`;
-const META_DIR = Directory.Data;
-
-interface VaultMeta {
-  times: Record<string, number>;
-  tombstones: Record<string, number>;
-}
-
-async function readMeta(): Promise<VaultMeta> {
-  try {
-    const res = await Filesystem.readFile({
-      path: META_PATH,
-      directory: META_DIR,
-      encoding: Encoding.UTF8,
-    });
-    const parsed = JSON.parse(res.data as string) as Partial<VaultMeta>;
-    return { times: parsed.times ?? {}, tombstones: parsed.tombstones ?? {} };
-  } catch {
-    return { times: {}, tombstones: {} };
-  }
-}
-
-async function writeMeta(meta: VaultMeta): Promise<void> {
-  await Filesystem.writeFile({
-    path: META_PATH,
-    data: JSON.stringify(meta),
-    directory: META_DIR,
-    encoding: Encoding.UTF8,
-    recursive: true,
-  });
-}
-
-/** Storage location follows the persisted setting (issue #8 / W-000008):
-    "icloud" -> Documents (iCloud-backed, Files-visible); "device" -> Data
-    (app-private). Reads merge BOTH locations so switching never hides
-    existing notes; writes go to the selected location; deletes cover both. */
-function selectedDirectory(): Directory {
-  return getSettings()["iosStorage"] === "device" ? Directory.Data : Directory.Documents;
-}
-
-const BOTH_DIRECTORIES: Directory[] = [Directory.Documents, Directory.Data];
-
-async function readRawNoteFrom(directory: Directory, id: string): Promise<RawNote> {
-  const [read, stat] = await Promise.all([
-    Filesystem.readFile({ path: notePath(id), directory, encoding: Encoding.UTF8 }),
-    Filesystem.stat({ path: notePath(id), directory }),
-  ]);
-  return { id, body: read.data as string, updatedAt: stat.mtime };
-}
+import {
+  IOS_STORAGE_KEY,
+  createNotesStorageController,
+  deleteNoteFrom,
+  isIosStorage,
+  listNotesIn,
+  otherStorage,
+  readMetaLenient,
+  readNoteFrom,
+  tombstonesOf,
+  writeMetaTo,
+  writeNoteTo,
+  type PreferenceStore,
+} from "./notesStorage";
 
 /**
  * Capacitor-native API shim for iOS (WKWebView).
@@ -83,6 +35,36 @@ function getSettings(): Record<string, unknown> {
 function setSettings(settings: Record<string, unknown>) {
   localStorage.setItem("mmw-settings", JSON.stringify(settings));
 }
+
+/**
+ * Notes-library storage location (issue #8 / W-000008). The controller owns
+ * the Documents-vs-LibraryNoCloud choice, legacy-value normalization, and
+ * migration; every notes operation below runs through `withActive` so a
+ * migration can never interleave with a note write, scaffold, or sync pull.
+ * The preference itself rides on the same localStorage settings blob as every
+ * other AppApi setting.
+ */
+const preferenceStore: PreferenceStore = {
+  get: (key) => getSettings()[key],
+  set: (key, value) => {
+    const settings = getSettings();
+    settings[key] = value;
+    setSettings(settings);
+  },
+  setMany: (values) => {
+    const settings = getSettings();
+    Object.assign(settings, values);
+    // One localStorage write is the activation commit: iosStorage and its
+    // cleanup marker can never be persisted in different settings snapshots.
+    setSettings(settings);
+  },
+  remove: (key) => {
+    const settings = getSettings();
+    delete settings[key];
+    setSettings(settings);
+  },
+};
+const notesStorage = createNotesStorageController(preferenceStore);
 
 async function writeAndShare(filename: string, data: string | Blob): Promise<boolean> {
   try {
@@ -209,9 +191,23 @@ export const capacitorApi: AppApi = {
   setZoomLevel: async () => null,
   getZoomLevel: async () => ({ level: 0 }),
 
-  getSetting: async (key) => getSettings()[key],
+  getSetting: async (key) => {
+    // The storage location is answered by the controller so callers only ever
+    // see a canonical value that matches the root notes are being served from.
+    if (key === IOS_STORAGE_KEY) return notesStorage.current();
+    return getSettings()[key];
+  },
 
   setSetting: async (key, value) => {
+    if (key === IOS_STORAGE_KEY) {
+      // Transactional: copies + verifies the library in the new root, atomically
+      // persists the preference + cleanup marker, then removes the old copy.
+      // Rejects (leaving the old location active) on any pre-activation
+      // failure. Cleanup after activation is best-effort and does not reject.
+      if (!isIosStorage(value)) throw new Error(`Invalid iOS storage location: ${String(value)}`);
+      await notesStorage.setStorage(value);
+      return;
+    }
     const settings = getSettings();
     settings[key] = value;
     setSettings(settings);
@@ -258,116 +254,86 @@ export const capacitorApi: AppApi = {
     /* no-op */
   },
 
-  listNotes: async () => {
-    // Merge both storage locations, newest copy of an id wins (see
-    // selectedDirectory for why both are read).
-    const byId = new Map<string, RawNote>();
-    for (const directory of BOTH_DIRECTORIES) {
+  // Notes library — every operation reads/writes ONLY the active root
+  // (Documents or Library/NoCloud per the storage setting) and is serialized
+  // with migration by the controller.
+  listNotes: () => notesStorage.withActive((directory) => listNotesIn(directory)),
+
+  readNote: ({ id }) =>
+    notesStorage.withActive(async (directory) => {
       try {
-        const res = await Filesystem.readdir({ path: NOTES_DIR, directory });
-        for (const entry of res.files) {
-          const name = typeof entry === "string" ? entry : entry.name;
-          if (!name.endsWith(".md")) continue;
-          try {
-            const note = await readRawNoteFrom(directory, name.slice(0, -3));
-            const existing = byId.get(note.id);
-            if (!existing || note.updatedAt > existing.updatedAt) byId.set(note.id, note);
-          } catch {
-            /* skip unreadable */
-          }
-        }
+        const note = await readNoteFrom(directory, id);
+        const { times } = await readMetaLenient(directory);
+        const canonical = times[id];
+        if (canonical !== undefined) note.updatedAt = canonical;
+        return note;
       } catch {
-        /* directory not created yet */
+        return null;
       }
-    }
-    // Overlay the authoritative updatedAt (a vault-pulled note keeps its
-    // canonical timestamp; mtime would otherwise read as the pull time).
-    const { times } = await readMeta();
-    for (const note of byId.values()) {
-      const canonical = times[note.id];
-      if (canonical !== undefined) note.updatedAt = canonical;
-    }
-    return [...byId.values()];
-  },
+    }),
 
-  readNote: async ({ id }) => {
-    for (const directory of [selectedDirectory(), ...BOTH_DIRECTORIES]) {
+  createNote: ({ body }) =>
+    notesStorage.withActive(async (directory) => {
+      const id = crypto.randomUUID();
+      const updatedAt = Date.now();
+      await writeNoteTo(directory, id, body ?? "");
+      const meta = await readMetaLenient(directory);
+      meta.times[id] = updatedAt;
+      await writeMetaTo(directory, meta);
+      return { id, body: body ?? "", updatedAt };
+    }),
+
+  writeNote: ({ id, body, updatedAt }) =>
+    notesStorage.withActive(async (directory) => {
+      const stamp = updatedAt ?? Date.now();
+      await writeNoteTo(directory, id, body);
+      const meta = await readMetaLenient(directory);
+      meta.times[id] = stamp;
+      delete meta.tombstones[id]; // resurrected note: drop any stale tombstone
+      await writeMetaTo(directory, meta);
+      return { id, body, updatedAt: stamp };
+    }),
+
+  deleteNote: ({ id }) =>
+    notesStorage.withActive(async (directory) => {
+      await deleteNoteFrom(directory, id);
+      // Defensive: also drop any leftover copy in the inactive root (e.g. from
+      // an interrupted cleanup) so it can never come back after a later switch.
+      const inactive = otherStorage(await notesStorage.current());
       try {
-        return await readRawNoteFrom(directory, id);
+        await deleteNoteFrom(
+          inactive === "private" ? Directory.LibraryNoCloud : Directory.Documents,
+          id,
+        );
       } catch {
-        /* try next location */
+        /* best effort */
       }
-    }
-    return null;
-  },
+      const meta = await readMetaLenient(directory);
+      delete meta.times[id];
+      await writeMetaTo(directory, meta);
+    }),
 
-  createNote: async ({ body }) => {
-    const id = crypto.randomUUID();
-    const updatedAt = Date.now();
-    await Filesystem.writeFile({
-      path: notePath(id),
-      data: body ?? "",
-      directory: selectedDirectory(),
-      encoding: Encoding.UTF8,
-      recursive: true,
-    });
-    const meta = await readMeta();
-    meta.times[id] = updatedAt;
-    await writeMeta(meta);
-    return { id, body: body ?? "", updatedAt };
-  },
+  listTombstones: () =>
+    notesStorage.withActive(async (directory) => tombstonesOf(await readMetaLenient(directory))),
 
-  writeNote: async ({ id, body, updatedAt }) => {
-    const stamp = updatedAt ?? Date.now();
-    await Filesystem.writeFile({
-      path: notePath(id),
-      data: body,
-      directory: selectedDirectory(),
-      encoding: Encoding.UTF8,
-      recursive: true,
-    });
-    const meta = await readMeta();
-    meta.times[id] = stamp;
-    delete meta.tombstones[id]; // resurrected note: drop any stale tombstone
-    await writeMeta(meta);
-    return { id, body, updatedAt: stamp };
-  },
+  recordTombstone: ({ id, deletedAt }) =>
+    notesStorage.withActive(async (directory) => {
+      const meta = await readMetaLenient(directory);
+      meta.tombstones[id] = deletedAt;
+      delete meta.times[id];
+      await writeMetaTo(directory, meta);
+    }),
 
-  deleteNote: async ({ id }) => {
-    // Remove from every location so stale copies can't resurface in the merge.
-    for (const directory of BOTH_DIRECTORIES) {
-      try {
-        await Filesystem.deleteFile({ path: notePath(id), directory });
-      } catch {
-        /* not present there */
-      }
-    }
-    const meta = await readMeta();
-    delete meta.times[id];
-    await writeMeta(meta);
-  },
+  clearTombstones: ({ ids }) =>
+    notesStorage.withActive(async (directory) => {
+      const meta = await readMetaLenient(directory);
+      for (const id of ids) delete meta.tombstones[id];
+      await writeMetaTo(directory, meta);
+    }),
 
-  listTombstones: async () => {
-    const { tombstones } = await readMeta();
-    return Object.entries(tombstones).map(([id, deletedAt]) => ({ id, deletedAt }) as NoteTombstone);
-  },
-
-  recordTombstone: async ({ id, deletedAt }) => {
-    const meta = await readMeta();
-    meta.tombstones[id] = deletedAt;
-    delete meta.times[id];
-    await writeMeta(meta);
-  },
-
-  clearTombstones: async ({ ids }) => {
-    const meta = await readMeta();
-    for (const id of ids) delete meta.tombstones[id];
-    await writeMeta(meta);
-  },
-
-  materializeTree: async ({ entries }) => {
+  // Scaffolds land beside the notes library in the active root.
+  materializeTree: ({ entries }) => notesStorage.withActive(async (directory) => {
     const scaffoldRoot = `scaffolds/${new Date().toISOString().replace(/[:.]/g, "-")}`;
-    const directory = selectedDirectory();
     const sorted = [...entries].sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
       const depthA = a.relativePath.split("/").length;
@@ -416,5 +382,5 @@ export const capacitorApi: AppApi = {
         error: err instanceof Error ? err.message : "Scaffold failed",
       };
     }
-  },
+  }),
 };

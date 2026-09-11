@@ -9,7 +9,7 @@ import {
 } from "../services/themeStore";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useNotesStore } from "../services/notesStore";
-import { useSettingsStore } from "../services/settingsStore";
+import { useSettingsStore, isIosStorage } from "../services/settingsStore";
 import { openSyncModal } from "./shell/SettingsPanel";
 
 const MD_EXTENSIONS = [".md", ".markdown", ".mdx", ".txt"];
@@ -80,8 +80,12 @@ export function App() {
         useSettingsStore.getState().setShowToolbar(saved);
       }
     });
+    // iOS storage location (issue #8): the shim resolves this only after its
+    // storage controller has normalized legacy values and finished any
+    // interrupted migration, so the hydrated value is always canonical and
+    // always matches the root that listNotes is serving from.
     window.appApi?.getSetting?.("iosStorage").then((saved) => {
-      if (saved === "icloud" || saved === "device") {
+      if (isIosStorage(saved)) {
         useSettingsStore.getState().setIosStorage(saved);
       }
     });

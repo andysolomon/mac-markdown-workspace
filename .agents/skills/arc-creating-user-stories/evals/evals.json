@@ -1,0 +1,128 @@
+{
+  "version": "1",
+  "skill_name": "arc-creating-user-stories",
+  "evals": [
+    {
+      "id": "draft-verifiable-backlog",
+      "description": "Golden path: draft a GitHub Issues backlog from a feature brief, but do not mutate GitHub before approval.",
+      "prompt": "Create a draft GitHub Issues backlog from `feature-brief.md`. Do not create issues yet; I want to review the proposed stories first.",
+      "expected_output": "The assistant should produce a concrete draft backlog with W-prefixed story IDs, epics, priorities, sizes, job-story sentences, and checklist acceptance criteria with per-criterion verification methods. It should not claim to have created GitHub issues.",
+      "setup": {
+        "kind": "seeded",
+        "sources": [
+          {
+            "from": "files/starter-inputs/feature-brief.md",
+            "to": "feature-brief.md"
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "id": "uses-story-ids",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "W-00000[1-3]",
+          "mustPass": true
+        },
+        {
+          "id": "uses-job-story-sentence",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "When .*I want .*so that",
+          "flags": "s",
+          "mustPass": true
+        },
+        {
+          "id": "criteria-have-verify-method",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "Acceptance criteria should be checklists of observable outcomes where each criterion names a concrete verification method (a test to run or write, a command, or a specific manual observation), not Given/When/Then Gherkin scenarios.",
+          "mustPass": true
+        },
+        {
+          "id": "includes-priority-and-size",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(priority:\\s*P[0-2]|P[0-2]).*(size:\\s*[SMLX]{1,2}|size:\\s*XL|size:\\s*L|size:\\s*M|size:\\s*S)",
+          "flags": "is",
+          "mustPass": true
+        },
+        {
+          "id": "no-issue-creation-claim",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not claim that GitHub issues, labels, or project items were created, because the user asked to review the draft first.",
+          "mustPass": true
+        },
+        {
+          "id": "grounded-in-brief",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The proposed stories should be grounded in the seeded feature brief: transaction categorization, budget alerts, or first-time-user empty states.",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": ["execution", "golden-path", "draft-only"],
+        "difficulty": "medium",
+        "intent": "draft-backlog"
+      }
+    },
+    {
+      "id": "adjacent-negative-existing-issue-plan",
+      "description": "Adjacent negative: planning implementation for an existing issue should not trigger story/backlog creation.",
+      "prompt": "Issue #42 already exists and has acceptance criteria. Create an implementation plan for fixing it; do not create more user stories or GitHub issues.",
+      "expected_output": "The assistant should plan implementation work for the existing issue without creating a new backlog.",
+      "assertions": [
+        {
+          "id": "does-not-create-new-story-ids",
+          "kind": "output",
+          "method": "judge",
+          "prompt": "The response should not create new W-000001-style user stories or a new backlog; it should stay focused on implementation planning for the existing issue.",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": ["routing", "negative"],
+        "difficulty": "easy",
+        "intent": "avoid-overtrigger"
+      }
+    },
+    {
+      "id": "approved-issue-creation-instructions",
+      "description": "Process adherence: when issue creation is approved, the assistant should use safe GitHub issue creation mechanics.",
+      "prompt": "I approve creating the GitHub issues for these stories. Explain the exact GitHub CLI process you will use before running anything.",
+      "expected_output": "The assistant should mention labels, issue body temp files with --body-file, project linking/item-add, and verification.",
+      "assertions": [
+        {
+          "id": "uses-body-file",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "--body-file",
+          "mustPass": true
+        },
+        {
+          "id": "mentions-project-integration",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(gh project|project item-add|project link)",
+          "flags": "i",
+          "mustPass": true
+        },
+        {
+          "id": "mentions-verification",
+          "kind": "output",
+          "method": "regex",
+          "pattern": "(verify|confirm|gh issue list)",
+          "flags": "i",
+          "mustPass": true
+        }
+      ],
+      "metadata": {
+        "tags": ["process", "github"],
+        "difficulty": "medium",
+        "intent": "approved-creation-process"
+      }
+    }
+  ]
+}

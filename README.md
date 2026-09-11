@@ -15,8 +15,8 @@ The design system's core rule: **structure is colored, prose is not.** Heading h
 - **Exports** — standalone themed **HTML**, **PDF**, TXT, and DOCX. iOS Safari delivers through the native share sheet.
 - **Mobile editing kit** — Bear-style bottom tool strip (share · Aa · +) and a markdown helper bar that rides above the on-screen keyboard (#, bold, italic, lists, tasks, quotes, code, links, indent, Done).
 - **Cloud sync (optional)** — passwordless, end-to-end encrypted sync across devices. A passphrase (never sent anywhere) derives the keys on-device; the API and S3 only ever hold ciphertext. Link a new device by sharing a **vault code**. See [`docs/passwordless-vault-sync.md`](./docs/passwordless-vault-sync.md).
-- **Settings** — toolbar visibility toggle; Cloud Sync setup; iOS notes storage location (see `docs/ios-icloud.md`).
-- **Local-first storage** — Electron: a real folder of `.md` files in `~/Documents/Mac Markdown`; web: IndexedDB; iOS: Capacitor Filesystem under Documents.
+- **Settings** — toolbar visibility toggle; Cloud Sync setup; iOS notes storage location — *Documents & Backup* (sandbox `Documents/`, backed up, Files-visible) or *On device* (`Library/NoCloud/`, app-private); switching migrates the library safely (see `docs/ios-icloud.md`).
+- **Local-first storage** — Electron: a real folder of `.md` files in `~/Documents/Mac Markdown`; web: IndexedDB; iOS: Capacitor Filesystem under `Documents/notes` or `Library/NoCloud/notes` per the Storage setting.
 
 ## Tech stack
 
@@ -81,7 +81,7 @@ The components are **platform-agnostic and UI-only** — all host capability (no
 |----------|---------------------|-------------------------|---------------------------------------------|
 | Electron | `src/renderer.tsx`  | `src/preload.ts` → IPC → `src/main.ts` | `.md` files in `~/Documents/Mac Markdown` |
 | Web      | `src/web/entry.tsx` | `src/web/browserApi.ts` | IndexedDB                                   |
-| iOS      | `src/ios/entry.tsx` | `src/ios/capacitorApi.ts` | Capacitor Filesystem (`Documents/notes`)  |
+| iOS      | `src/ios/entry.tsx` | `src/ios/capacitorApi.ts` + `src/ios/notesStorage.ts` | Capacitor Filesystem: `Documents/notes` or `Library/NoCloud/notes` (Settings → Storage) |
 
 Notes are raw markdown keyed by a stable id; titles, previews, and tags always **derive from content** (`src/services/notesModel.ts`), so the UI is identical everywhere. The design system lives as CSS custom properties in `src/styles/tokens/` (four palettes + derived dark variants + markdown role colors), applied via `data-theme` / `data-mode` on `<html>`.
 

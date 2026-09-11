@@ -10,6 +10,7 @@ import { useDocumentStore } from "../services/documentStore";
 import { defaultCodeLanguage, resolveCodeLanguage } from "../services/codeLanguages";
 import { macMarkdownEditorTheme } from "../services/markdownEditorTheme";
 import { registerEditorView } from "../services/editorBridge";
+import { getMobileEditorBottomInset } from "../services/editorViewport";
 import { LIST_INDENT_UNIT } from "../services/listIndent";
 import { applyListIndentCommand } from "../services/listIndentCommands";
 import { useSettingsStore } from "../services/settingsStore";
@@ -30,6 +31,15 @@ const listTabKeymap = Prec.high(
     },
   ]),
 );
+
+// CodeMirror uses this facet for both its native typing scroll and explicit
+// EditorView.scrollIntoView effects. Reading the CSS variable at scroll time
+// lets keyboard animations change the visible boundary without rebuilding the
+// editor extension set.
+const mobileEditorScrollMargins = EditorView.scrollMargins.of(() => {
+  const bottom = getMobileEditorBottomInset();
+  return bottom > 0 ? { bottom } : null;
+});
 
 export const SourceEditor = React.memo(function SourceEditor() {
   const content = useDocumentStore((s) => s.content);
@@ -79,6 +89,7 @@ export const SourceEditor = React.memo(function SourceEditor() {
       indentUnit.of(LIST_INDENT_UNIT),
       ...(vimMode ? [vim()] : [listTabKeymap]),
       EditorView.lineWrapping,
+      mobileEditorScrollMargins,
       macMarkdownEditorTheme,
     ],
     [vimMode],

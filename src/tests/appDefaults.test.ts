@@ -8,10 +8,10 @@ describe("app defaults", () => {
     expect(useDocumentStore.getState().viewMode).toBe("source");
   });
 
-  it("shows the toolbar and prefers iCloud storage by default", () => {
+  it("shows the toolbar and defaults iOS storage to Documents (canonical value, issue #8)", () => {
     const s = useSettingsStore.getState();
     expect(s.showToolbar).toBe(true);
-    expect(s.iosStorage).toBe("icloud");
+    expect(s.iosStorage).toBe("documents");
     expect(s.vimMode).toBe(false);
   });
 });

@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_FILE="${ARC_TEST_GH_STATE:?ARC_TEST_GH_STATE is required}"
+REMOTE_REPO="${ARC_TEST_GH_REMOTE:?ARC_TEST_GH_REMOTE is required}"
+MODE="${ARC_TEST_GH_MODE:-normal}"
+
+state_value() {
+  local key="$1"
+  if [ -f "$STATE_FILE" ]; then
+    sed -n "s/^${key}=//p" "$STATE_FILE"
+  fi
+}
+
+write_state() {
+  local state="$1"
+  local auto_merge="${2:-false}"
+  local base_branch="${3:-main}"
+  local head_oid="${4:-}"
+  local merge_oid="${5:-}"
+  printf 'state=%s\nnumber=42\nurl=https://example.test/pull/42\nauto=%s\nbase=%s\nhead=%s\nmerge=%s\n' \
+    "$state" "$auto_merge" "$base_branch" "$head_oid" "$merge_oid" >"$STATE_FILE"
+}
+
+make_squash_merge() {
+  local repo_root feature_tree remote_main_sha
+
+  repo_root="$(git rev-parse --show-toplevel)"
+  FEATURE_SHA="$(git rev-parse HEAD)"
+  remote_main_sha="$(git --git-dir "$REMOTE_REPO" rev-parse refs/heads/main)"
+  feature_tree="$(git rev-parse "$FEATURE_SHA^{tree}")"
+  MERGE_SHA="$(git -C "$repo_root" -c user.name='ARC Test' -c user.email=arc-test@example.test commit-tree "$feature_tree" -p "$remote_main_sha" -m 'squash merge PR #42')"
+
+  if [ "$MODE" != "no-remote-update" ]; then
+    git -C "$repo_root" push -q origin "$MERGE_SHA:refs/heads/main"
+  fi
+}
+
+if [ "${1:-}" = "auth" ] && [ "${2:-}" = "status" ]; then
+  exit 0
+fi
+
+if [ "${1:-}" != "pr" ]; then
+  echo "fake gh only supports auth and pr commands" >&2
+  exit 1
+fi
+
+SUBCOMMAND="${2:-}"
+shift 2
+
+case "$SUBCOMMAND" in
+  list)
+    JSON_FIELD=""
+    JQ_EXPRESSION=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --json)
+          JSON_FIELD="$2"
+          shift 2
+          ;;
+        --jq)
+          JQ_EXPRESSION="$2"
+          shift 2
+          ;;
+        *)
+          shift
+          ;;
+      esac
+    done
+
+    STATE="$(state_value state)"
+    [ -n "$STATE" ] || STATE="NONE"
+
+    if [ "$JSON_FIELD" = "number" ] && [ "$JQ_EXPRESSION" = "length" ]; then
+      if [ "$STATE" = "NONE" ]; then
+        echo 0
+      else
+        echo 1
+      fi
+    elif [ "$STATE" = "NONE" ]; then
+      echo ""
+    elif [ "$JSON_FIELD" = "state" ]; then
+      echo "$STATE"
+    elif [ "$JSON_FIELD" = "number" ]; then
+      echo "$(state_value number)"
+    elif [ "$JSON_FIELD" = "url" ]; then
+      echo "$(state_value url)"
+    elif [ "$JSON_FIELD" = "autoMergeRequest" ]; then
+      if [ "$(state_value auto)" = "true" ]; then
+        echo true
+      else
+        echo false
+      fi
+    elif [ "$JSON_FIELD" = "baseRefName" ]; then
+      echo "$(state_value base)"
+    else
+      echo "unsupported fake gh list query: --json $JSON_FIELD --jq $JQ_EXPRESSION" >&2
+      exit 1
+    fi
+    ;;
+  view)
+    shift
+    JSON_FIELD=""
+    JQ_EXPRESSION=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --json)
+          JSON_FIELD="$2"
+          shift 2
+          ;;
+        --jq)
+          JQ_EXPRESSION="$2"
+          shift 2
+          ;;
+        *)
+          shift
+          ;;
+      esac
+    done
+
+    case "$JSON_FIELD" in
+      state)
+        echo "$(state_value state)"
+        ;;
+      baseRefName)
+        echo "$(state_value base)"
+        ;;
+      headRefOid)
+        echo "$(state_value head)"
+        ;;
+      mergeCommit)
+        echo "$(state_value merge)"
+        ;;
+      *)
+        echo "unsupported fake gh view query: --json $JSON_FIELD --jq $JQ_EXPRESSION" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  create)
+    FEATURE_SHA="$(git rev-parse HEAD)"
+    if [ "$MODE" = "already-merged" ]; then
+      make_squash_merge
+      write_state MERGED false main "$FEATURE_SHA" "$MERGE_SHA"
+    elif [ "$MODE" = "wrong-base" ]; then
+      write_state OPEN false develop "$FEATURE_SHA"
+    else
+      write_state OPEN false main "$FEATURE_SHA"
+    fi
+    ;;
+  merge)
+    IS_AUTO=0
+    for argument in "$@"; do
+      if [ "$argument" = "--auto" ]; then
+        IS_AUTO=1
+      fi
+    done
+
+    if [ "$IS_AUTO" -eq 1 ]; then
+      write_state OPEN true main "$(state_value head)"
+      exit 0
+    fi
+
+    make_squash_merge
+
+    if [ "$MODE" = "dirty-current" ]; then
+      printf 'changed during merge\n' >"$(git rev-parse --show-toplevel)/dirty-after-merge.txt"
+    elif [ "$MODE" = "post-merge-change" ]; then
+      REPO_ROOT="$(git rev-parse --show-toplevel)"
+      printf 'committed after merge\n' >"$REPO_ROOT/post-merge-change.txt"
+      git -C "$REPO_ROOT" add post-merge-change.txt
+      git -C "$REPO_ROOT" -c user.name='ARC Test' -c user.email=arc-test@example.test commit -qm 'chore: post-merge change'
+    fi
+
+    if [ "$MODE" = "open-after-merge" ]; then
+      write_state OPEN false main "$FEATURE_SHA" "$MERGE_SHA"
+    elif [ "$MODE" = "missing-merge-commit" ]; then
+      write_state MERGED false main "$FEATURE_SHA"
+    else
+      write_state MERGED false main "$FEATURE_SHA" "$MERGE_SHA"
+    fi
+    ;;
+  *)
+    echo "unsupported fake gh subcommand: $SUBCOMMAND" >&2
+    exit 1
+    ;;
+esac

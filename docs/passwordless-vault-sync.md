@@ -20,7 +20,7 @@ export interface RawNote {
 |----------|---------------|--------------|
 | Electron | `~/Documents/Mac Markdown/` | `{id}.md` |
 | Web | IndexedDB | `mmw-notes` store |
-| iOS | Capacitor Filesystem | `notes/{id}.md` in Documents or Data |
+| iOS | Capacitor Filesystem | `notes/{id}.md` in `Documents/` (default) or `Library/NoCloud/` (Settings → Storage; see [ios-icloud.md](./ios-icloud.md)) |
 
 There is **no cloud sync today**. Cloud sync is explicitly deferred in
 [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) (section 5). The app is
@@ -183,20 +183,21 @@ names on its function runtime.)
 
 ### Short answer for **today’s build**
 
-**No — not reliably across devices.** The Settings “iCloud” pill does **not**
-yet write to an iCloud Drive ubiquity container.
+**No — not via iCloud.** Settings → Storage on iOS chooses between two
+*local* sandbox locations; neither writes to an iCloud Drive ubiquity
+container. Cross-device sync is the encrypted vault (Part 1).
 
-Current behavior in [capacitorApi.ts](../src/ios/capacitorApi.ts):
+Current behavior (`src/ios/notesStorage.ts`, issue #8 / W-000008):
 
-```typescript
-/** Storage location follows the persisted setting (issue #8 / W-000008):
-    "icloud" -> Documents (iCloud-backed, Files-visible); "device" -> Data
-    (app-private). Reads merge BOTH locations so switching never hides
-    existing notes; writes go to the selected location; deletes cover both. */
-function selectedDirectory(): Directory {
-  return getSettings()["iosStorage"] === "device" ? Directory.Data : Directory.Documents;
-}
-```
+| Setting | Capacitor directory | Physical path | Cross-device? |
+|---------|---------------------|---------------|---------------|
+| Documents & Backup (default) | `Directory.Documents` | `Documents/notes/` | No — device backup only; Files-visible after the plist steps in [ios-icloud.md](./ios-icloud.md) |
+| On device | `Directory.LibraryNoCloud` | `Library/NoCloud/notes/` | No — app-private, excluded from backup |
+
+Switching moves the whole library (copy → verify → activate → clean up, with
+the sync sidecar `.vault-meta.json` — canonical `times` and `tombstones` —
+carried along), so a vault sync sees the same ids and timestamps before and
+after a switch.
 
 `Directory.Documents` = **app sandbox Documents**, which is:
 
@@ -205,16 +206,17 @@ function selectedDirectory(): Directory {
 - **Not** the same as iCloud Drive document sync between a live iPad and iPhone
 
 So two devices signed into the same Apple ID will **not** automatically see each
-other’s notes in real time with the current implementation.
+other’s notes with the current implementation — use the vault.
 
-### After true iCloud Documents is implemented
+### If true iCloud Documents were implemented (deferred)
 
-Per [ios-icloud.md](./ios-icloud.md), the intended layout is:
+Per [ios-icloud.md](./ios-icloud.md), a third option would look like:
 
 | Setting | Location | Cross-device? |
 |---------|----------|---------------|
-| iCloud (with entitlement) | Ubiquity container `iCloud.com.andrewsolomon.macmarkdownworkspace` → `Documents/notes/` | **Yes**, via iCloud Drive (eventual consistency) |
-| On device | App-private `Data/notes/` | No |
+| iCloud Drive (with entitlement + native bridge) | Ubiquity container `iCloud.com.andrewsolomon.macmarkdownworkspace` → `Documents/notes/` | **Yes**, via iCloud Drive (eventual consistency) |
+| Documents & Backup | App sandbox `Documents/notes/` | No |
+| On device | App sandbox `Library/NoCloud/notes/` | No |
 
 **Folder structure** (once the native bridge lands): all notes in a named app
 folder inside the ubiquity container, e.g.:

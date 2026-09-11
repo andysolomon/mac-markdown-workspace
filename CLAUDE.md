@@ -46,7 +46,7 @@ Each target assigns its shim to `window.appApi` **before** any component imports
 |----------|----------------------|--------------------------------|------------------------------------------------|
 | Electron | `src/renderer.tsx`   | `src/preload.ts` + `ipcMain` in `src/main.ts` | `.md` files in `~/Documents/Mac Markdown` (fs) |
 | Web      | `src/web/entry.tsx`  | `src/web/browserApi.ts`        | IndexedDB (`mmw-notes`)                        |
-| iOS      | `src/ios/entry.tsx`  | `src/ios/capacitorApi.ts`      | Capacitor Filesystem `Documents/notes` (or `Data` per the storage setting; reads merge both, deletes cover both) |
+| iOS      | `src/ios/entry.tsx`  | `src/ios/capacitorApi.ts`      | Capacitor `Documents/notes` or `Library/NoCloud/notes` per the setting; reads use only the active root |
 
 Adding a host capability: extend the `AppApi` type, implement in **all three** shims. Components treat `window.appApi?.method?.()` as possibly absent.
 

@@ -2,6 +2,20 @@
 @import "./styles/compat.css";
 @import "./styles/shell.css";
 
+/* Keep native text selection readable in Source, Preview, and the shell. This
+   intentionally has its own tokens because --mm-sel is also a row-selection
+   wash for sidebar and document-list items. */
+::selection {
+  background-color: var(--mm-selection-bg);
+  color: var(--mm-selection-text);
+  -webkit-text-fill-color: var(--mm-selection-text);
+}
+
+::-moz-selection {
+  background-color: var(--mm-selection-bg);
+  color: var(--mm-selection-text);
+}
+
 :root {
   font-family: var(--mm-font-sans);
   -webkit-font-smoothing: antialiased;
@@ -555,7 +569,12 @@ button.active:hover {
      inset changes so typed text stays visible instead of iOS panning the
      whole app. */
   .mm-editor .cm-scroller {
-    padding-bottom: calc(88px + var(--mm-kb-inset, 0px));
+    /* Leave enough trailing content for CodeMirror to scroll the caret above
+       the fixed bottom chrome. The scroll-margin facet supplies the
+       asymmetric visible-area boundary; this padding supplies the scroll
+       range for the final line. */
+    padding-bottom: max(88px, var(--mm-kb-inset, 0px));
+    scroll-padding-bottom: max(88px, var(--mm-kb-inset, 0px));
   }
 
   .preview {

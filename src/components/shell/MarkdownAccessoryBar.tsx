@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   wrapSelection,
   toggleLinePrefix,
@@ -6,6 +6,10 @@ import {
   insertLink,
   scrollCursorIntoView,
 } from "../../services/editorBridge";
+import {
+  ACCESSORY_BAR_HEIGHT,
+  measureKeyboardInset,
+} from "../../services/editorViewport";
 
 /**
  * MarkdownAccessoryBar — the helper strip that rides above the on-screen
@@ -20,32 +24,59 @@ import {
  * bar never blurs the editor mid-insert.
  */
 
-const BAR_HEIGHT = 50;
-
 export function MarkdownAccessoryBar() {
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  const revealFrame = useRef<number | null>(null);
 
   useEffect(() => {
     const vv = window.visualViewport;
-    const update = () => {
-      const inset = vv
-        ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop))
-        : 0;
-      setKeyboardInset(inset);
-      // Let the editor pad itself above keyboard + bar, then re-reveal the
-      // caret in the reduced viewport.
-      document.documentElement.style.setProperty("--mm-kb-inset", `${inset + BAR_HEIGHT}px`);
-      scrollCursorIntoView();
+    const windowScrollOptions: AddEventListenerOptions = {
+      capture: true,
+      passive: true,
     };
+
+    const revealCaret = () => {
+      // Reveal immediately for a responsive caret, then once more after the
+      // browser has applied the new viewport geometry and CSS variable.
+      scrollCursorIntoView();
+      if (typeof window.requestAnimationFrame !== "function") return;
+      if (revealFrame.current !== null) return;
+      revealFrame.current = window.requestAnimationFrame(() => {
+        revealFrame.current = null;
+        scrollCursorIntoView();
+      });
+    };
+
+    const update = () => {
+      const inset = measureKeyboardInset(window.innerHeight, vv);
+      // Keep the bar's position out of React's render cycle. During keyboard
+      // animations, a direct CSS update avoids a frame where the app chrome
+      // can be panned over the accessory.
+      document.documentElement.style.setProperty("--mm-kb-offset", `${inset}px`);
+      // The editor needs clearance for both the keyboard and this bar.
+      document.documentElement.style.setProperty(
+        "--mm-kb-inset",
+        `${inset + ACCESSORY_BAR_HEIGHT}px`,
+      );
+      revealCaret();
+    };
+
     update();
     vv?.addEventListener("resize", update);
     vv?.addEventListener("scroll", update);
+    // Native-resize WebViews report geometry changes on window instead.
+    window.addEventListener("resize", update);
     // Some iOS versions pan via window scroll without visualViewport events.
-    window.addEventListener("scroll", update, true);
+    window.addEventListener("scroll", update, windowScrollOptions);
     return () => {
+      if (revealFrame.current !== null) {
+        window.cancelAnimationFrame(revealFrame.current);
+        revealFrame.current = null;
+      }
       vv?.removeEventListener("resize", update);
       vv?.removeEventListener("scroll", update);
-      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, windowScrollOptions);
+      document.documentElement.style.setProperty("--mm-kb-offset", "0px");
       document.documentElement.style.setProperty("--mm-kb-inset", "0px");
     };
   }, []);
@@ -65,7 +96,7 @@ export function MarkdownAccessoryBar() {
   ];
 
   return (
-    <div className="mm-accessory" style={{ bottom: keyboardInset }}>
+    <div className="mm-accessory">
       {buttons.map((b) => (
         <button
           key={b.aria}
