@@ -102,7 +102,7 @@ Each phase is independently reviewable and keeps the app runnable.
 
 ### Phase 9 — Settings screen
 - **Goal:** A settings surface in the design language.
-- **Deliverables:** gear entry point in the chrome → settings panel (same popover design language); **toolbar show/hide toggle** (persisted; hides the transitional toolbar); **iOS save-location option** (Documents/backup vs private on-device), persisted via AppApi settings with safe migration between `Directory.Documents` and `Directory.LibraryNoCloud` (issue #8 plan: `docs/W-000008-IMPLEMENTATION_PLAN.md`).
+- **Deliverables:** gear entry point in the chrome → settings panel (same popover design language); **toolbar show/hide toggle** (persisted; hides the transitional toolbar); **iOS save-location option** (Documents/backup vs private on-device), persisted via AppApi settings with safe migration between `Directory.Documents` and `Directory.LibraryNoCloud` (issue #8 plan archived: `docs/archive/W-000008-IMPLEMENTATION_PLAN.md`).
 - **Dependencies:** Phase 8.
 - **Acceptance:** toggles persist and apply live on all platforms.
 
