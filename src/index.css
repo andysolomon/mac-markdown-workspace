@@ -2,6 +2,20 @@
 @import "./styles/compat.css";
 @import "./styles/shell.css";
 
+/* Keep native text selection readable in Source, Preview, and the shell. This
+   intentionally has its own tokens because --mm-sel is also a row-selection
+   wash for sidebar and document-list items. */
+::selection {
+  background-color: var(--mm-selection-bg);
+  color: var(--mm-selection-text);
+  -webkit-text-fill-color: var(--mm-selection-text);
+}
+
+::-moz-selection {
+  background-color: var(--mm-selection-bg);
+  color: var(--mm-selection-text);
+}
+
 :root {
   font-family: var(--mm-font-sans);
   -webkit-font-smoothing: antialiased;

@@ -21,6 +21,8 @@
   --mm-code-bg: #22262a;
   --mm-border: #2b2f33;
   --mm-sel: #262b2f;
+  --mm-selection-bg: #3cc4d8;
+  --mm-selection-text: #102326;
   --mm-swatch-bottom: #1d5a66;
 }
 
@@ -35,6 +37,8 @@
   --mm-code-bg: #202318;
   --mm-border: #2a2d1f;
   --mm-sel: #25281b;
+  --mm-selection-bg: #45c48c;
+  --mm-selection-text: #10251b;
   --mm-swatch-bottom: #244430;
 }
 
@@ -49,6 +53,8 @@
   --mm-code-bg: #251f14;
   --mm-border: #2d2718;
   --mm-sel: #292317;
+  --mm-selection-bg: #e6b53f;
+  --mm-selection-text: #2a210d;
   --mm-swatch-bottom: #4a3d1a;
 }
 
@@ -63,5 +69,7 @@
   --mm-code-bg: #251820;
   --mm-border: #301f26;
   --mm-sel: #2a1b21;
+  --mm-selection-bg: #e85d89;
+  --mm-selection-text: #2b111b;
   --mm-swatch-bottom: #4a2334;
 }
