@@ -95,6 +95,7 @@
     "rehype-katex": "^7.0.1",
     "rehype-pretty-code": "^0.14.3",
     "rehype-stringify": "^10.0.1",
+    "remark": "^15.0.1",
     "remark-emoji": "^5.0.2",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
