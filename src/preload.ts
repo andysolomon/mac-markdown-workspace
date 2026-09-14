@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { AppApi } from "../shared/types/ipc";
+import type { AppApi, CloseFlushResult } from "../shared/types/ipc";
 
 const api: AppApi = {
   getVersion: () => ipcRenderer.invoke("app:get-version"),
@@ -32,10 +32,19 @@ const api: AppApi = {
       ipcRenderer.removeListener("menu:action", handler);
     };
   },
+  // Close/quit handshake (issue #27): main sends `check-dirty`, the renderer
+  // flushes every pending/in-flight note save and answers with a
+  // CloseFlushResult. Always answer — a thrown callback must not hang the
+  // close (main also bounds the wait with a timeout).
   checkDirty: (callback) => {
-    const handler = async () => {
-      const canClose = await callback();
-      ipcRenderer.send("dirty-check-response", canClose);
+    const handler = async (_event: Electron.IpcRendererEvent, requestId: number) => {
+      let result: CloseFlushResult;
+      try {
+        result = await callback();
+      } catch (err) {
+        result = { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+      ipcRenderer.send("dirty-check-response", { requestId, result });
     };
     ipcRenderer.on("check-dirty", handler);
     return () => {

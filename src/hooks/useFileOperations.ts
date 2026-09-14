@@ -1,31 +1,55 @@
 import { useCallback } from "react";
 import { useDocumentStore, selectIsDirty } from "../services/documentStore";
 import { useNotesStore } from "../services/notesStore";
+import { showToast } from "../services/toast";
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function markCleanIfCurrent(noteId: string | null, body: string): void {
+  const note = useNotesStore.getState();
+  const document = useDocumentStore.getState();
+  if (note.activeNoteId === noteId && document.content === body) {
+    document.markClean();
+  }
+}
 
 async function checkDirtyAndProceed(): Promise<boolean> {
   const state = useDocumentStore.getState();
-  const isDirty = selectIsDirty(state);
-  if (!isDirty) return true;
+  if (!selectIsDirty(state)) return true;
 
   try {
     const result = await window.appApi.confirmDiscard();
     if (result === "cancel") return false;
-    if (result === "save") {
-      const { content, filePath } = state;
-      if (filePath) {
-        await window.appApi.saveFile({ filePath, content });
-      } else {
-        const saved = await window.appApi.saveFileAs({ content, defaultPath: "document.md" });
-        if (!saved) return false;
-        useDocumentStore.getState().setFilePath(saved.filePath);
-      }
+    if (result === "discard") {
       useDocumentStore.getState().markClean();
+      return true;
     }
-  } catch {
-    // If dialog fails (e.g. no focused window), proceed anyway
+    if (result !== "save") return false;
+
+    const { content, filePath } = useDocumentStore.getState();
+    const { activeNoteId } = useNotesStore.getState();
+    if (activeNoteId) {
+      await useNotesStore.getState().updateNote(activeNoteId, content);
+      markCleanIfCurrent(activeNoteId, content);
+      return true;
+    }
+
+    if (filePath) {
+      await window.appApi.saveFile({ filePath, content });
+    } else {
+      const saved = await window.appApi.saveFileAs({ content, defaultPath: "document.md" });
+      if (!saved) return false;
+      useDocumentStore.getState().setFilePath(saved.filePath);
+    }
+    const current = useDocumentStore.getState();
+    if (current.content === content) current.markClean();
     return true;
+  } catch (error) {
+    showToast(`Couldn't save: ${errorMessage(error)}`);
+    return false;
   }
-  return true;
 }
 
 export function useFileOperations() {
@@ -46,40 +70,53 @@ export function useFileOperations() {
   const saveFile = useCallback(async () => {
     const { content, filePath } = useDocumentStore.getState();
 
-    // Library-first: Save flushes the buffer into the active note — no file
-    // dialog (issue #4 / W-000004). Export is the path to a file on disk.
-    const { activeNoteId } = useNotesStore.getState();
-    if (activeNoteId) {
-      await useNotesStore.getState().updateActiveNote(content);
-      useDocumentStore.getState().markClean();
-      return;
-    }
+    try {
+      // Library-first: Save flushes the buffer into the active note — no file
+      // dialog (issue #4 / W-000004). Export is the path to a file on disk.
+      const { activeNoteId } = useNotesStore.getState();
+      if (activeNoteId) {
+        await useNotesStore.getState().updateNote(activeNoteId, content);
+        markCleanIfCurrent(activeNoteId, content);
+        return;
+      }
 
-    // Legacy fallback when no note is active (shouldn't happen in the shell).
-    if (!filePath) {
-      const saved = await window.appApi.saveFileAs({
-        content,
-        defaultPath: "document.md",
-      });
-      if (saved) {
-        useDocumentStore.setState({ filePath: saved.filePath });
+      // Legacy fallback when no note is active (shouldn't happen in the shell).
+      if (!filePath) {
+        const saved = await window.appApi.saveFileAs({
+          content,
+          defaultPath: "document.md",
+        });
+        if (saved) {
+          const current = useDocumentStore.getState();
+          useDocumentStore.setState({ filePath: saved.filePath });
+          if (current.content === content) useDocumentStore.getState().markClean();
+        }
+        return;
+      }
+      await window.appApi.saveFile({ filePath, content });
+      if (useDocumentStore.getState().content === content) {
         useDocumentStore.getState().markClean();
       }
-      return;
+    } catch (error) {
+      showToast(`Couldn't save: ${errorMessage(error)}`);
     }
-    await window.appApi.saveFile({ filePath, content });
-    useDocumentStore.getState().markClean();
   }, []);
 
   const saveFileAs = useCallback(async () => {
     const { content, filePath } = useDocumentStore.getState();
-    const saved = await window.appApi.saveFileAs({
-      content,
-      defaultPath: filePath || "document.md",
-    });
-    if (saved) {
-      useDocumentStore.setState({ filePath: saved.filePath });
-      useDocumentStore.getState().markClean();
+    try {
+      const saved = await window.appApi.saveFileAs({
+        content,
+        defaultPath: filePath || "document.md",
+      });
+      if (saved) {
+        useDocumentStore.setState({ filePath: saved.filePath });
+        if (useDocumentStore.getState().content === content) {
+          useDocumentStore.getState().markClean();
+        }
+      }
+    } catch (error) {
+      showToast(`Couldn't save: ${errorMessage(error)}`);
     }
   }, []);
 

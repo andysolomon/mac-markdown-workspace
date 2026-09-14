@@ -70,6 +70,8 @@ bun run test:e2e       # end-to-end (Playwright)
 
 For visual testing across the Mac app, web, and iOS (screenshots, Playwright
 baselines, Simulator), see [`docs/visual-testing.md`](./docs/visual-testing.md).
+Desktop save/quit guarantees and forced-termination limits are documented in
+[`docs/desktop-save-recovery.md`](./docs/desktop-save-recovery.md).
 
 > Use `bun run test`, not `bun test`. The latter invokes Bun's built-in runner, which lacks a jsdom environment and picks up the Playwright specs in `e2e/`, producing spurious failures. The real suite runs through `vitest`.
 

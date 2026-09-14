@@ -12,6 +12,11 @@ export type SaveAsFileResult = { filePath: string } | null;
 
 export type ConfirmDiscardResult = "save" | "discard" | "cancel";
 
+/** Outcome of the renderer flushing pending/in-flight note saves when the
+    host asks before a window close/quit (issue #27). `ok: false` keeps the
+    window open until the user retries or explicitly discards. */
+export type CloseFlushResult = { ok: true } | { ok: false; error: string };
+
 /** A recorded local deletion awaiting vault sync (id + when deleted).
     Structurally the sync engine's VaultTombstone; kept inline here so the
     shared IPC contract doesn't depend on the sync service. */
@@ -36,7 +41,11 @@ export type AppApi = {
   exportDocx: (payload: { html: string }) => Promise<boolean>;
   /** `html` is a complete standalone document (built by the renderer). */
   exportHtml: (payload: { html: string }) => Promise<boolean>;
-  checkDirty: (callback: () => Promise<boolean>) => () => void;
+  /** Host → renderer close handshake: the callback must flush every pending
+      and in-flight note save and report whether all of them persisted. The
+      Electron host blocks the close until `{ ok: true }` or an explicit
+      user discard; browser/iOS shims are no-ops. */
+  checkDirty: (callback: () => Promise<CloseFlushResult>) => () => void;
 
   // Notes library — each note is a markdown file/record keyed by a stable id.
   listNotes: () => Promise<RawNote[]>;

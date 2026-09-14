@@ -6,14 +6,45 @@ import {
   type VaultTransport,
 } from "./vaultSync";
 
+/** The only remote origin native shells may use for vault traffic. */
+export const PROD_ORIGIN = "https://mac-markdown-workspace.vercel.app";
+
+export interface VaultRuntimeIdentity {
+  protocol?: string;
+  userAgent?: string;
+  capacitor?: boolean;
+}
+
+/**
+ * Resolve the vault API origin without accepting a user-controlled destination.
+ * Deployed web stays same-origin; Electron (including Vite development and
+ * packaged file://), Capacitor, and other non-web shells use the allowlisted
+ * production API origin.
+ */
+export function resolveVaultBaseUrl(runtime: VaultRuntimeIdentity = {}): string {
+  const protocol =
+    runtime.protocol ?? (typeof window !== "undefined" ? window.location.protocol : "");
+  const userAgent =
+    runtime.userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "");
+  const capacitor =
+    runtime.capacitor ??
+    (typeof window !== "undefined" &&
+      (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() ===
+        true);
+
+  if (capacitor || protocol === "file:" || protocol === "capacitor:" || /Electron/i.test(userAgent)) {
+    return PROD_ORIGIN;
+  }
+  return "";
+}
+
 /**
  * HTTP implementation of VaultTransport against the Phase B API
  * (issue #20 / W-000020, api/vault/*).
  *
- * baseUrl is "" on the web (same origin); the iOS build must pass the
- * absolute production origin since Capacitor serves from capacitor://.
- * The write token travels as a Bearer header and only ever to our API;
- * the passphrase never appears here at all.
+ * baseUrl is "" on deployed web (same origin); native shells pass the
+ * allowlisted production origin. The write token travels as a Bearer header
+ * and only ever to our API; the passphrase never appears here at all.
  */
 export function createHttpVaultTransport(baseUrl = ""): VaultTransport {
   const url = (path: string): string => `${baseUrl}/api/vault${path}`;

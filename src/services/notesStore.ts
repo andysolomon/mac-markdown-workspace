@@ -23,7 +23,15 @@ interface NotesActions {
   loadLibrary: () => Promise<void>;
   reloadLibrary: () => Promise<void>;
   createNote: (body?: string) => Promise<Note>;
+  /** Persist `body` as the content of the note with `id` — the id is bound
+      at call time so a write that started on one note can never land on
+      whichever note is active when it completes (issue #27). Rejects on a
+      failed write; the in-memory entry is updated only after success. */
+  updateNote: (id: string, body: string) => Promise<Note>;
+  /** Convenience wrapper: `updateNote` for the currently active note. */
   updateActiveNote: (body: string) => Promise<void>;
+  /** Wait for writes initiated by this store, including direct Save actions. */
+  waitForWrites: () => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   selectNote: (id: string | null) => void;
   setSelectedTag: (tag: string | null) => void;
@@ -36,7 +44,56 @@ function sortNotes(notes: Note[]): Note[] {
   return [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export const useNotesStore = create<NotesStore>((set, get) => ({
+export const useNotesStore = create<NotesStore>((set, get) => {
+  // Keep every renderer-initiated write for a note in submission order. The
+  // Electron adapter also serializes filesystem mutations, but this queue
+  // covers direct Save/settings callers that bypass NotesShell's autosave
+  // coordinator and gives close a complete in-flight set to await.
+  const writeTails = new Map<string, Promise<void>>();
+  const inFlightWrites = new Set<Promise<unknown>>();
+
+  const updateNote = (id: string, body: string): Promise<Note> => {
+    const previous = writeTails.get(id);
+    const persist = async () => {
+      const updated = buildNote(await window.appApi.writeNote({ id, body }));
+      set((s) => ({
+        notes: sortNotes(s.notes.map((n) => (n.id === id ? updated : n))),
+      }));
+      return updated;
+    };
+    // Start an idle write in the current turn so a close flush does not leave
+    // a sub-600ms edit queued behind an avoidable microtask.
+    const operation = previous ? previous.then(persist) : persist();
+    const tail = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    writeTails.set(id, tail);
+    inFlightWrites.add(operation);
+    const cleanup = () => {
+      inFlightWrites.delete(operation);
+      if (writeTails.get(id) === tail) writeTails.delete(id);
+    };
+    void operation.then(cleanup, cleanup);
+    return operation;
+  };
+
+  const waitForWrites = async (): Promise<void> => {
+    let failed = false;
+    let firstError: unknown;
+    while (inFlightWrites.size > 0) {
+      const results = await Promise.allSettled([...inFlightWrites]);
+      for (const result of results) {
+        if (result.status === "rejected" && !failed) {
+          failed = true;
+          firstError = result.reason;
+        }
+      }
+    }
+    if (failed) throw firstError;
+  };
+
+  return {
   notes: [],
   activeNoteId: null,
   selectedTag: null,
@@ -64,12 +121,15 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     return note;
   },
 
+  updateNote,
+
   updateActiveNote: async (body) => {
     const id = get().activeNoteId;
     if (!id) return;
-    const updated = buildNote(await window.appApi.writeNote({ id, body }));
-    set((s) => ({ notes: sortNotes(s.notes.map((n) => (n.id === id ? updated : n))) }));
+    await updateNote(id, body);
   },
+
+  waitForWrites,
 
   // Re-read the whole library from storage without re-seeding a welcome note.
   // Used after a vault sync applies remote edits/deletions underneath the store.
@@ -85,6 +145,10 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   deleteNote: async (id) => {
+    // Never delete behind an active write for the same library. A failed
+    // write remains recoverable in the editor instead of being hidden by the
+    // subsequent delete.
+    await waitForWrites();
     await window.appApi.deleteNote({ id });
     // Record a tombstone so the deletion propagates on the next vault sync
     // instead of the note resurrecting from the remote snapshot.
@@ -99,7 +163,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   selectNote: (id) => set({ activeNoteId: id }),
   setSelectedTag: (selectedTag) => set({ selectedTag }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
-}));
+  };
+});
 
 export const selectActiveNote = (s: NotesStore): Note | null =>
   s.notes.find((n) => n.id === s.activeNoteId) ?? null;
