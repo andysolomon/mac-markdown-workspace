@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Mac Markdown Workspace
+Comment=Local-first Markdown notes workspace
+Exec=mac-markdown-workspace %F
+Icon=mac-markdown-workspace
+Terminal=false
+Categories=Office;TextEditor;Utility;
+MimeType=text/markdown;text/x-markdown;
+StartupWMClass=mac-markdown-workspace
+StartupNotify=true

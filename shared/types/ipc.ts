@@ -46,6 +46,10 @@ export type AppApi = {
       Electron host blocks the close until `{ ok: true }` or an explicit
       user discard; browser/iOS shims are no-ops. */
   checkDirty: (callback: () => Promise<CloseFlushResult>) => () => void;
+  /** Host → renderer: Markdown paths from CLI, file manager, or macOS
+      `open-file`. Optional so web/iOS shims stay unchanged; Electron
+      subscribes and imports each path as a new library note. */
+  onHostOpenFiles?: (callback: (paths: string[]) => void) => () => void;
 
   // Notes library — each note is a markdown file/record keyed by a stable id.
   listNotes: () => Promise<RawNote[]>;

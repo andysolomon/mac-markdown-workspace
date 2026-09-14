@@ -51,6 +51,21 @@ const api: AppApi = {
       ipcRenderer.removeListener("check-dirty", handler);
     };
   },
+  // CLI / file-manager / macOS open-file (issue #25). Subscribing tells
+  // main the library is ready to drain the host open-files queue.
+  onHostOpenFiles: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, paths: unknown) => {
+      if (!Array.isArray(paths)) return;
+      const clean = paths.filter((p): p is string => typeof p === "string" && p.length > 0);
+      if (clean.length === 0) return;
+      callback(clean);
+    };
+    ipcRenderer.on("host:open-files", handler);
+    ipcRenderer.send("host:renderer-ready");
+    return () => {
+      ipcRenderer.removeListener("host:open-files", handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld("appApi", api);
