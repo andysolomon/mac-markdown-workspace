@@ -420,7 +420,6 @@ const registerIpc = (): void => {
     await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(payload.html)}`);
     const pdfData = await printWin.webContents.printToPDF({
       printBackground: true,
-      margins: { marginType: "default" },
     });
     await fs.writeFile(result.filePath, pdfData);
     printWin.destroy();

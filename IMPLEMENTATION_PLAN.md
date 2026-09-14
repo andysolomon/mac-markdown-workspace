@@ -118,6 +118,12 @@ Each phase is independently reviewable and keeps the app runnable.
 - **Dependencies:** Phases 1–10.
 - **Acceptance:** typecheck, lint, all Vitest tests, web + iOS builds, and Playwright e2e pass; Safari re-verified; screenshots match the design across all four themes + dark on all platforms.
 
+### Phase 17 — Omarchy/Linux distribution track
+- **Goal:** Establish the installable Linux prerequisites in dependency order: #23 → #25 → #26 → #24 → #29.
+- **Current work:** Issue #23 produces a reproducible Linux x86_64 Electron ZIP, stable executable identity, tracked icons, full MIT license, runtime dependency inventory, and validation evidence. Detailed plan: [`docs/issue-23-IMPLEMENTATION_PLAN.md`](docs/issue-23-IMPLEMENTATION_PLAN.md).
+- **Dependencies:** #25 consumes #23's artifact/identity; #26 consumes #25's launcher integration; #24 consumes the validated artifact and runtime inventory; #29 validates the resulting installed package.
+- **Acceptance:** Do not begin #24 or #29 until #23 has produced the artifact and evidence they need.
+
 ## 5. Out-of-scope / deferred
 - Nested tags (`#a/b`), note links/backlinks, pinned/archived notes.
 - ~~Cloud sync, multi-device~~ — now its own track: [docs/passwordless-vault-sync.md](docs/passwordless-vault-sync.md) (issues #19–#21; Phase A crypto+sync engine landed). Collaboration and per-note lock remain out of scope.
@@ -126,6 +132,6 @@ Each phase is independently reviewable and keeps the app runnable.
 - Full-text index optimization for very large libraries.
 
 ## 6. Immediate next steps
-1. Get sign-off on this phased plan and the dark-mode derivation approach (Phase 1 risk).
-2. Copy the kit token files into `src/styles/tokens/` and stand up the guidelines preview harness (Phase 1).
-3. Draft the dark-variant palettes for review before wiring `themeStore`.
+1. Run the independent Verify phase for issue #23 against its artifact and validation record.
+2. Complete sandboxed offline relaunch on a non-containerized Linux host and packaging checks on macOS.
+3. Continue the Omarchy dependency order with #25 only after issue #23 is accepted.

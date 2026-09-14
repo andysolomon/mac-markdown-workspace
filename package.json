@@ -1,14 +1,16 @@
 {
   "name": "mac-markdown-workspace",
-  "productName": "mac-markdown-workspace",
+  "productName": "Mac Markdown Workspace",
   "version": "1.0.0",
   "description": "Mac-first local Markdown workspace built with Electron + React",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
+    "postinstall": "install-electron",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "make:linux": "npm_config_user_agent=\"npm/$(npm --version)\" electron-forge make --platform linux --arch x64 --targets @electron-forge/maker-zip",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
     "typecheck": "tsc --noEmit",
@@ -51,7 +53,7 @@
     "@typescript-eslint/parser": "^5.62.0",
     "@vercel/node": "^5.8.22",
     "@vitejs/plugin-react": "4.3.4",
-    "electron": "41.0.2",
+    "electron": "44.3.0",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "fake-indexeddb": "^6.2.5",
@@ -104,13 +106,20 @@
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
-  "packageManager": "bun@1.2.19",
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "trustedDependencies": [
+    "electron"
+  ],
   "overrides": {
     "@codemirror/language": "^6.12.4",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.40.0",
     "@lezer/common": "^1.2.0",
     "@lezer/highlight": "^1.2.3",
-    "@types/node": "^24.12.0"
+    "@types/node": "^24.12.0",
+    "yauzl": "3.4.0"
   }
 }
