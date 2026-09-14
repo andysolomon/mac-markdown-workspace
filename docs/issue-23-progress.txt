@@ -26,5 +26,5 @@ On completion, move this file and the plan to docs/archive/.
     [x] 4.5 - Recorded as remaining blocker: Darwin ZIP, Gatekeeper, and Finder icon require a macOS host (docs/linux-build-validation-2026-09.md)
 [~] 5.0 - Verify, ship, and archive
     [x] 5.1 - Independent Verify PASS of the final tree (linux-artifact-final-check); macOS Darwin host check remains explicit and external
-    [ ] 5.2 - If authorized, create a conventional commit and PR with Closes #23
+    [x] 5.2 - Shipped as PR #32 (feat/issue-23-linux-artifact, Closes #23); awaiting review/merge
     [ ] 5.3 - On merge, move docs/issue-23-IMPLEMENTATION_PLAN.md and docs/issue-23-progress.txt to docs/archive/
