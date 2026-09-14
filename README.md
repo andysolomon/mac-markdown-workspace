@@ -53,8 +53,31 @@ For Files-app visibility and on-device iOS storage options, see [`docs/ios-iclou
 
 ## Building
 
+### macOS desktop
+
 ```bash
-bun run make           # package a distributable macOS app (Electron Forge)
+bun run make           # package the existing macOS targets (Electron Forge)
+```
+
+### Linux desktop (x86_64)
+
+Use Bun 1.4.2 and a frozen lockfile. The Linux command selects only Forge's ZIP
+maker, so it does not require the DEB, RPM, or macOS packaging toolchains.
+
+```bash
+bun install --frozen-lockfile
+bun run make:linux
+```
+
+The versioned artifact is written to
+`out/make/zip/linux/x64/Mac Markdown Workspace-linux-x64-1.0.0.zip`; its stable
+executable is `mac-markdown-workspace`. See
+[`docs/linux-build.md`](./docs/linux-build.md) for prerequisites, runtime
+dependencies, sandbox requirements, artifact contents, and validation limits.
+
+### Web and iOS
+
+```bash
 bun run web:build      # build the web app to dist-web/
 bun run ios:build      # build the iOS web bundle
 ```

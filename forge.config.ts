@@ -10,9 +10,21 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // Stable binary identity for launchers/PKGBUILDs (#25/#24): the executable is
+    // always `mac-markdown-workspace` even though the display name (productName)
+    // is "Mac Markdown Workspace".
+    executableName: 'mac-markdown-workspace',
     appBundleId: 'com.andrewsolomon.mac-markdown-workspace',
     appCategoryType: 'public.app-category.productivity',
+    // Extensionless: Packager resolves icon.icns (darwin) / icon.png (linux, 512px).
     icon: './assets/icons/icon',
+    // Optional local Electron ZIP source for repeat builds in network-isolated
+    // environments. Normal clean builds leave this unset and use @electron/get.
+    electronZipDir: process.env.ELECTRON_ZIP_DIR,
+    // Ship the application's MIT license inside resources/ so it stays distinct
+    // from Electron's top-level LICENSE and LICENSES.chromium.html, plus the icon
+    // artwork so the Linux ZIP is self-contained for launcher integration (#25).
+    extraResource: ['./LICENSE', './assets/icons/icon.png', './assets/icons/icon.svg'],
     // Uncomment for production signing:
     // osxSign: {},
     // osxNotarize: { appleId: '', appleIdPassword: '', teamId: '' },
@@ -20,7 +32,7 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
-    new MakerZIP({}, ['darwin']),
+    new MakerZIP({}, ['darwin', 'linux']),
     new MakerRpm({}),
     new MakerDeb({}),
   ],

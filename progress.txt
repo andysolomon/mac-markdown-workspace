@@ -126,3 +126,11 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 16.4 - Phase C/D (issue #21/W-000021): Cloud Sync UI. vaultSyncController (enable/link/syncNow/disableSync; per-platform transport origin; post-sync reloadLibrary; persists only non-secret settings). SyncModal (passphrase entry never stored/re-collected each sync; enable/link/sync/manage views; iCloud-vs-vault copy; unrecoverable-passphrase warning). Settings "Cloud Sync" section; App hydrates sync settings + on-focus auto-sync nudge (surfaces passphrase prompt when stale >5min, throttled). Verified: Playwright UI smoke (render/nav/validation, no console errors) + LIVE two-device round-trip against production (A enables, B links by code, pulls A's note); test vault purged
     UX decisions (user): auto-sync on focus (reconciled with never-store passphrase by prompting when stale) + passphrase re-entered every sync, never stored
     [x] 16.5 - Phase C/D security+UX review round (Opus, approve-with-nits): friendly "passphrase doesn't match this vault" on decrypt failure (was raw WebCrypto OperationError); busy label paints before the synchronous scrypt freeze (rAF yield); modal a11y — per-view <form> submit (Enter + password managers), Escape-to-close, Tab focus trap, aria-live errors, aria-labelledby; iCloud-vs-vault copy reframed around scope+encryption and gated to iOS; on-return nudge switched to visibilitychange + 30min backoff and can't hijack an open modal; scrim/✕ disabled while busy
+
+[~] 17.0 - Phase 17 - Omarchy/Linux distribution track (#23 -> #25 -> #26 -> #24 -> #29)
+    [x] 17.1 - Issue #23 plan synchronized: Linux x86_64 ZIP, Electron/Bun pins, icons, LICENSE, runtime inventory, and validation boundaries (docs/issue-23-IMPLEMENTATION_PLAN.md)
+    [~] 17.2 - Issue #23 Linux ZIP implemented, Omarchy smoke-tested, independently verified, PR #32 open; macOS Darwin host check and merge pending
+    [ ] 17.3 - Implement #25 launcher/associations/single-instance opening after #23
+    [ ] 17.4 - Implement #26 Hyprland integration after #25
+    [ ] 17.5 - Implement #24 PKGBUILD/private pacman flow after #23 and integration prerequisites
+    [ ] 17.6 - Implement #29 CI/installed-package tests/support guide after the package path exists

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mac Markdown Workspace application icon (canonical vector source).
+  Palette: Teal accent #1ea7bb from src/styles/tokens/colors.css (data-theme="teal").
+  Generated rasters: icon.png (512x512, Linux) and icon.icns (macOS) are derived from
+  this file — see docs/linux-build.md for the regeneration commands.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2bb8cc"/>
+      <stop offset="1" stop-color="#1ea7bb"/>
+    </linearGradient>
+  </defs>
+  <!-- macOS-style rounded square background -->
+  <rect x="64" y="64" width="896" height="896" rx="200" ry="200" fill="url(#bg)"/>
+  <!-- inner page frame -->
+  <rect x="176" y="256" width="672" height="512" rx="56" ry="56" fill="none" stroke="#ffffff" stroke-width="56"/>
+  <!-- "M" mark -->
+  <path d="M272 664 V360 L392 512 L512 360 V664"
+        fill="none" stroke="#ffffff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- down arrow (markdown glyph) -->
+  <path d="M684 360 V664" fill="none" stroke="#ffffff" stroke-width="64" stroke-linecap="round"/>
+  <path d="M588 568 L684 664 L780 568" fill="none" stroke="#ffffff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

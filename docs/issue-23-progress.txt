@@ -1,0 +1,30 @@
+issue-23 - Reproducible Linux Electron Artifact - Progress
+Generated: 2026-09-14 09:18:16 EDT
+On completion, move this file and the plan to docs/archive/.
+
+[x] 1.0 - Phase 1 - Package identity, assets, and licensing
+    [x] 1.1 - Pin Electron 44.3.0 and Bun 1.4.2; add Electron trusted dependency and make:linux
+    [x] 1.2 - Regenerate bun.lock and confirm retained frozen-install evidence supplies Electron 44.3.0 without rewriting the lock
+    [x] 1.3 - Add canonical SVG, 512px Linux PNG, and valid multi-size ICNS icon assets
+    [x] 1.4 - Add the complete MIT LICENSE attributed to Andrew Solomon
+[x] 2.0 - Phase 2 - Linux ZIP packaging contract
+    [x] 2.1 - Enable MakerZIP for darwin and linux while retaining existing makers
+    [x] 2.2 - Set stable executable identity and package the application license distinctly
+    [x] 2.3 - Build the Linux x64 ZIP without DEB/RPM or macOS tooling (cached official Electron ZIP used after restricted DNS blocked download)
+    [x] 2.4 - Confirm the versioned artifact filename contract
+[x] 3.0 - Phase 3 - Artifact and runtime validation
+    [x] 3.1 - Record toolchain/runtime versions, ZIP manifest, metadata, licenses, and SHA-256
+    [x] 3.2 - Derive and document Arch runtime dependencies from ldd and pacman ownership
+    [x] 3.3 - Ordinary-user Wayland launch without --no-sandbox; renderer used --enable-sandbox
+    [x] 3.4 - Isolated-HOME create/edit/quit/relaunch persistence smoke (CDP; note path follows Electron documents dir)
+    [x] 3.5 - Typecheck, lint (one pre-existing warning), 210 unit tests, web build, iOS build, and 5 Electron E2E tests passed
+[~] 4.0 - Phase 4 - Documentation complete; external-host checks remain
+    [x] 4.1 - Add docs/linux-build.md with exact commands, Node >=22.12.0 floor, Electron ZIP checksum gate, quoted $HOME launch path, output contract, dependencies, and limitations
+    [x] 4.2 - Add docs/linux-build-validation-2026-09.md with observed reproducibility evidence and explicit pending checks
+    [x] 4.3 - Update README.md with separate macOS and Linux build instructions
+    [~] 4.4 - Forge config/typecheck and ICNS structure validated on Linux; macOS resolution remains external
+    [x] 4.5 - Recorded as remaining blocker: Darwin ZIP, Gatekeeper, and Finder icon require a macOS host (docs/linux-build-validation-2026-09.md)
+[~] 5.0 - Verify, ship, and archive
+    [x] 5.1 - Independent Verify PASS of the final tree (linux-artifact-final-check); macOS Darwin host check remains explicit and external
+    [x] 5.2 - Shipped as PR #32 (feat/issue-23-linux-artifact, Closes #23); awaiting review/merge
+    [ ] 5.3 - On merge, move docs/issue-23-IMPLEMENTATION_PLAN.md and docs/issue-23-progress.txt to docs/archive/
