@@ -91,6 +91,56 @@ describe("notesStore", () => {
     expect(active?.tags).toEqual(["tag"]);
   });
 
+  it("updateNote targets the given id even when another note is active (issue #27)", async () => {
+    const { notes: disk } = installFakeApi([
+      { id: "a", body: "# A", updatedAt: 200 },
+      { id: "b", body: "# B", updatedAt: 100 },
+    ]);
+    await useNotesStore.getState().loadLibrary();
+    useNotesStore.getState().selectNote("b");
+    await useNotesStore.getState().updateNote("a", "# A edited");
+    const { notes } = useNotesStore.getState();
+    expect(notes.find((n) => n.id === "a")?.body).toBe("# A edited");
+    expect(notes.find((n) => n.id === "b")?.body).toBe("# B");
+    expect(disk.get("a")?.body).toBe("# A edited");
+    expect(disk.get("b")?.body).toBe("# B");
+  });
+
+  it("waitForWrites includes direct saves and does not resolve early", async () => {
+    installFakeApi([{ id: "a", body: "# A", updatedAt: 100 }]);
+    await useNotesStore.getState().loadLibrary();
+    let release: ((note: RawNote) => void) | undefined;
+    (window.appApi as unknown as { writeNote: unknown }).writeNote = ({ id, body }: { id: string; body: string }) =>
+      new Promise<RawNote>((resolve) => {
+        release = (note) => resolve(note);
+        void id;
+        void body;
+      });
+
+    const write = useNotesStore.getState().updateNote("a", "# A latest");
+    let finished = false;
+    const waiting = useNotesStore.getState().waitForWrites().then(() => {
+      finished = true;
+    });
+    await Promise.resolve();
+    expect(finished).toBe(false);
+
+    release?.({ id: "a", body: "# A latest", updatedAt: 200 });
+    await Promise.all([write, waiting]);
+    expect(finished).toBe(true);
+    expect(selectActiveNote(useNotesStore.getState())?.body).toBe("# A latest");
+  });
+
+  it("updateNote rejects on a failed write and leaves the in-memory note untouched", async () => {
+    installFakeApi([{ id: "a", body: "# A", updatedAt: 100 }]);
+    await useNotesStore.getState().loadLibrary();
+    (window.appApi as unknown as { writeNote: unknown }).writeNote = async () => {
+      throw new Error("EACCES: permission denied");
+    };
+    await expect(useNotesStore.getState().updateNote("a", "# lost?")).rejects.toThrow("EACCES");
+    expect(selectActiveNote(useNotesStore.getState())?.body).toBe("# A");
+  });
+
   it("deletes a note and reselects a remaining one", async () => {
     installFakeApi([
       { id: "a", body: "# A", updatedAt: 200 },

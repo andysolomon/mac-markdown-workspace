@@ -1,8 +1,13 @@
-import { createHttpVaultTransport } from "./vaultHttpTransport";
+import {
+  createHttpVaultTransport,
+  PROD_ORIGIN,
+  resolveVaultBaseUrl,
+} from "./vaultHttpTransport";
 import { createLocalNotesPort } from "./localNotesPort";
 import { createVault, syncVault, type SyncOutcome, type VaultTransport } from "./vaultSync";
 import { useSettingsStore } from "./settingsStore";
 import { useNotesStore } from "./notesStore";
+import { flushNoteSaves, reconcileActiveNoteBuffer } from "./noteAutosave";
 import { showToast } from "./toast";
 
 /**
@@ -13,17 +18,10 @@ import { showToast } from "./toast";
  * and never retained here — the UI re-collects it every time by design.
  */
 
-/** iOS is served from capacitor://, so it must call the API by absolute
-    origin; web is same-origin. */
-const PROD_ORIGIN = "https://mac-markdown-workspace.vercel.app";
-
-function isCapacitor(): boolean {
-  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return cap?.isNativePlatform?.() === true;
-}
-
+/** The transport chooses a fixed origin for native shells and same-origin
+    requests for deployed web. */
 function transport(): VaultTransport {
-  return createHttpVaultTransport(isCapacitor() ? PROD_ORIGIN : "");
+  return createHttpVaultTransport(resolveVaultBaseUrl());
 }
 
 async function persist(patch: {
@@ -46,9 +44,17 @@ async function persist(patch: {
   }
 }
 
+/** Sync must start from the latest local buffer, not from a pre-debounce
+    snapshot of the notes adapter. */
+async function flushBeforeSync(): Promise<void> {
+  const result = await flushNoteSaves();
+  if ("error" in result) throw new Error(`Save your changes before syncing: ${result.error}`);
+}
+
 /** Create a brand-new vault from this device's current library. Returns the
     vault id (the user's "Sync code"). */
 export async function enableSync(passphrase: string): Promise<string> {
+  await flushBeforeSync();
   const { vaultId } = await createVault(passphrase, createLocalNotesPort(), transport());
   await persist({ syncEnabled: true, syncVaultId: vaultId, lastSyncedAt: Date.now() });
   showToast("Cloud sync enabled");
@@ -57,8 +63,10 @@ export async function enableSync(passphrase: string): Promise<string> {
 
 /** Join an existing vault by its sync code: pull + merge into this device. */
 export async function linkDevice(vaultId: string, passphrase: string): Promise<SyncOutcome> {
+  await flushBeforeSync();
   const outcome = await syncVault(passphrase, vaultId, createLocalNotesPort(), transport());
   await useNotesStore.getState().reloadLibrary();
+  reconcileActiveNoteBuffer();
   await persist({ syncEnabled: true, syncVaultId: vaultId, lastSyncedAt: Date.now() });
   showToast(outcome.pulled ? `Linked — ${outcome.pulled} notes pulled` : "Device linked");
   return outcome;
@@ -68,8 +76,10 @@ export async function linkDevice(vaultId: string, passphrase: string): Promise<S
 export async function syncNow(passphrase: string): Promise<SyncOutcome> {
   const vaultId = useSettingsStore.getState().syncVaultId;
   if (!vaultId) throw new Error("Cloud sync isn't set up on this device yet.");
+  await flushBeforeSync();
   const outcome = await syncVault(passphrase, vaultId, createLocalNotesPort(), transport());
   await useNotesStore.getState().reloadLibrary();
+  reconcileActiveNoteBuffer();
   await persist({ lastSyncedAt: Date.now() });
   showToast(outcome.pulled ? `Synced — ${outcome.pulled} updated` : "Up to date");
   return outcome;

@@ -1,9 +1,16 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, session } from "electron";
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { randomUUID } from "node:crypto";
 import started from "electron-squirrel-startup";
 import Store from "electron-store";
+import type { CloseFlushResult } from "../shared/types/ipc";
+import { createNotesFileStore } from "./services/notesFileStore";
+import {
+  CLOSE_FLUSH_TIMEOUT_MS,
+  negotiateClose,
+  normalizeFlushResult,
+  type FailureChoice,
+} from "./services/closeHandshake";
 
 if (started) {
   app.quit();
@@ -11,6 +18,121 @@ if (started) {
 
 const store = new Store() as Store & { get(key: string): unknown; set(key: string, value: unknown): void };
 let mainWindow: BrowserWindow | null = null;
+let quitRequested = false;
+let quitAllowed = false;
+let requestCloseFromGuard: (() => void) | null = null;
+let closeRequestSequence = 0;
+
+/**
+ * Ask the renderer to flush every pending/in-flight note save (issue #27).
+ * Each request has a nonce so a late response from a timed-out attempt cannot
+ * approve a later close attempt. Silence is a failure, never permission to
+ * close.
+ */
+const requestRendererFlush = (win: BrowserWindow): Promise<CloseFlushResult> =>
+  new Promise((resolve) => {
+    const wc = win.webContents;
+    const requestId = ++closeRequestSequence;
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const finish = (value: unknown) => {
+      if (settled) return;
+      settled = true;
+      if (timer !== null) clearTimeout(timer);
+      ipcMain.removeListener("dirty-check-response", onResponse);
+      resolve(normalizeFlushResult(value));
+    };
+    const onResponse = (event: Electron.IpcMainEvent, value: unknown) => {
+      if (event.sender !== wc) return;
+      // New preload versions wrap the result with the request id. Accept a
+      // legacy bare result as well; there is only one window in this app.
+      if (value && typeof value === "object" && "requestId" in value) {
+        const response = value as { requestId?: unknown; result?: unknown };
+        if (response.requestId !== requestId) return;
+        finish(response.result);
+        return;
+      }
+      finish(value);
+    };
+    timer = setTimeout(
+      () => finish({ ok: false, error: "The editor didn't confirm that your notes were saved." }),
+      CLOSE_FLUSH_TIMEOUT_MS,
+    );
+    ipcMain.on("dirty-check-response", onResponse);
+    try {
+      wc.send("check-dirty", requestId);
+    } catch (err) {
+      finish({ ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+const promptSaveFailure = async (win: BrowserWindow, error: string): Promise<FailureChoice> => {
+  try {
+    const result = await dialog.showMessageBox(win, {
+      type: "error",
+      buttons: ["Try Again", "Discard Changes", "Cancel"],
+      defaultId: 0,
+      cancelId: 2,
+      message: "Your latest changes couldn't be saved.",
+      detail: `${error}\n\nYour edits are still in the editor. Try again, or discard them to close anyway.`,
+    });
+    const map: FailureChoice[] = ["retry", "discard", "cancel"];
+    return map[result.response] ?? "cancel";
+  } catch {
+    // A destroyed/unavailable native dialog must not turn a failed save into
+    // an implicit discard.
+    return "cancel";
+  }
+};
+
+/** Gate window close/quit on a successful renderer flush (issue #27). */
+const installCloseGuard = (win: BrowserWindow) => {
+  let approved = false;
+  let negotiating = false;
+
+  const beginNegotiation = () => {
+    if (negotiating || win.isDestroyed()) return;
+    negotiating = true;
+    const wc = win.webContents;
+    const flush = (): Promise<CloseFlushResult> =>
+      wc.isDestroyed() || wc.isCrashed()
+        ? Promise.resolve({ ok: false, error: "The editor is unavailable to save your changes." })
+        : requestRendererFlush(win);
+    void negotiateClose(flush, (error) => promptSaveFailure(win, error)).then(
+      (decision) => {
+        negotiating = false;
+        if (decision !== "close") {
+          quitRequested = false;
+          return;
+        }
+
+        approved = true;
+        if (quitRequested) {
+          // before-quit was prevented on the first attempt; resume it only
+          // after the renderer has confirmed persistence.
+          quitAllowed = true;
+          app.quit();
+        } else if (!win.isDestroyed()) {
+          win.close();
+        }
+      },
+      () => {
+        negotiating = false;
+        quitRequested = false;
+      },
+    );
+  };
+
+  requestCloseFromGuard = beginNegotiation;
+  win.on("closed", () => {
+    if (requestCloseFromGuard === beginNegotiation) requestCloseFromGuard = null;
+  });
+  win.on("close", (event) => {
+    if (approved) return;
+    event.preventDefault();
+    beginNegotiation();
+  });
+};
 
 const createMainWindow = (): BrowserWindow => {
   mainWindow = new BrowserWindow({
@@ -36,10 +158,8 @@ const createMainWindow = (): BrowserWindow => {
     );
   }
 
-  // Check dirty state before closing
-  mainWindow.on("close", () => {
-    // Renderer handles dirty checks via IPC
-  });
+  // Block close/quit until pending note saves have persisted (issue #27).
+  installCloseGuard(mainWindow);
 
   return mainWindow;
 };
@@ -342,109 +462,39 @@ const registerIpc = (): void => {
     return true;
   });
 
-  // Notes library — a user-visible folder of .md files in Documents/Mac Markdown.
-  const notesDir = () => path.join(app.getPath("documents"), "Mac Markdown");
-  const ensureNotesDir = () => fs.mkdir(notesDir(), { recursive: true });
-  const notePath = (id: string) => path.join(notesDir(), `${id}.md`);
-  const readRawNote = async (id: string) => {
-    const full = notePath(id);
-    const [body, stat] = await Promise.all([fs.readFile(full, "utf8"), fs.stat(full)]);
-    return { id, body, updatedAt: stat.mtimeMs };
-  };
-
-  // Vault-sync bookkeeping: a hidden tombstone sidecar (updatedAt rides on the
-  // file's mtime directly, set via utimes on write — no time sidecar needed).
-  const tombstonesPath = () => path.join(notesDir(), ".vault-tombstones.json");
-  const readTombstones = async (): Promise<Record<string, number>> => {
-    try {
-      return JSON.parse(await fs.readFile(tombstonesPath(), "utf8")) as Record<string, number>;
-    } catch {
-      return {};
-    }
-  };
-  const writeTombstones = async (map: Record<string, number>) => {
-    await ensureNotesDir();
-    await fs.writeFile(tombstonesPath(), JSON.stringify(map), "utf8");
-  };
-
-  ipcMain.handle("notes:list", async () => {
-    await ensureNotesDir();
-    const entries = await fs.readdir(notesDir());
-    const notes = [];
-    for (const name of entries) {
-      if (!name.endsWith(".md")) continue;
-      try {
-        notes.push(await readRawNote(name.slice(0, -3)));
-      } catch {
-        /* skip unreadable files */
-      }
-    }
-    return notes;
+  // Notes library — a user-visible folder of .md files in Documents/Mac
+  // Markdown. Writes are atomic (temp file + rename in the same directory)
+  // and serialized per note / for the tombstone sidecar (issue #27). The
+  // tombstone sidecar is hidden; updatedAt rides on each file's mtime, set
+  // via utimes when a vault pull supplies a canonical timestamp.
+  const notes = createNotesFileStore({
+    dir: () => path.join(app.getPath("documents"), "Mac Markdown"),
   });
 
-  ipcMain.handle("notes:read", async (_event, payload: { id: string }) => {
-    try {
-      return await readRawNote(payload.id);
-    } catch {
-      return null;
-    }
-  });
+  ipcMain.handle("notes:list", () => notes.listNotes());
 
-  ipcMain.handle("notes:create", async (_event, payload: { body: string }) => {
-    await ensureNotesDir();
-    const id = randomUUID();
-    await fs.writeFile(notePath(id), payload.body ?? "", "utf8");
-    return readRawNote(id);
-  });
+  ipcMain.handle("notes:read", (_event, payload: { id: string }) => notes.readNote(payload.id));
+
+  ipcMain.handle("notes:create", (_event, payload: { body: string }) =>
+    notes.createNote(payload.body ?? ""),
+  );
 
   ipcMain.handle(
     "notes:write",
-    async (_event, payload: { id: string; body: string; updatedAt?: number }) => {
-      await ensureNotesDir();
-      await fs.writeFile(notePath(payload.id), payload.body, "utf8");
-      // Preserve a vault-pulled note's canonical timestamp by stamping mtime
-      // (Electron has full fs, unlike Capacitor) so listNotes reads it back.
-      if (payload.updatedAt !== undefined) {
-        const when = new Date(payload.updatedAt);
-        await fs.utimes(notePath(payload.id), when, when);
-      }
-      // A (re)written note must not keep a stale tombstone.
-      const map = await readTombstones();
-      if (payload.id in map) {
-        delete map[payload.id];
-        await writeTombstones(map);
-      }
-      return readRawNote(payload.id);
-    },
+    (_event, payload: { id: string; body: string; updatedAt?: number }) => notes.writeNote(payload),
   );
 
-  ipcMain.handle("notes:delete", async (_event, payload: { id: string }) => {
-    try {
-      await fs.unlink(notePath(payload.id));
-    } catch {
-      /* already gone */
-    }
-  });
+  ipcMain.handle("notes:delete", (_event, payload: { id: string }) => notes.deleteNote(payload.id));
 
-  ipcMain.handle("notes:tombstones:list", async () => {
-    const map = await readTombstones();
-    return Object.entries(map).map(([id, deletedAt]) => ({ id, deletedAt }));
-  });
+  ipcMain.handle("notes:tombstones:list", () => notes.listTombstones());
 
-  ipcMain.handle(
-    "notes:tombstones:record",
-    async (_event, payload: { id: string; deletedAt: number }) => {
-      const map = await readTombstones();
-      map[payload.id] = payload.deletedAt;
-      await writeTombstones(map);
-    },
+  ipcMain.handle("notes:tombstones:record", (_event, payload: { id: string; deletedAt: number }) =>
+    notes.recordTombstone(payload.id, payload.deletedAt),
   );
 
-  ipcMain.handle("notes:tombstones:clear", async (_event, payload: { ids: string[] }) => {
-    const map = await readTombstones();
-    for (const id of payload.ids) delete map[id];
-    await writeTombstones(map);
-  });
+  ipcMain.handle("notes:tombstones:clear", (_event, payload: { ids: string[] }) =>
+    notes.clearTombstones(payload.ids),
+  );
 
   const isPathInsideRoot = (root: string, target: string): boolean => {
     const rel = path.relative(root, target);
@@ -524,7 +574,7 @@ const setupCSP = () => {
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self' data:",
             "img-src 'self' data: blob:",
-            "connect-src 'self' ws://localhost:* http://localhost:*",
+            "connect-src 'self' https://mac-markdown-workspace.vercel.app ws://localhost:* http://localhost:*",
           ].join("; "),
         ],
       },
@@ -543,6 +593,20 @@ app.whenReady().then(() => {
       createMainWindow();
     }
   });
+});
+
+// Cmd+Q / app.quit(): stop Electron from closing the window before the
+// renderer has flushed its saves. The guard resumes the quit after success or
+// leaves the window open after a failure/cancel.
+app.on("before-quit", (event) => {
+  if (quitAllowed) {
+    quitAllowed = false;
+    return;
+  }
+  if (!requestCloseFromGuard || !mainWindow || mainWindow.isDestroyed()) return;
+  event.preventDefault();
+  quitRequested = true;
+  requestCloseFromGuard();
 });
 
 app.on("window-all-closed", () => {

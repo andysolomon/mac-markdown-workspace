@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Sidebar } from "./Sidebar";
 import { DocList } from "./DocList";
 import { EditorChrome } from "./EditorChrome";
@@ -15,8 +15,14 @@ import { useNotesStore } from "../../services/notesStore";
 import { buildTagIndex, filterNotes } from "../../services/notesModel";
 import { useDocumentStore } from "../../services/documentStore";
 import { TOAST_EVENT } from "../../services/toast";
-
-const AUTOSAVE_MS = 600;
+import {
+  discardFailedSaves,
+  flushNoteSaves,
+  loadNoteIntoBuffer,
+  noteSaves,
+  retryFailedSaves,
+  syncBufferToAutosave,
+} from "../../services/noteAutosave";
 
 function isNarrowQuery(): MediaQueryList {
   return window.matchMedia("(max-width: 640px)");
@@ -134,61 +140,39 @@ export function NotesShell() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
-  const saveTimer = useRef<number | null>(null);
-
   useEffect(() => {
     loadLibrary();
   }, [loadLibrary]);
 
-  // Selection changed: load the active note into the editing buffer.
-  // filePath is cleared so file-save shortcuts can never write a note's
-  // content over a previously opened file.
+  // Selection changed: load the active note into the editing buffer (an
+  // unpersisted body for that note wins, so edits survive switching away and
+  // back). filePath is cleared so file-save shortcuts can never write a
+  // note's content over a previously opened file.
   useEffect(() => {
     if (!activeNoteId) return;
-    const note = useNotesStore.getState().notes.find((n) => n.id === activeNoteId);
-    if (!note) return;
-    useDocumentStore.setState({
-      content: note.body,
-      savedContent: note.body,
-      filePath: "",
-    });
+    loadNoteIntoBuffer(activeNoteId);
   }, [activeNoteId]);
 
-  // Debounced autosave: editing buffer -> active note. The effect cleanup is
-  // the debounce; a no-op when the buffer matches the stored body (e.g. right
-  // after selection sync).
+  // Debounced autosave (600ms): every buffer change is handed to the save
+  // coordinator, which binds the note id + revision at that moment and
+  // serializes writes (issue #27).
   useEffect(() => {
-    const s = useNotesStore.getState();
-    if (!s.loaded || !s.activeNoteId) return;
-    const active = s.notes.find((n) => n.id === s.activeNoteId);
-    if (!active || content === active.body) return;
+    syncBufferToAutosave();
+  }, [content, activeNoteId]);
 
-    const timer = window.setTimeout(() => {
-      saveTimer.current = null;
-      useNotesStore
-        .getState()
-        .updateActiveNote(useDocumentStore.getState().content)
-        .then(() => useDocumentStore.getState().markClean());
-    }, AUTOSAVE_MS);
-    saveTimer.current = timer;
-    return () => {
-      window.clearTimeout(timer);
-      if (saveTimer.current === timer) saveTimer.current = null;
-    };
-  }, [content]);
+  // Host close/quit handshake: the window may not close until every pending
+  // and in-flight save has persisted; a failure keeps it open.
+  useEffect(() => {
+    const off = window.appApi?.checkDirty?.(() => flushNoteSaves());
+    return () => off?.();
+  }, []);
 
-  // Write any pending edit immediately (before switching notes).
+  const saveState = useSyncExternalStore(noteSaves.subscribe, noteSaves.getState);
+
+  // Write any pending edit immediately (before switching notes). A failed
+  // write is retained by the coordinator; switching proceeds regardless.
   const flushPendingSave = useCallback(async () => {
-    if (saveTimer.current === null) return;
-    window.clearTimeout(saveTimer.current);
-    saveTimer.current = null;
-    const buffer = useDocumentStore.getState().content;
-    const s = useNotesStore.getState();
-    const active = s.notes.find((n) => n.id === s.activeNoteId);
-    if (active && buffer !== active.body) {
-      await s.updateActiveNote(buffer);
-      useDocumentStore.getState().markClean();
-    }
+    await flushNoteSaves();
   }, []);
 
   const handleSelectNote = useCallback(
@@ -212,6 +196,13 @@ export function NotesShell() {
     const note = useNotesStore.getState().notes.find((n) => n.id === id);
     const ok = window.confirm(`Delete "${note?.title ?? "this note"}"?`);
     if (!ok) return;
+
+    // Deleting an active note must not leave a delayed autosave that can
+    // resurrect it after the delete completes.
+    if (id === useNotesStore.getState().activeNoteId || noteSaves.getUnsavedBody(id) !== null) {
+      const flushed = await flushNoteSaves();
+      if ("error" in flushed) return;
+    }
     await useNotesStore.getState().deleteNote(id);
   }, []);
 
@@ -283,7 +274,27 @@ export function NotesShell() {
           {isNarrow && editorFocused ? <MarkdownAccessoryBar /> : null}
         </section>
       )}
-      {toast ? <div className="mm-toast">{toast}</div> : null}
+      {saveState.status === "error" ? (
+        <div className="mm-toast mm-toast--save-error" role="alert" data-testid="save-error">
+          <span>Couldn’t save: {saveState.error}</span>
+          <button type="button" onClick={() => void retryFailedSaves()} style={{ marginLeft: 12 }}>
+            Retry
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("Discard the unsaved changes? This cannot be undone.")) {
+                discardFailedSaves();
+              }
+            }}
+            style={{ marginLeft: 6 }}
+          >
+            Discard
+          </button>
+        </div>
+      ) : toast ? (
+        <div className="mm-toast">{toast}</div>
+      ) : null}
       <SyncModal
         open={syncModal.open}
         autoSync={syncModal.auto}
