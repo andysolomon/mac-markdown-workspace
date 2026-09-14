@@ -129,7 +129,7 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
 
 [~] 17.0 - Phase 17 - Omarchy/Linux distribution track (#23 -> #25 -> #26 -> #24 -> #29)
     [x] 17.1 - Issue #23 plan synchronized: Linux x86_64 ZIP, Electron/Bun pins, icons, LICENSE, runtime inventory, and validation boundaries (docs/issue-23-IMPLEMENTATION_PLAN.md)
-    [~] 17.2 - Issue #23 Linux ZIP implemented, Omarchy smoke-tested, independently verified, PR #32 open; macOS Darwin host check and merge pending
+    [x] 17.2 - Issue #23 Linux ZIP implemented, Omarchy smoke-tested, independently verified, PR #32 merged; plan/progress archived (macOS Darwin host check remains external)
     [ ] 17.3 - Implement #25 launcher/associations/single-instance opening after #23
     [ ] 17.4 - Implement #26 Hyprland integration after #25
     [ ] 17.5 - Implement #24 PKGBUILD/private pacman flow after #23 and integration prerequisites
