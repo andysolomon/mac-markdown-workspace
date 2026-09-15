@@ -131,6 +131,6 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 17.1 - Issue #23 plan synchronized: Linux x86_64 ZIP, Electron/Bun pins, icons, LICENSE, runtime inventory, and validation boundaries (docs/issue-23-IMPLEMENTATION_PLAN.md)
     [x] 17.2 - Issue #23 Linux ZIP implemented, Omarchy smoke-tested, independently verified, PR #32 merged; plan/progress archived (macOS Darwin host check remains external)
     [x] 17.3 - Issue #25 launcher/MIME/single-instance opening implemented, verified, PR #33 merged; plan/progress archived
-    [ ] 17.4 - Implement #26 Hyprland integration after #25
+    [x] 17.4 - Issue #26 Hyprland menus/shortcuts/layout + Export-menu route implemented, verified, PR #38 merged; plan/progress archived
     [ ] 17.5 - Implement #24 PKGBUILD/private pacman flow after #23 and integration prerequisites
     [ ] 17.6 - Implement #29 CI/installed-package tests/support guide after the package path exists

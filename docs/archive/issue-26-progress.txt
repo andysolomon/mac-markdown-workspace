@@ -16,7 +16,7 @@ On completion, move this file and the plan to docs/archive/.
     [x] 4.2 - Playwright e2e/hyprland-desktop.spec.ts
     [x] 4.3 - bun run typecheck, lint, test (231), test:e2e 10/10 (workers:1)
     [x] 4.4 - docs/hyprland-desktop.md + docs/hyprland-desktop-validation-2026-09.md
-[ ] 5.0 - Ship and archive
+[x] 5.0 - Ship and archive
     [x] 5.1 - Independent Verify PASS (opus-4.8-check) on parent-local tree
-    [ ] 5.2 - Parent-owned PR with Closes #26
-    [ ] 5.3 - On merge: archive plan + progress
+    [x] 5.2 - PR #38 opened and squash-merged (Closes #26)
+    [x] 5.3 - Moving docs/issue-26-IMPLEMENTATION_PLAN.md + docs/issue-26-progress.txt to docs/archive/
