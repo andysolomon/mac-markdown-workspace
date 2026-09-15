@@ -1,0 +1,121 @@
+# Maintainer: Andrew Solomon <andrewsolomon.edu at gmail.com>
+# Private Arch x86_64 build for the Mac Markdown Workspace.
+# This package is for use only by authenticated members of the private
+# repository https://github.com/andysolomon/mac-markdown-workspace.
+# See packaging/arch/install-guide.md for the private install workflow and
+# the explicit separation from any future public AUR publication.
+
+pkgname=mac-markdown-workspace
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='Local-first Markdown notes workspace (private x86_64 build)'
+arch=('x86_64')
+url='https://github.com/andysolomon/mac-markdown-workspace'
+license=('MIT')
+
+# Runtime deps that ship with the system but Electron 44 expects to be able
+# to dlopen at runtime. The bundled Chromium/Vulkan libs sit next to the
+# executable under /opt and are NOT re-listed here.
+depends=(
+  'alsa-lib'
+  'at-spi2-core'
+  'cairo'
+  'dbus'
+  'expat'
+  'gcc-libs'
+  'glib2'
+  'gtk3'
+  'hicolor-icon-theme'
+  'libcups'
+  'libdrm'
+  'libnotify'
+  'libsecret'
+  'libx11'
+  'libxcb'
+  'libxcomposite'
+  'libxdamage'
+  'libxext'
+  'libxfixes'
+  'libxkbcommon'
+  'libxkbcommon-x11'
+  'libxrandr'
+  'libxrender'
+  'libxss'
+  'libxtst'
+  'mesa'
+  'nspr'
+  'nss'
+  'pango'
+  'wayland'
+)
+makedepends=(
+  'pacman-contrib'   # updpkgsums + namcap are pulled in for build.sh/operator runs
+)
+optdepends=(
+  'pipewire-pulse: PipeWire audio backend'
+  'libpulse: PulseAudio audio backend (alternative)'
+  'libappindicator-gtk3: StatusNotifierItem tray support'
+)
+provides=("${pkgname}")
+conflicts=("${pkgname}-bin")
+
+options=('!strip')
+# Local-source PKGBUILD: the upstream ZIP is staged into the build directory
+# by packaging/arch/build.sh, which performs the authenticated download and
+# sha256 verification *before* invoking makepkg. This keeps secrets out of
+# the source URL and gives a hard cryptographic integrity check.
+source=("mac-markdown-workspace-${pkgver}-linux-x64.zip")
+sha256sums=('17980b1614dba1e5f3be536e7f6e4072528641ccf8fa95f9d75f2c161618fe2f')
+
+# Internal — used by packaging/arch/build.sh to flip the dependency set if
+# the upstream artifact ever stops bundling Vulkan. Not user-facing.
+_ARTIFACT_DIR='Mac Markdown Workspace-linux-x64'
+
+package() {
+  cd "${srcdir}/${_ARTIFACT_DIR}"
+
+  # 1. Bundle the application under /opt so the executable can find its
+  #    native libraries next to it (Electron 44 dlopens from argv0.dirname).
+  install -dm755 "${pkgdir}/opt/mac-markdown-workspace"
+  cp -a . "${pkgdir}/opt/mac-markdown-workspace/"
+  # Linux archives include the binary as 0755; chmod explicitly.
+  chmod 0755 "${pkgdir}/opt/mac-markdown-workspace/mac-markdown-workspace"
+
+  # 2. The chrome-sandbox helper needs setuid-root on kernels without
+  #    CONFIG_USER_NS=y; the launcher has been validated with the user
+  #    namespace sandbox as the preferred path (#23). Setting 4755 covers
+  #    both modes for ordinary users.
+  if [ -f "${pkgdir}/opt/mac-markdown-workspace/chrome-sandbox" ]; then
+    chmod 4755 "${pkgdir}/opt/mac-markdown-workspace/chrome-sandbox"
+  fi
+
+  # 3. /usr/bin wrapper symlink so 'mac-markdown-workspace %F' resolves.
+  install -dm755 "${pkgdir}/usr/bin"
+  ln -s /opt/mac-markdown-workspace/mac-markdown-workspace \
+        "${pkgdir}/usr/bin/mac-markdown-workspace"
+
+  # 4. Desktop entry: use the .desktop bundled inside resources/linux so the
+  #    MIME types + StartupWMClass match what the launcher already expects.
+  install -dm755 "${pkgdir}/usr/share/applications"
+  install -Dm644 resources/linux/mac-markdown-workspace.desktop \
+          "${pkgdir}/usr/share/applications/mac-markdown-workspace.desktop"
+
+  # 5. Icons under hicolor. The bundled SVG is the canonical vector; the
+  #    512px PNG (already validated in #25) is the launcher fallback.
+  install -dm755 "${pkgdir}/usr/share/icons/hicolor/512x512/apps"
+  install -Dm644 resources/linux/icon.png \
+          "${pkgdir}/usr/share/icons/hicolor/512x512/apps/mac-markdown-workspace.png"
+  install -dm755 "${pkgdir}/usr/share/icons/hicolor/scalable/apps"
+  install -Dm644 resources/icon.svg \
+          "${pkgdir}/usr/share/icons/hicolor/scalable/apps/mac-markdown-workspace.svg"
+
+  # 6. License bundle. Distinguish the application MIT license from
+  #    Electron's bundled Chromium and upstream notices.
+  install -dm755 "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -Dm644 LICENSE \
+          "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 resources/LICENSE \
+          "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.application"
+  install -Dm644 LICENSES.chromium.html \
+          "${pkgdir}/usr/share/licenses/${pkgname}/LICENSES.chromium.html"
+}
