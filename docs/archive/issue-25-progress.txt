@@ -21,7 +21,7 @@ On completion, move this file and the plan to docs/archive/.
     [x] 4.3 - bun run typecheck, lint, test (new tests pass; 2 pre-existing iosNotesStorage failures on HEAD), test:e2e 9/9
     [x] 4.4 - bun run make:linux ZIP resources/linux/ + executable mac-markdown-workspace
     [x] 4.5 - desktop-file-validate + xdg-mime default unchanged; write launcher-integration docs
-[ ] 5.0 - Ship and archive
-    [ ] 5.1 - Independent Verify
-    [ ] 5.2 - Parent-owned PR with Closes #25 (no main push, no deploy)
-    [ ] 5.3 - On merge: move docs/issue-25-IMPLEMENTATION_PLAN.md + docs/issue-25-progress.txt to docs/archive/
+[x] 5.0 - Ship and archive
+    [x] 5.1 - Independent Verify PASS (opus-4.8-check); re-Verify PASS on amended HEAD 91265ec
+    [x] 5.2 - PR #33 opened and squash-merged (Closes #25)
+    [x] 5.3 - Moving docs/issue-25-IMPLEMENTATION_PLAN.md + docs/issue-25-progress.txt to docs/archive/
