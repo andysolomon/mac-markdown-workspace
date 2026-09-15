@@ -6,6 +6,11 @@ import Store from "electron-store";
 import type { CloseFlushResult } from "../shared/types/ipc";
 import { parseOpenFileArgs } from "./services/argvParser";
 import { createHostOpenFilesQueue } from "./services/hostOpenFilesQueue";
+import {
+  includeMacAppMenuRoles,
+  WINDOW_MIN_HEIGHT,
+  WINDOW_MIN_WIDTH,
+} from "./services/hostPlatform";
 import { createNotesFileStore } from "./services/notesFileStore";
 import {
   CLOSE_FLUSH_TIMEOUT_MS,
@@ -184,8 +189,9 @@ const createMainWindow = (): BrowserWindow => {
   mainWindow = new BrowserWindow({
     width: 1320,
     height: 860,
-    minWidth: 980,
-    minHeight: 640,
+    // Issue #26: allow Hyprland half-tiles (~960 on 1920); shell collapses at 640.
+    minWidth: WINDOW_MIN_WIDTH,
+    minHeight: WINDOW_MIN_HEIGHT,
     title: "Mac Markdown Workspace",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -232,8 +238,13 @@ const sendMenuAction = (action: string) => {
 };
 
 const buildAppMenu = () => {
-  const template: Electron.MenuItemConstructorOptions[] = [
-    {
+  const isMac = includeMacAppMenuRoles(process.platform);
+  const template: Electron.MenuItemConstructorOptions[] = [];
+
+  // macOS app menu (About / Services / Hide / Quit). On Linux the Quit item
+  // lives under File so we do not install misleading Hide/Services roles.
+  if (isMac) {
+    template.push({
       label: app.name,
       submenu: [
         { role: "about" },
@@ -246,46 +257,55 @@ const buildAppMenu = () => {
         { type: "separator" },
         { role: "quit" },
       ],
+    });
+  }
+
+  const fileSubmenu: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: "New",
+      accelerator: "CmdOrCtrl+N",
+      click: () => sendMenuAction("new-file"),
     },
     {
-      label: "File",
-      submenu: [
-        {
-          label: "New",
-          accelerator: "CmdOrCtrl+N",
-          click: () => sendMenuAction("new-file"),
-        },
-        {
-          label: "Open...",
-          accelerator: "CmdOrCtrl+O",
-          click: () => sendMenuAction("open-file"),
-        },
-        { type: "separator" },
-        {
-          label: "Save",
-          accelerator: "CmdOrCtrl+S",
-          click: () => sendMenuAction("save-file"),
-        },
-        {
-          label: "Save As...",
-          accelerator: "CmdOrCtrl+Shift+S",
-          click: () => sendMenuAction("save-file-as"),
-        },
-        { type: "separator" },
-        {
-          label: "Export as Text",
-          click: () => sendMenuAction("export-txt"),
-        },
-        {
-          label: "Export as PDF",
-          click: () => sendMenuAction("export-pdf"),
-        },
-        {
-          label: "Export as Word",
-          click: () => sendMenuAction("export-docx"),
-        },
-      ],
+      label: "Open...",
+      accelerator: "CmdOrCtrl+O",
+      click: () => sendMenuAction("open-file"),
     },
+    { type: "separator" },
+    {
+      label: "Save",
+      accelerator: "CmdOrCtrl+S",
+      click: () => sendMenuAction("save-file"),
+    },
+    {
+      label: "Save As...",
+      accelerator: "CmdOrCtrl+Shift+S",
+      click: () => sendMenuAction("save-file-as"),
+    },
+    { type: "separator" },
+    {
+      label: "Export as Text",
+      click: () => sendMenuAction("export-txt"),
+    },
+    {
+      label: "Export as PDF",
+      click: () => sendMenuAction("export-pdf"),
+    },
+    {
+      label: "Export as Word",
+      click: () => sendMenuAction("export-docx"),
+    },
+    {
+      label: "Export as HTML",
+      click: () => sendMenuAction("export-html"),
+    },
+  ];
+  if (!isMac) {
+    fileSubmenu.push({ type: "separator" }, { role: "quit" });
+  }
+
+  template.push(
+    { label: "File", submenu: fileSubmenu },
     {
       label: "Edit",
       submenu: [
@@ -334,15 +354,16 @@ const buildAppMenu = () => {
       submenu: [
         { role: "minimize" },
         { role: "zoom" },
-        { type: "separator" },
-        { role: "front" },
+        ...(isMac
+          ? ([{ type: "separator" }, { role: "front" }] as Electron.MenuItemConstructorOptions[])
+          : []),
       ],
     },
     {
       label: "Help",
-      submenu: [],
+      submenu: isMac ? [] : [{ role: "about" }],
     },
-  ];
+  );
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 };

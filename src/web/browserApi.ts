@@ -101,6 +101,7 @@ async function deliverFile(blob: Blob, filename: string, mime: string): Promise<
 }
 
 export const browserApi: AppApi = {
+  platform: { os: "web", commandUsesCtrl: false, showWindowDots: true },
   getVersion: async () => "1.0.0-web",
 
   openFile: async () => {

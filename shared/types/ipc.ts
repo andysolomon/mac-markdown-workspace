@@ -1,4 +1,7 @@
 import type { RawNote } from "../../src/services/notesModel";
+import type { HostOs, HostPlatformInfo } from "../../src/services/hostPlatform";
+
+export type { HostOs, HostPlatformInfo };
 
 export type OpenFileResult =
   | {
@@ -24,6 +27,8 @@ export type NoteTombstone = { id: string; deletedAt: number };
 
 export type AppApi = {
   getVersion: () => Promise<string>;
+  /** Sync platform snapshot for menus, shortcuts, and chrome (issue #26). */
+  platform?: HostPlatformInfo;
   openFile: () => Promise<OpenFileResult>;
   readFile: (payload: { filePath: string }) => Promise<OpenFileResult>;
   saveFile: (payload: { filePath: string; content: string }) => Promise<SaveFileResult>;

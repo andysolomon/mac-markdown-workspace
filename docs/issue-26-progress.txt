@@ -1,0 +1,22 @@
+issue-26 - Hyprland menus, shortcuts, and responsive layout - Progress
+Generated: 2026-09-15
+On completion, move this file and the plan to docs/archive/.
+
+[x] 1.0 - Phase 1 - Platform metadata
+    [x] 1.1 - Add src/services/hostPlatform.ts (os, commandUsesCtrl, showWindowDots, mins, menu helpers)
+    [x] 1.2 - Extend AppApi.platform; implement in preload / browserApi / capacitorApi
+[x] 2.0 - Phase 2 - Main process
+    [x] 2.1 - BrowserWindow minWidth/minHeight → 640/480
+    [x] 2.2 - Darwin-only Services/Hide/front; Linux File→Quit; Export as HTML
+[x] 3.0 - Phase 3 - Renderer
+    [x] 3.1 - useKeyboardShortcuts: platform mod, normalizeShortcutKey, exportDocument menu path
+    [x] 3.2 - Sidebar gates WindowDots on platform.showWindowDots
+[x] 4.0 - Phase 4 - Tests and Omarchy record
+    [x] 4.1 - Unit tests hostPlatform.test.ts
+    [x] 4.2 - Playwright e2e/hyprland-desktop.spec.ts
+    [x] 4.3 - bun run typecheck, lint, test (231), test:e2e 10/10 (workers:1)
+    [x] 4.4 - docs/hyprland-desktop.md + docs/hyprland-desktop-validation-2026-09.md
+[ ] 5.0 - Ship and archive
+    [x] 5.1 - Independent Verify PASS (opus-4.8-check) on parent-local tree
+    [ ] 5.2 - Parent-owned PR with Closes #26
+    [ ] 5.3 - On merge: archive plan + progress

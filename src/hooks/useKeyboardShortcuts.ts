@@ -1,7 +1,19 @@
 import { useEffect } from "react";
 import { useDocumentStore } from "../services/documentStore";
+import { exportDocument } from "../services/exportActions";
+import {
+  isCommandMod,
+  menuActionToExportFormat,
+  normalizeShortcutKey,
+  platformFromOs,
+  type HostPlatformInfo,
+} from "../services/hostPlatform";
 import { useThemeStore } from "../services/themeStore";
 import { useFileOperations } from "./useFileOperations";
+
+function resolvePlatform(): HostPlatformInfo {
+  return window.appApi?.platform ?? platformFromOs("unknown");
+}
 
 export function useKeyboardShortcuts() {
   const { openFile, saveFile, saveFileAs, newFile } = useFileOperations();
@@ -9,11 +21,12 @@ export function useKeyboardShortcuts() {
   const cycleMode = useThemeStore((s) => s.cycleMode);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
+    const platform = resolvePlatform();
 
-      switch (e.key) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isCommandMod(e, platform)) return;
+
+      switch (normalizeShortcutKey(e.key)) {
         case "s":
           e.preventDefault();
           if (e.shiftKey) {
@@ -46,7 +59,14 @@ export function useKeyboardShortcuts() {
     };
 
     const handleMenuAction = (e: Event) => {
-      const action = (e as CustomEvent).detail;
+      const action = (e as CustomEvent).detail as string;
+      const exportFormat = menuActionToExportFormat(action);
+      if (exportFormat) {
+        const content = useDocumentStore.getState().content;
+        void exportDocument(exportFormat, content);
+        return;
+      }
+
       switch (action) {
         case "new-file":
           newFile();
