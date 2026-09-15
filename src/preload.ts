@@ -1,7 +1,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { AppApi, CloseFlushResult } from "../shared/types/ipc";
+import { hostOsFromNodePlatform, platformFromOs } from "./services/hostPlatform";
 
 const api: AppApi = {
+  platform: platformFromOs(hostOsFromNodePlatform(process.platform)),
   getVersion: () => ipcRenderer.invoke("app:get-version"),
   openFile: () => ipcRenderer.invoke("file:open"),
   readFile: (payload) => ipcRenderer.invoke("file:read", payload),

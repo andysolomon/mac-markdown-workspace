@@ -109,6 +109,7 @@ async function writeAndShare(filename: string, data: string | Blob): Promise<boo
 }
 
 export const capacitorApi: AppApi = {
+  platform: { os: "ios", commandUsesCtrl: true, showWindowDots: false },
   getVersion: async () => "1.0.0-ios",
 
   openFile: async () => {

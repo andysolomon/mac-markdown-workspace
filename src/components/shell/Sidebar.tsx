@@ -1,5 +1,6 @@
 import React from "react";
 import type { TagCount } from "../../services/notesModel";
+import { platformFromOs } from "../../services/hostPlatform";
 import { Tag } from "./Tag";
 import { WindowDots } from "./WindowDots";
 
@@ -12,11 +13,16 @@ export function Sidebar({
   selectedTag: string | null;
   onSelectTag: (tag: string | null) => void;
 }) {
+  const showDots =
+    window.appApi?.platform?.showWindowDots ?? platformFromOs("web").showWindowDots;
+
   return (
     <aside className="mm-sidebar">
-      <div className="mm-dots-row">
-        <WindowDots />
-      </div>
+      {showDots ? (
+        <div className="mm-dots-row">
+          <WindowDots />
+        </div>
+      ) : null}
       <div className="mm-scroll">
         <div
           className={`mm-all${selectedTag === null ? " sel" : ""}`}
