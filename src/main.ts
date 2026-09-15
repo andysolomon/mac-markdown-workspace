@@ -4,6 +4,8 @@ import { promises as fs } from "node:fs";
 import started from "electron-squirrel-startup";
 import Store from "electron-store";
 import type { CloseFlushResult } from "../shared/types/ipc";
+import { parseOpenFileArgs } from "./services/argvParser";
+import { createHostOpenFilesQueue } from "./services/hostOpenFilesQueue";
 import { createNotesFileStore } from "./services/notesFileStore";
 import {
   CLOSE_FLUSH_TIMEOUT_MS,
@@ -22,6 +24,50 @@ let quitRequested = false;
 let quitAllowed = false;
 let requestCloseFromGuard: (() => void) | null = null;
 let closeRequestSequence = 0;
+let windowLoaded = false;
+let rendererReady = false;
+
+const openFilesQueue = createHostOpenFilesQueue();
+
+const resolveOpenPaths = (args: string[], cwd: string): string[] =>
+  parseOpenFileArgs(args).map((p) => (path.isAbsolute(p) ? path.normalize(p) : path.resolve(cwd, p)));
+
+const sendOpenFiles = (paths: string[]): void => {
+  const win = mainWindow;
+  if (!win || win.isDestroyed() || win.webContents.isDestroyed()) return;
+  win.webContents.send("host:open-files", paths);
+};
+
+openFilesQueue.setListener(sendOpenFiles);
+
+const tryMarkOpenFilesReady = (): void => {
+  if (windowLoaded && rendererReady) openFilesQueue.markReady();
+};
+
+const isPrimaryInstance = app.requestSingleInstanceLock();
+if (!isPrimaryInstance) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, commandLine, workingDirectory) => {
+    openFilesQueue.enqueue(resolveOpenPaths(commandLine, workingDirectory || process.cwd()));
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+// macOS Finder / `open` deliver paths here, often before `ready`. preventDefault
+// so Electron does not also try to open them as a window URL.
+app.on("open-file", (event, filePath) => {
+  event.preventDefault();
+  openFilesQueue.enqueue([filePath]);
+});
+
+if (isPrimaryInstance) {
+  openFilesQueue.enqueue(resolveOpenPaths(process.argv, process.cwd()));
+}
 
 /**
  * Ask the renderer to flush every pending/in-flight note save (issue #27).
@@ -149,6 +195,10 @@ const createMainWindow = (): BrowserWindow => {
     },
   });
 
+  windowLoaded = false;
+  rendererReady = false;
+  openFilesQueue.markUnready();
+
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -157,6 +207,16 @@ const createMainWindow = (): BrowserWindow => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    windowLoaded = true;
+    tryMarkOpenFilesReady();
+  });
+  mainWindow.on("closed", () => {
+    windowLoaded = false;
+    rendererReady = false;
+    openFilesQueue.markUnready();
+  });
 
   // Block close/quit until pending note saves have persisted (issue #27).
   installCloseGuard(mainWindow);
@@ -288,6 +348,12 @@ const buildAppMenu = () => {
 };
 
 const registerIpc = (): void => {
+  ipcMain.on("host:renderer-ready", (event) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents) return;
+    rendererReady = true;
+    tryMarkOpenFilesReady();
+  });
+
   ipcMain.handle("app:get-version", () => app.getVersion());
 
   // Settings
@@ -582,6 +648,7 @@ const setupCSP = () => {
 };
 
 app.whenReady().then(() => {
+  if (!isPrimaryInstance) return;
   setupCSP();
   registerIpc();
   buildAppMenu();

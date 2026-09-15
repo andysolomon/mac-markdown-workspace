@@ -15,6 +15,11 @@ function markCleanIfCurrent(noteId: string | null, body: string): void {
   }
 }
 
+/** Shared by File > Open and host open-file imports (issue #25). */
+export async function confirmDiscardIfDirty(): Promise<boolean> {
+  return checkDirtyAndProceed();
+}
+
 async function checkDirtyAndProceed(): Promise<boolean> {
   const state = useDocumentStore.getState();
   if (!selectIsDirty(state)) return true;

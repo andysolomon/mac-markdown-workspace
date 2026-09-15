@@ -24,7 +24,12 @@ const config: ForgeConfig = {
     // Ship the application's MIT license inside resources/ so it stays distinct
     // from Electron's top-level LICENSE and LICENSES.chromium.html, plus the icon
     // artwork so the Linux ZIP is self-contained for launcher integration (#25).
-    extraResource: ['./LICENSE', './assets/icons/icon.png', './assets/icons/icon.svg'],
+    extraResource: [
+      './LICENSE',
+      './assets/icons/icon.png',
+      './assets/icons/icon.svg',
+      './packaging/linux',
+    ],
     // Uncomment for production signing:
     // osxSign: {},
     // osxNotarize: { appleId: '', appleIdPassword: '', teamId: '' },

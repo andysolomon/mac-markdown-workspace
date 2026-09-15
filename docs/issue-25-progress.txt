@@ -1,0 +1,27 @@
+issue-25 - Launcher, MIME association, and single-instance file opening - Progress
+Generated: 2026-09-14 13:00:00 EDT
+On completion, move this file and the plan to docs/archive/.
+
+[x] 1.0 - Phase 1 - Packaging identity
+    [x] 1.1 - Add packaging/linux/mac-markdown-workspace.desktop (Exec %F, MimeType, StartupWMClass, no URI handler)
+    [x] 1.2 - Copy tracked icon.png next to the desktop template
+    [x] 1.3 - Extend forge.config.ts extraResource with ./packaging/linux
+[x] 2.0 - Phase 2 - Host queue and IPC
+    [x] 2.1 - Add argvParser (packaged/dev argv, --, spaces, Unicode, leading-dash)
+    [x] 2.2 - Add hostOpenFilesQueue (hold until ready; coalesce cold start; warm enqueue immediate)
+    [x] 2.3 - Wire requestSingleInstanceLock, second-instance, macOS open-file, did-finish-load + renderer-ready
+    [x] 2.4 - Additive AppApi.onHostOpenFiles on preload + ipc.ts (web/iOS shims untouched)
+[x] 3.0 - Phase 3 - Renderer import
+    [x] 3.1 - useHostOpenFiles: confirmDiscardIfDirty, flushNoteSaves, createNote per readable Markdown path
+    [x] 3.2 - Mount the hook from NotesShell; leave useFileOperations.openFile on createNote
+    [x] 3.3 - Toast missing/unreadable/unsupported paths without overwriting the active note
+[x] 4.0 - Phase 4 - Tests, ZIP, and Omarchy record
+    [x] 4.1 - Unit tests argvParser.test.ts and hostOpenFilesQueue.test.ts
+    [x] 4.2 - Playwright e2e/launcher-integration.spec.ts (cold single/multi, second-instance, missing file)
+    [x] 4.3 - bun run typecheck, lint, test (new tests pass; 2 pre-existing iosNotesStorage failures on HEAD), test:e2e 9/9
+    [x] 4.4 - bun run make:linux ZIP resources/linux/ + executable mac-markdown-workspace
+    [x] 4.5 - desktop-file-validate + xdg-mime default unchanged; write launcher-integration docs
+[ ] 5.0 - Ship and archive
+    [ ] 5.1 - Independent Verify
+    [ ] 5.2 - Parent-owned PR with Closes #25 (no main push, no deploy)
+    [ ] 5.3 - On merge: move docs/issue-25-IMPLEMENTATION_PLAN.md + docs/issue-25-progress.txt to docs/archive/

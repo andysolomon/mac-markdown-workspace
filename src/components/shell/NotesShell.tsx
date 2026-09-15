@@ -23,6 +23,7 @@ import {
   retryFailedSaves,
   syncBufferToAutosave,
 } from "../../services/noteAutosave";
+import { useHostOpenFiles } from "../../hooks/useHostOpenFiles";
 
 function isNarrowQuery(): MediaQueryList {
   return window.matchMedia("(max-width: 640px)");
@@ -74,6 +75,7 @@ export function NotesShell() {
   const [editorFocused, setEditorFocused] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const showToolbar = useSettingsStore((s) => s.showToolbar);
+  useHostOpenFiles();
 
   // Cloud Sync modal opens from the settings section and the on-focus nudge.
   useEffect(() => {
