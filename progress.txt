@@ -132,5 +132,5 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 17.2 - Issue #23 Linux ZIP implemented, Omarchy smoke-tested, independently verified, PR #32 merged; plan/progress archived (macOS Darwin host check remains external)
     [x] 17.3 - Issue #25 launcher/MIME/single-instance opening implemented, verified, PR #33 merged; plan/progress archived
     [x] 17.4 - Issue #26 Hyprland menus/shortcuts/layout + Export-menu route implemented, verified, PR #38 merged; plan/progress archived
-    [ ] 17.5 - Implement #24 PKGBUILD/private pacman flow after #23 and integration prerequisites
+    [x] 17.5 - Issue #24 Arch PKGBUILD + private install/upgrade workflow implemented, verified (parent-local Verify; ARC runner critical/down), PR #39 merged; plan/progress archived
     [ ] 17.6 - Implement #29 CI/installed-package tests/support guide after the package path exists

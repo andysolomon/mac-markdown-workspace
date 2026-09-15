@@ -25,7 +25,7 @@ On completion, move this file and the plan to docs/archive/.
     [ ] 5.3 - namcap PKGBUILD findings recorded (operator: namcap not installed)
     [ ] 5.4 - namcap *.pkg.tar.zst findings recorded (operator: namcap not installed)
     [ ] 5.5 - Disposable install/upgrade/removal smoke recorded (operator: requires sudo)
-[ ] 6.0 - Phase 6 - Ship and archive
+[x] 6.0 - Phase 6 - Ship and archive
     [x] 6.1 - Parent-local Verify PASS (arc-delegate verify failed: arc-orchestrator upstream registry divergence on cursor-auto; ARC runner not actionable here)
-    [ ] 6.2 - PR with Closes #24 opened, squashed-merged
-    [ ] 6.3 - Move plan + progress to docs/archive/
+    [x] 6.2 - PR #39 opened and squash-merged (Closes #24)
+    [x] 6.3 - Moving docs/issue-24-IMPLEMENTATION_PLAN.md + docs/issue-24-progress.txt to docs/archive/
