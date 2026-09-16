@@ -1,11 +1,10 @@
 pkgbase = mac-markdown-workspace
-	pkgdesc = Local-first Markdown notes workspace (private x86_64 build)
+	pkgdesc = Local-first Markdown notes workspace (Bear-inspired, structure-colored markdown)
 	pkgver = 1.0.0
 	pkgrel = 1
 	url = https://github.com/andysolomon/mac-markdown-workspace
 	arch = x86_64
 	license = MIT
-	makedepends = pacman-contrib
 	depends = alsa-lib
 	depends = at-spi2-core
 	depends = cairo
@@ -42,7 +41,7 @@ pkgbase = mac-markdown-workspace
 	provides = mac-markdown-workspace
 	conflicts = mac-markdown-workspace-bin
 	options = !strip
-	source = mac-markdown-workspace-1.0.0-linux-x64.zip
-	sha256sums = 17980b1614dba1e5f3be536e7f6e4072528641ccf8fa95f9d75f2c161618fe2f
+	source = https://github.com/andysolomon/mac-markdown-workspace/releases/download/v1.0.0/mac-markdown-workspace-1.0.0-linux-x64.zip
+	sha256sums = 76b9348a45335615988ecf96bc25741342cd36c69c3ad07462ddfad93c1c604c
 
 pkgname = mac-markdown-workspace
