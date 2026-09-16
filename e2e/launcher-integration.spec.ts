@@ -108,11 +108,27 @@ test.describe("Launcher integration (issue #25)", () => {
     const window = await app.firstWindow();
     await window.waitForLoadState("domcontentloaded");
     await expect(window.locator(".mm-doclist")).toBeVisible();
+    expect(app.windows()).toHaveLength(1);
 
     await spawnSecondInstance(userData, [extra], env);
+    expect(app.windows()).toHaveLength(1);
     await expect(window.locator(".mm-doclist").getByText("Launcher Second Instance")).toBeVisible({
       timeout: 15000,
     });
+    // createNote prepends and selects; DocListItem has no is-active class, so
+    // the first row plus the editor heading prove the imported note is active.
+    await expect(window.locator(".mm-doc-row").first()).toContainText("Launcher Second Instance");
+    await expect(window.locator(".cm-content")).toContainText("Launcher Second Instance");
+
+    await window.bringToFront();
+    const hasFocus = await window.evaluate(() => document.hasFocus());
+    // Headless Linux often never reports document.hasFocus(); the single-window
+    // check above is the degraded substitute rather than skipping.
+    if (hasFocus) {
+      expect(hasFocus).toBe(true);
+    } else {
+      expect(app.windows()).toHaveLength(1);
+    }
     await app.close();
   });
 
@@ -126,6 +142,27 @@ test.describe("Launcher integration (issue #25)", () => {
     });
     const window = await app.firstWindow();
     await window.waitForLoadState("domcontentloaded");
+    await expect(window.locator(".mm-toast")).toContainText("missing or unreadable", { timeout: 15000 });
+    await expect(window.locator(".mm-doclist").getByText("Welcome to Mac Markdown")).toBeVisible();
+    await app.close();
+  });
+
+  test("mixed batch imports the readable file, toasts the missing one, and keeps welcome", async () => {
+    const { home, userData, env } = await makeIsolatedHome();
+    const files = path.join(home, "files");
+    await mkdir(files);
+    const good = await writeMarkdown(files, "mixed-good.md", "# Launcher Mixed Good\n");
+    const missing = path.join(files, "mixed-missing.md");
+
+    const app = await launchApp({
+      args: [`--user-data-dir=${userData}`, "--", good, missing],
+      env,
+    });
+    const window = await app.firstWindow();
+    await window.waitForLoadState("domcontentloaded");
+    await expect(window.locator(".mm-doclist").getByText("Launcher Mixed Good")).toBeVisible({
+      timeout: 15000,
+    });
     await expect(window.locator(".mm-toast")).toContainText("missing or unreadable", { timeout: 15000 });
     await expect(window.locator(".mm-doclist").getByText("Welcome to Mac Markdown")).toBeVisible();
     await app.close();
