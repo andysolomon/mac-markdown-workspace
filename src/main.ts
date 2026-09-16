@@ -33,14 +33,27 @@ let windowLoaded = false;
 let rendererReady = false;
 
 const openFilesQueue = createHostOpenFilesQueue();
+/** Paths drained while the window was gone; replayed on the next createMainWindow. */
+const lostSinceLastWindow: string[] = [];
 
 const resolveOpenPaths = (args: string[], cwd: string): string[] =>
   parseOpenFileArgs(args).map((p) => (path.isAbsolute(p) ? path.normalize(p) : path.resolve(cwd, p)));
 
+const isAppQuitting = (): boolean => quitRequested || quitAllowed;
+
+// Re-queue on next createMainWindow (not dialog.notify): enqueue-while-ready would recurse, and a quit-time MessageBox would zombie.
 const sendOpenFiles = (paths: string[]): void => {
   const win = mainWindow;
-  if (!win || win.isDestroyed() || win.webContents.isDestroyed()) return;
+  if (!win || win.isDestroyed() || win.webContents.isDestroyed()) {
+    if (!isAppQuitting()) lostSinceLastWindow.push(...paths);
+    return;
+  }
   win.webContents.send("host:open-files", paths);
+};
+
+const reclaimLostOpenFiles = (): void => {
+  if (lostSinceLastWindow.length === 0) return;
+  openFilesQueue.enqueue(lostSinceLastWindow.splice(0, lostSinceLastWindow.length));
 };
 
 openFilesQueue.setListener(sendOpenFiles);
@@ -204,6 +217,7 @@ const createMainWindow = (): BrowserWindow => {
   windowLoaded = false;
   rendererReady = false;
   openFilesQueue.markUnready();
+  reclaimLostOpenFiles();
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -690,7 +704,12 @@ app.on("before-quit", (event) => {
     quitAllowed = false;
     return;
   }
-  if (!requestCloseFromGuard || !mainWindow || mainWindow.isDestroyed()) return;
+  if (!requestCloseFromGuard || !mainWindow || mainWindow.isDestroyed()) {
+    // No window survives this quit (e.g. the Linux window-all-closed trigger),
+    // so parked paths can never be reclaimed; drop them instead of retaining.
+    lostSinceLastWindow.length = 0;
+    return;
+  }
   event.preventDefault();
   quitRequested = true;
   requestCloseFromGuard();

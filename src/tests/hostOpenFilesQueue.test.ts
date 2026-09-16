@@ -57,4 +57,20 @@ describe("hostOpenFilesQueue (issue #25)", () => {
     q.setListener(listener);
     expect(listener).toHaveBeenCalledWith(["/late.md"]);
   });
+
+  it("does not recurse when a listener re-enqueues after markUnready (destroyed-window drain)", () => {
+    const q = createHostOpenFilesQueue();
+    const listener = vi.fn((paths: string[]) => {
+      q.markUnready();
+      q.enqueue(paths);
+    });
+    q.setListener(listener);
+    q.markReady();
+    q.enqueue(["/lost.md"]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(q.getPending()).toEqual(["/lost.md"]);
+    q.markReady();
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenLastCalledWith(["/lost.md"]);
+  });
 });

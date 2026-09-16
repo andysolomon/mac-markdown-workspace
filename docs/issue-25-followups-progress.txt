@@ -1,0 +1,26 @@
+issue-25-followups - Issue #25 Follow-ups - Progress
+Generated: 2026-09-16 10:35:00 EDT
+On completion, move this file and the plan to docs/archive/.
+
+[x] 1.0 - Phase 1 - #35 queue-drain guard (correctness)
+    [x] 1.1 - Decide re-queue vs. notify in src/main.ts sendOpenFiles; document the trade-off
+    [x] 1.2 - Implement chosen behavior; cover app.isQuitting and not recursing into the queue
+    [x] 1.3 - Extend src/tests/hostOpenFilesQueue.test.ts with the re-queue drain path (if applicable)
+[x] 2.0 - Phase 2 - #34 confirmDiscardIfDirty unit tests
+    [x] 2.1 - Add src/tests/useFileOperations.test.ts with jsdom + reset pattern from src/tests/setup.ts
+    [x] 2.2 - Cover clean-buffer short-circuit
+    [x] 2.3 - Cover dirty + Save (updateNote + markClean)
+    [x] 2.4 - Cover dirty + Don't Save (markClean, no IPC)
+    [x] 2.5 - Cover dirty + Cancel (no mutation, returns false)
+[x] 3.0 - Phase 3 - #36 second-instance E2E focus + active note
+    [x] 3.1 - Identify active-note selector in NotesShell/DocList
+    [x] 3.2 - Strengthen existing second-instance test: no second window, original window focused
+    [x] 3.3 - Assert imported note is the active selection
+[x] 4.0 - Phase 4 - #37 mixed-batch E2E
+    [x] 4.1 - Add cold-launch mixed-batch test (readable + missing)
+    [x] 4.2 - Assert readable note imported, missing toast shown, welcome note preserved
+[~] 5.0 - Verify, ship, and archive
+    [x] 5.1 - Run typecheck, lint, vitest, playwright locally
+    [x] 5.2 - Independent Verify PASS (opus-check); minor quit-edge fix-up + side-buffer unit test added
+    [ ] 5.3 - Conventional commit + PR closing #34, #35, #36, #37
+    [ ] 5.4 - On merge, move docs/issue-25-followups-IMPLEMENTATION_PLAN.md and progress.txt to docs/archive/
