@@ -1,144 +1,118 @@
-# Private Arch install — Mac Markdown Workspace
+# Install — Mac Markdown Workspace (Arch / Omarchy)
 
-> Private workflow for the PKGBUILD in `packaging/arch/`. This guide is
-> **only** for authenticated members of the repository
-> [`andysolomon/mac-markdown-workspace`](https://github.com/andysolomon/mac-markdown-workspace).
-> Public AUR publication is a separate, future decision — the Omarchy
-> *Install ▸ AUR* path will only work after that happens.
-
-## What this package contains
-
-The package `mac-markdown-workspace` bundles the Linux Electron x64
-artifact (built by `bun run make:linux`) under
-`/opt/mac-markdown-workspace/`. The native system libraries Electron needs
-at runtime (`glib2`, GTK 3, NSS, ALSA, Wayland, …) are **not** bundled —
-they are pulled from the Omarchy / Arch repos and updated by the system.
+Public install guide for `mac-markdown-workspace` on Arch Linux and Omarchy.
+The package ships the Linux x86_64 Electron build under
+`/opt/mac-markdown-workspace/`. Native system libraries (glib2, GTK 3, NSS,
+ALSA, Wayland, …) come from the Arch repos and are updated by the system.
 
 ```
-/usr/bin/mac-markdown-workspace                 # symlink → /opt/.../mac-markdown-workspace
+/usr/bin/mac-markdown-workspace                          # symlink → /opt/.../mac-markdown-workspace
 /usr/share/applications/mac-markdown-workspace.desktop
 /usr/share/icons/hicolor/{512x512,scalable}/apps/mac-markdown-workspace.{png,svg}
 /usr/share/licenses/mac-markdown-workspace/{LICENSE, LICENSE.application, LICENSES.chromium.html}
-/opt/mac-markdown-workspace/                    # bundled Electron 44.3.0 + renderer
+/opt/mac-markdown-workspace/                             # bundled Electron 44.3.0 + renderer
 ```
 
-The packaged app's appdata lives next to the executable (as Electron
-expects) so that the Chrome sandbox helper (`chrome-sandbox`, mode
-`4755`) is always at the path `argv0.dirname + "/chrome-sandbox"`.
+> The packaged app's data lives next to the executable (as Electron expects)
+> so the Chrome sandbox helper (`chrome-sandbox`, mode `4755`) is always at
+> the path `argv0.dirname + "/chrome-sandbox"`.
 
-> **Why bundled Electron and not the `electron` package?**
->
-> | Tradeoff | Bundled (this package) | Arch `electron` package |
-> | --- | --- | --- |
-> | Chromium/Vulkan patches | Tied to Electron 44.3.0 release; can lag CVE rollups | Tracks Arch stable/RC cycle |
-> | Disk size | +~125 MB | smaller on-disk |
-> | Launcher behaviour on Hyprland/Wayland | Validated with sandboxed offline launch in #23 | Not validated in this repo |
-> | Kernel unprivileged-userns reliance | Already proven for Omarchy 4.x | Same requirement |
-> | Disable macOS-themed chrome toggle | Yes | Yes (depends on Electron version) |
+## Install via AUR (recommended)
 
-If/when the `electron` Arch version catches up to the dependency baseline
-this package was validated against, switching is a one-line change in
-`PKGBUILD`'s `depends` and a `makepkg -si` rebuild.
-
-## One-time host setup
+The package is published to the AUR as [`mac-markdown-workspace`][aur].
 
 ```sh
-sudo pacman -S --needed namcap base-devel git
-gh auth login                                                # choose HTTPS + repo scope
+# AUR helper (Omarchy's installer uses one of these)
+yay -S mac-markdown-workspace
+# or, via the Omarchy package installer:
+#   Install ▸ AUR  →  mac-markdown-workspace
+
+# Manual with a helper
+paru -S mac-markdown-workspace
 ```
 
-`namcap` is needed to lint the recipe and built package; `base-devel`
-brings `makepkg` and the `fakeroot` helper. If you already ran
-`packaging/linux/build` before, you do not need anything else.
+## Install from the local PKGBUILD
 
-## Cut a private release (operator)
-
-When `package.json` version bumps to `X.Y.Z`, the operator runs:
+Useful when you want to pin to an unreleased commit or skip AUR.
 
 ```sh
-./packaging/arch/release.sh X.Y.Z
+git clone https://github.com/andysolomon/mac-markdown-workspace.git
+cd mac-markdown-workspace/packaging/arch
+makepkg -si        # build + install + sync deps
 ```
 
-This:
+`makepkg -si` resolves runtime dependencies from the Arch repos and the
+Linux x86_64 ZIP from the public GitHub release tagged `v1.0.0`.
 
-1. Runs `bun run make:linux` to rebuild the Linux Electron x64 ZIP.
-2. Refuses to publish if the freshly-built ZIP SHA-256 doesn't match the
-   one already locked into `PKGBUILD` (forces a deliberate PKGBUILD bump).
-3. Creates the `vX.Y.Z` tag in the private repo if missing and uploads the
-   renamed ZIP plus a `SHA256SUMS` manifest.
+## What gets installed
 
-The release URL is then fixed at
-`https://github.com/andysolomon/mac-markdown-workspace/releases/download/vX.Y.Z/mac-markdown-workspace-X.Y.Z-linux-x64.zip`,
-which `build.sh` downloads with `gh auth`.
+| Path | Purpose |
+|------|---------|
+| `/opt/mac-markdown-workspace/` | self-contained Electron 44.3.0 + renderer + ASAR |
+| `/usr/bin/mac-markdown-workspace` | symlink to the binary |
+| `/usr/share/applications/mac-markdown-workspace.desktop` | launcher entry with Markdown MIME types |
+| `/usr/share/icons/hicolor/512x512/apps/mac-markdown-workspace.png` | launcher icon |
+| `/usr/share/icons/hicolor/scalable/apps/mac-markdown-workspace.svg` | vector icon |
+| `/usr/share/licenses/mac-markdown-workspace/LICENSE` | MIT (Andrew Solomon) |
+| `/usr/share/licenses/mac-markdown-workspace/LICENSE.application` | bundled app license |
+| `/usr/share/licenses/mac-markdown-workspace/LICENSES.chromium.html` | Electron / Chromium notices |
 
-## Build & install the package locally
+## Sandbox
 
-After a release exists for your tag:
+The renderer runs with `contextIsolation: true`, `nodeIntegration: false`,
+`sandbox: true`, ASAR-only loading, and the Electron fuses in
+`forge.config.ts`. `--no-sandbox` is never used and must not be added to
+launchers.
+
+The package installs `chrome-sandbox` setuid-root under `/opt`, so the
+sandbox helper works without `CONFIG_USER_NS=y` on the kernel. If user
+namespaces are enabled (Arch default), Chromium uses those instead — both
+paths are validated end-to-end on Omarchy.
+
+## Runtime notes
+
+- Notes are written to `~/Documents/Mac Markdown/<id>.md` on a default
+  Omarchy install. If `XDG_DOCUMENTS_DIR` is unset, Electron 44 falls
+  back to `$HOME`, so the library appears at `$HOME/Mac Markdown`. Either
+  way it is owned by the user and survives upgrades untouched.
+- Wayland is auto-selected by Electron 44 on this host. A single
+  `--ozone-platform=wayland is not compatible with Vulkan` line on stderr
+  is expected and harmless (Vulkan is disabled).
+- Single-instance opening: launching `mac-markdown-workspace file.md`
+  while the app is already running forwards the path to the existing
+  instance instead of opening a second window.
+
+## Round-trip upgrade
 
 ```sh
-./packaging/arch/build.sh --install        # downloads, verifies, makepkg -si
+yay -Syu mac-markdown-workspace      # upgrade alongside other AUR/system packages
+pacman -Qii mac-markdown-workspace   # install date bumped, no reinstall dropped
 ```
 
-`build.sh` does the following behind the scenes:
+Notes in `~/Documents/Mac Markdown` are owned by the user, not by pacman,
+and survive upgrade untouched.
 
-1. Confirms `gh auth status` is good.
-2. Downloads the artifact from the private release.
-3. Verifies SHA-256 against the value committed in `PKGBUILD`.
-4. Stages a clean `makepkg` build directory under `/tmp`.
-5. Calls `makepkg -si --nocheck` (syncs makedepends, skips optdepends).
-
-The resulting `mac-markdown-workspace-X.Y.Z-x86_64.pkg.tar.zst` lands in
-`/tmp/macmd-pkgbuild-XXXXXX/build/` and is installed into the active pacman
-database.
-
-### Round-trip upgrade
-
-```sh
-./packaging/arch/build.sh --install       # install v1.0.0
-… time passes …
-./packaging/arch/build.sh --install       # install v1.1.0 over v1.0.0
-pacman -Qii mac-markdown-workspace         # install date bumped, no reinstall dropped
-```
-
-Notes live in `~/Documents/Mac Markdown` (Electron's `appData` dir is also
-left alone; both are owned by the user, not by pacman). They survive
-upgrade untouched.
-
-### Removal
+## Removal
 
 ```sh
 sudo pacman -Rns mac-markdown-workspace
 ```
 
 This deletes everything under `/opt/mac-markdown-workspace`, the
-`/usr/bin/mac-markdown-workspace` symlink, the `usr/share` pieces, and
-the license bundle — **without** touching your notes in
+`/usr/bin/mac-markdown-workspace` symlink, the `usr/share` pieces, and the
+license bundle — **without** touching your notes in
 `~/Documents/Mac Markdown`.
-
-## What this workflow is **not**
-
-- **Not** the Omarchy *Install ▸ AUR* path. AUR helpers (paru, yay) look
-  for a recipe in `https://aur.archlinux.org/` and **only** that URL. The
-  PKGBUILD in this repo is private; it is therefore not visible to AUR.
-  Trying `omarchy install aur/mac-markdown-workspace` will fail with a
-  `package not found`. Public AUR publication is a future distribution
-  decision that requires an anonymously accessible source/artifact URL —
-  it is **not** part of this implementation.
-- **Not** signed. There's no GPG signature on the artifact or the package
-  yet — operators verify the SHA-256 against the committed PKGBUILD and
-  the GitHub release publisher. A maintainer signature can be added by
-  setting `GPGKEY=` in `~/.makepkg.conf`; it is intentionally out of scope
-  for the initial private build.
 
 ## Troubleshooting
 
-- `build.sh: gh is not authenticated` → `gh auth login` first.
-- `build.sh: sha256 mismatch` → re-run with `--refresh` after a private
-  release is cut by `./packaging/arch/release.sh X.Y.Z`. This is the
-  normal flow after a version bump.
 - `pacman -U` fails with `signature` errors → install with
   `pacman -U --config <(printf '[options]\nSigLevel = Never\n')` for the
   first install only, then re-add your real config.
-- `chrome-sandbox` cannot be setuid-root on noexec `/tmp` mounts: this
-  package installs it under `/opt` which is mounted normally on Omarchy;
-  nothing extra to do.
+- App fails with "SUID sandbox helper binary" / "No usable sandbox" → the
+  installed `/opt/mac-markdown-workspace/chrome-sandbox` should be setuid
+  (mode `4755`). Reinstall with `pacman -S --overwrite '*' mac-markdown-workspace`
+  if the mode is wrong.
+- App fails to find native libraries → confirm the runtime `depends` list
+  in `PKGBUILD` is satisfied: `pacman -Qqe | grep -E '^(glib2|gtk3|nss|alsa-lib|wayland)$'`.
+
+[aur]: https://aur.archlinux.org/packages/mac-markdown-workspace

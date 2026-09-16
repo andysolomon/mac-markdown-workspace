@@ -91,6 +91,13 @@ bun run test           # unit tests (Vitest) — note: NOT `bun test`
 bun run test:e2e       # end-to-end (Playwright)
 ```
 
+## Install
+
+- **macOS** — clone, `bun install`, `bun start` (dev) or `bun run make` (distributable).
+- **Linux (Arch / Omarchy)** — install via AUR: `yay -S mac-markdown-workspace` (or use the Omarchy *Install ▸ AUR* launcher). See [`packaging/arch/install-guide.md`](./packaging/arch/install-guide.md).
+- **Web** — visit the [live demo](https://mac-markdown-workspace.vercel.app) or `bun run web:build` for a static deploy.
+- **iOS** — `bun run ios:sync` then open in Xcode.
+
 For visual testing across the Mac app, web, and iOS (screenshots, Playwright
 baselines, Simulator), see [`docs/visual-testing.md`](./docs/visual-testing.md).
 Desktop save/quit guarantees and forced-termination limits are documented in
