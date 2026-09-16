@@ -133,4 +133,4 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 17.3 - Issue #25 launcher/MIME/single-instance opening implemented, verified, PR #33 merged; plan/progress archived
     [x] 17.4 - Issue #26 Hyprland menus/shortcuts/layout + Export-menu route implemented, verified, PR #38 merged; plan/progress archived
     [x] 17.5 - Issue #24 Arch PKGBUILD + private install/upgrade workflow implemented, verified (parent-local Verify; ARC runner critical/down), PR #39 merged; plan/progress archived
-    [ ] 17.6 - Implement #29 CI/installed-package tests/support guide after the package path exists
+    [x] 17.6 - Issue #29 CI workflows + installed-package smoke + support matrix implemented, verified (parent-local Verify; ARC runner critical/down), PR #40 merged; plan/progress archived. **Omarchy Linux support roadmap complete: all 6 leaves shipped (#23, #25, #26, #27, #28, #24, #29).**

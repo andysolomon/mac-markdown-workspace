@@ -27,10 +27,10 @@ registry divergence).
     [x] 5.3 - No edits to src/; preserves existing behaviour
     [ ] 5.4 - Operator: live smoke run on Omarchy host (requires sudo + Wayland session)
 
-[ ] 6.0 - Phase 6 - Ship and archive
-    [ ] 6.1 - Verify (parent-local) PASS
-    [ ] 6.2 - PR with Closes #29 opened, squash-merged
-    [ ] 6.3 - Move plan + progress to docs/archive/
+[x] 6.0 - Phase 6 - Ship and archive
+    [x] 6.1 - Verify (parent-local) PASS (ARC runner critical/down; same registry divergence as #24)
+    [x] 6.2 - PR #40 opened and squash-merged (Closes #29)
+    [x] 6.3 - Moving docs/issue-29-{IMPLEMENTATION_PLAN,progress}.md + docs/issue-29/verify-2026-09.md to docs/archive/
 
 Notes:
 - ARC runner was unusable for Verify (same registry divergence as #24). Parent-local Verify replaces the second-model Code Review.
