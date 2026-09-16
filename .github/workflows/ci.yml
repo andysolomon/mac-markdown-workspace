@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same ref to avoid wasting minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Typecheck · Lint · Unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun ${{ vars.BUN_VERSION || '1.4.2' }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION || '1.4.2' }}
+
+      - name: Install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Unit tests
+        run: bun run test
+
+  web-e2e:
+    name: Web e2e (xvfb)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION || '1.4.2' }}
+
+      - run: bun install --frozen-lockfile
+      - run: bun run web:build
+
+      - uses: browser-actions/setup-xvfb@v1
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run web e2e
+        run: bun run test:e2e -- --project=web
+
+  linux-build:
+    name: Linux build + checksums
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION || '1.4.2' }}
+
+      - run: bun install --frozen-lockfile
+      - run: bun run make:linux
+
+      - name: Compute SHA-256
+        run: |
+          set -euo pipefail
+          cd out/make/zip/linux/x64
+          sha256sum -b "Mac Markdown Workspace-linux-x64-1.0.0.zip" \
+            > "Mac Markdown Workspace-linux-x64-1.0.0.zip.sha256"
+          cat "Mac Markdown Workspace-linux-x64-1.0.0.zip.sha256"
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-markdown-workspace-linux-x64
+          path: |
+            out/make/zip/linux/x64/**
+          if-no-files-found: error
+
+  arch-validate:
+    name: PKGBUILD / namcap (container)
+    # NOTE: Static-only PKGBUILD checks live in the dedicated
+    # `arch-validate.yml` workflow (manual dispatch). This job pulls
+    # in the same logic as part of every PR to fail fast on broken
+    # recipes or accidentally committed secrets.
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build + lint tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed base-devel namcap jq
+
+      - name: Static checks
+        working-directory: packaging/arch
+        run: |
+          set -euo pipefail
+          bash -n PKGBUILD
+          bash -n build.sh
+          bash -n release.sh
+          bash -n ../../scripts/native-test/installed-package-smoke.sh
+          if grep -rE 'oauth2:|ghp_|gho_|x-access-token:' . ; then
+            echo "embedded token detected in packaging/arch" >&2
+            exit 1
+          fi
+
+      - name: Rebuild PKGBUILD-derived checksums
+        working-directory: packaging/arch
+        run: |
+          set -euo pipefail
+          makepkg --printsrcinfo > computed.SRCINFO
+          diff -u .SRCINFO computed.SRCINFO
+          rm computed.SRCINFO
+
+      - name: Upload validation log
+        uses: actions/upload-artifact@v4
+        with:
+          name: arch-validate-log
+          path: packaging/arch/validation.log
+          if-no-files-found: ignore
+
+  secrets:
+    name: Secret / token scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for accidentally committed secrets
+        run: |
+          set -euo pipefail
+          # Block common GitHub tokens, OAuth headers, AWS keys, and our
+          # own .SRCINFO / PKGBUILD gh auth URLs.
+          if grep -rEn --include='*.{sh,yml,yaml,md,json,ts,tsx,js}' \
+              -E 'oauth2:[A-Za-z0-9]+|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|x-access-token:[A-Za-z0-9]+|AKIA[0-9A-Z]{16}' . ; then
+            echo "secrets detected in source" >&2
+            exit 1
+          fi
+          echo "no secrets detected"

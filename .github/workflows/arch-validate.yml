@@ -1,0 +1,79 @@
+name: Arch validate
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_smoke:
+        description: "Run installed-package smoke (only valid on a self-hosted Omarchy runner)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  pkgbuild:
+    name: PKGBUILD sanity + namcap
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed base-devel namcap jq
+
+      - name: Static checks
+        working-directory: packaging/arch
+        run: |
+          set -euo pipefail
+          bash -n PKGBUILD
+          bash -n build.sh
+          bash -n release.sh
+          bash -n ../../scripts/native-test/installed-package-smoke.sh
+          if grep -rE 'oauth2:|ghp_|gho_|x-access-token:' . ; then
+            echo "embedded token detected" >&2
+            exit 1
+          fi
+
+      - name: Rebuild PKGBUILD-derived checksums
+        working-directory: packaging/arch
+        run: |
+          set -euo pipefail
+          makepkg --printsrcinfo > computed.SRCINFO
+          diff -u .SRCINFO computed.SRCINFO
+          rm computed.SRCINFO
+
+      - name: Upload validation log
+        uses: actions/upload-artifact@v4
+        with:
+          name: arch-validate-log
+          path: packaging/arch/validation.log
+          if-no-files-found: ignore
+
+  smoke:
+    name: Installed-package smoke (self-hosted only)
+    needs: pkgbuild
+    if: github.event.inputs.run_smoke == 'true'
+    runs-on: [self-hosted, omarchy, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run installed-package smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/native-test/installed-package-smoke.sh \
+            --package packaging/arch/*.pkg.tar.zst \
+            --report docs/omarchy-validation-2026-09.md
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: omarchy-smoke-report
+          path: docs/omarchy-validation-2026-09.md
+          if-no-files-found: ignore

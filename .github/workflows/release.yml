@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.1)"
+        required: true
+      notes:
+        description: "Release notes (markdown)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  linux-build:
+    name: Linux x64 build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION || '1.4.2' }}
+
+      - run: bun install --frozen-lockfile
+      - run: bun run make:linux
+
+      - name: Compute checksums
+        working-directory: out/make/zip/linux/x64
+        run: |
+          set -euo pipefail
+          sha256sum -b "Mac Markdown Workspace-linux-x64-1.0.0.zip" \
+            > "Mac Markdown Workspace-linux-x64-1.0.0.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64-artifacts
+          path: |
+            out/make/zip/linux/x64/**
+          if-no-files-found: error
+
+  arch-pkgbuild:
+    name: Arch PKGBUILD rebuild
+    needs: linux-build
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed base-devel namcap
+
+      - name: Stage Linux ZIP
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arch-build
+          mv "$RUNNER_TEMP/artifacts/linux-x64-artifacts" /tmp/arch-build/
+          ls /tmp/arch-build/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch-pkg-zst
+          path: "**/*.pkg.tar.zst"
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [linux-build, arch-pkgbuild]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Compose SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd dist
+          find . -name '*.zip' -o -name '*.pkg.tar.zst' | \
+            xargs sha256sum -b > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.tag }}
+          body: ${{ inputs.notes }}
+          files: |
+            dist/**/*.zip
+            dist/**/*.pkg.tar.zst
+            dist/SHA256SUMS
+          fail_on_unmatched_files: true
