@@ -135,7 +135,7 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 17.5 - Issue #24 Arch PKGBUILD + private install/upgrade workflow implemented, verified (parent-local Verify; ARC runner critical/down), PR #39 merged; plan/progress archived
     [x] 17.6 - Issue #29 CI workflows + installed-package smoke + support matrix implemented, verified (parent-local Verify; ARC runner critical/down), PR #40 merged; plan/progress archived
 
-[~] 18.0 - Phase 18 - #25 review follow-ups (#34/#35/#36/#37)
+[x] 18.0 - Phase 18 - #25 review follow-ups (#34/#35/#36/#37)
     [x] 18.1 - Plan posted to #35 with cross-refs; docs/issue-25-followups-IMPLEMENTATION_PLAN.md + progress.txt
-    [ ] 18.2 - Implement on feat/issue-25-followups (after explicit authorization): #35 sendOpenFiles drain-loss guard, #34 confirmDiscardIfDirty unit tests, #36 second-instance focus + active-note E2E, #37 mixed-batch E2E
-    [ ] 18.3 - Independent Verify + shipping PR
+    [x] 18.2 - Implemented on feat/issue-25-followups: #35 sendOpenFiles drain-loss guard, #34 confirmDiscardIfDirty unit tests, #36 second-instance focus + active-note E2E, #37 mixed-batch E2E
+    [x] 18.3 - Independent Verify PASS (opus-check) + medium-light fix-up; PR #42 merged as ceab990; plan/progress archived
