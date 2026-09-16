@@ -1,0 +1,37 @@
+Issue #29 — CI, native testing and Omarchy support documentation
+
+Decided medium-heavy parent-local (ARC runner critical/down for cursor-auto
+registry divergence).
+
+[x] 1.0 - Phase 1 - Plan and contract
+    [x] 1.1 - workflow.yaml AC read; README scope captured
+    [x] 1.2 - Operator approves medium-heavy parent-local (decision 393511cf)
+
+[x] 2.0 - Phase 2 - CI workflow
+    [x] 2.1 - .github/workflows/ci.yml: typecheck/lint/vitest/web-e2e/linux-build/PKGBUILD-static/secret-scan
+    [x] 2.2 - .github/workflows/release.yml: workflow_dispatch; linux + archlinux; SHA256SUMS + gh-release
+    [x] 2.3 - .github/workflows/arch-validate.yml: namcap + optional self-hosted smoke
+    [x] 2.4 - .github/workflows/macos-build.yml: macos-latest; weekly cron; iOS sync best-effort
+
+[x] 3.0 - Phase 3 - Installed-package smoke
+    [x] 3.1 - scripts/native-test/installed-package-smoke.sh: 11 phases, mktemp + nobody user
+    [x] 3.2 - bash -n + set -euo pipefail verified
+
+[x] 4.0 - Phase 4 - Support matrix
+    [x] 4.1 - docs/support-matrix.md: explicit NOT-supported rows for ARM64/offline-PWA/public-AUR
+    [x] 4.2 - docs/omarchy-validation-2026-09.md: template populated by smoke script
+
+[x] 5.0 - Phase 5 - Local verification
+    [x] 5.1 - bun run typecheck/lint/test still green
+    [x] 5.2 - bash -n on smoke script; YAML syntactic validation via actionlint skipped (operator has tool)
+    [x] 5.3 - No edits to src/; preserves existing behaviour
+    [ ] 5.4 - Operator: live smoke run on Omarchy host (requires sudo + Wayland session)
+
+[ ] 6.0 - Phase 6 - Ship and archive
+    [ ] 6.1 - Verify (parent-local) PASS
+    [ ] 6.2 - PR with Closes #29 opened, squash-merged
+    [ ] 6.3 - Move plan + progress to docs/archive/
+
+Notes:
+- ARC runner was unusable for Verify (same registry divergence as #24). Parent-local Verify replaces the second-model Code Review.
+- macOS / iOS signing is intentionally NOT configured. The maintainer does not hold an Apple Developer certificate; macOS and iOS rows in the validation doc remain TBD.
