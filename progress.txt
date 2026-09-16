@@ -127,10 +127,10 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     UX decisions (user): auto-sync on focus (reconciled with never-store passphrase by prompting when stale) + passphrase re-entered every sync, never stored
     [x] 16.5 - Phase C/D security+UX review round (Opus, approve-with-nits): friendly "passphrase doesn't match this vault" on decrypt failure (was raw WebCrypto OperationError); busy label paints before the synchronous scrypt freeze (rAF yield); modal a11y — per-view <form> submit (Enter + password managers), Escape-to-close, Tab focus trap, aria-live errors, aria-labelledby; iCloud-vs-vault copy reframed around scope+encryption and gated to iOS; on-return nudge switched to visibilitychange + 30min backoff and can't hijack an open modal; scrim/✕ disabled while busy
 
-[~] 17.0 - Phase 17 - Omarchy/Linux distribution track (#23 -> #25 -> #26 -> #24 -> #29)
+[x] 17.0 - Phase 17 - Omarchy/Linux distribution track (#23 -> #25 -> #26 -> #24 -> #29). **Omarchy Linux support roadmap complete: all 6 leaves shipped (#23, #25, #26, #27, #28, #24, #29).**
     [x] 17.1 - Issue #23 plan synchronized: Linux x86_64 ZIP, Electron/Bun pins, icons, LICENSE, runtime inventory, and validation boundaries (docs/issue-23-IMPLEMENTATION_PLAN.md)
     [x] 17.2 - Issue #23 Linux ZIP implemented, Omarchy smoke-tested, independently verified, PR #32 merged; plan/progress archived (macOS Darwin host check remains external)
     [x] 17.3 - Issue #25 launcher/MIME/single-instance opening implemented, verified, PR #33 merged; plan/progress archived
     [x] 17.4 - Issue #26 Hyprland menus/shortcuts/layout + Export-menu route implemented, verified, PR #38 merged; plan/progress archived
     [x] 17.5 - Issue #24 Arch PKGBUILD + private install/upgrade workflow implemented, verified (parent-local Verify; ARC runner critical/down), PR #39 merged; plan/progress archived
-    [x] 17.6 - Issue #29 CI workflows + installed-package smoke + support matrix implemented, verified (parent-local Verify; ARC runner critical/down), PR #40 merged; plan/progress archived. **Omarchy Linux support roadmap complete: all 6 leaves shipped (#23, #25, #26, #27, #28, #24, #29).**
+    [x] 17.6 - Issue #29 CI workflows + installed-package smoke + support matrix implemented, verified (parent-local Verify; ARC runner critical/down), PR #40 merged; plan/progress archived
