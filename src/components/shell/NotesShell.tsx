@@ -5,6 +5,7 @@ import { EditorChrome } from "./EditorChrome";
 import { FontPopover } from "./FontPopover";
 import { SettingsPanel, OPEN_SYNC_EVENT } from "./SettingsPanel";
 import { SyncModal } from "./SyncModal";
+import { getAmbientScheduler, pushBeforeClose } from "../../services/ambientSync";
 import { BottomBar } from "./BottomBar";
 import { MarkdownAccessoryBar } from "./MarkdownAccessoryBar";
 import { useSettingsStore } from "../../services/settingsStore";
@@ -165,7 +166,13 @@ export function NotesShell() {
   // Host close/quit handshake: the window may not close until every pending
   // and in-flight save has persisted; a failure keeps it open.
   useEffect(() => {
-    const off = window.appApi?.checkDirty?.(() => flushNoteSaves());
+    const off = window.appApi?.checkDirty?.(async () => {
+      const flushed = await flushNoteSaves();
+      // Local persistence decides the close; the vault push is best-effort
+      // and time-bounded so a slow network can't hold the window open.
+      if (flushed.ok) await pushBeforeClose();
+      return flushed;
+    });
     return () => off?.();
   }, []);
 
@@ -180,6 +187,9 @@ export function NotesShell() {
   const handleSelectNote = useCallback(
     async (id: string) => {
       await flushPendingSave();
+      // Switching notes is a natural "done editing" boundary: push now
+      // rather than waiting out the ambient debounce.
+      void getAmbientScheduler()?.pushNow();
       selectNote(id);
       if (isNarrow) {
         setMobilePage("editor");

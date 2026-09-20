@@ -37,6 +37,15 @@ export type AppApi = {
   getZoomLevel: () => Promise<{ level: number }>;
   getSetting: (key: string) => Promise<unknown>;
   setSetting: (key: string, value: unknown) => Promise<void>;
+  /** Host secure storage for small secrets (docs/ambient-vault-sync.md,
+      Part 1): Electron `safeStorage`, iOS Keychain. All optional — the web
+      shim has no OS keychain and leaves them undefined, and vaultKeyStore
+      falls back to a non-extractable IndexedDB CryptoKey there. Never put
+      a passphrase through these; only derived material. */
+  secureAvailable?: () => Promise<boolean>;
+  secureGet?: (key: string) => Promise<string | null>;
+  secureSet?: (key: string, value: string) => Promise<void>;
+  secureDelete?: (key: string) => Promise<void>;
   onMenuAction: (callback: (action: string) => void) => () => void;
   confirmDiscard: () => Promise<ConfirmDiscardResult>;
   exportTxt: (payload: { content: string }) => Promise<boolean>;

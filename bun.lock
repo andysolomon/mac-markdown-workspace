@@ -26,6 +26,7 @@
         "@noble/hashes": "^2.2.0",
         "@replit/codemirror-vim": "^6.3.0",
         "@uiw/react-codemirror": "^4.25.8",
+        "capacitor-secure-storage-plugin": "0.13.0",
         "electron-squirrel-startup": "^1.0.1",
         "electron-store": "^11.0.2",
         "html-to-docx": "^1.8.0",
@@ -1006,6 +1007,8 @@
     "camelize": ["camelize@1.0.1", "", {}, "sha512-dU+Tx2fsypxTgtLoE36npi3UqcjSSMNYfkqgmoEhtZrraP5VWq0K7FkWVTYa8eMPtnU/G2txVsfdCJTn9uzpuQ=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001778", "", {}, "sha512-PN7uxFL+ExFJO61aVmP1aIEG4i9whQd4eoSCebav62UwDyp5OHh06zN4jqKSMePVgxHifCw1QJxdRkA1Pisekg=="],
+
+    "capacitor-secure-storage-plugin": ["capacitor-secure-storage-plugin@0.13.0", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-+rLC/9Z0LTaRRt6L6HjBwcDh5gqgI3NPmDSwo4hk41XQOy3EBrRo81VleIqFsowsMA3oMT+E59Bl8/HiWk0nhQ=="],
 
     "ccount": ["ccount@2.0.1", "", {}, "sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg=="],
 

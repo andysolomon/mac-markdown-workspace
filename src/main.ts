@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, session } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, session } from "electron";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import started from "electron-squirrel-startup";
@@ -23,7 +23,11 @@ if (started) {
   app.quit();
 }
 
-const store = new Store() as Store & { get(key: string): unknown; set(key: string, value: unknown): void };
+const store = new Store() as Store & {
+  get(key: string): unknown;
+  set(key: string, value: unknown): void;
+  delete(key: string): void;
+};
 let mainWindow: BrowserWindow | null = null;
 let quitRequested = false;
 let quitAllowed = false;
@@ -398,6 +402,43 @@ const registerIpc = (): void => {
 
   ipcMain.handle("settings:set", (_event, key: string, value: unknown) => {
     store.set(key, value);
+  });
+
+  // Host secure storage (docs/ambient-vault-sync.md, Part 1): small secrets
+  // sealed by the OS keychain via safeStorage and parked, as base64
+  // ciphertext, in the same electron-store file as the settings. Linux
+  // without a keyring falls back to safeStorage's "basic_text" backend,
+  // which is obfuscation rather than encryption — report it unavailable so
+  // the renderer uses its non-extractable IndexedDB key instead.
+  const secureUsable = (): boolean => {
+    if (!safeStorage.isEncryptionAvailable()) return false;
+    if (process.platform === "linux" && safeStorage.getSelectedStorageBackend() === "basic_text") {
+      return false;
+    }
+    return true;
+  };
+  const secureKey = (key: string): string => `secure.${key.replace(/\./g, "_")}`;
+
+  ipcMain.handle("secure:available", () => secureUsable());
+
+  ipcMain.handle("secure:get", (_event, key: string): string | null => {
+    if (!secureUsable()) return null;
+    const stored = store.get(secureKey(key));
+    if (typeof stored !== "string") return null;
+    try {
+      return safeStorage.decryptString(Buffer.from(stored, "base64"));
+    } catch {
+      return null; // keychain changed underneath us; treat as forgotten
+    }
+  });
+
+  ipcMain.handle("secure:set", (_event, key: string, value: string) => {
+    if (!secureUsable()) throw new Error("Secure storage is not available on this host");
+    store.set(secureKey(key), safeStorage.encryptString(value).toString("base64"));
+  });
+
+  ipcMain.handle("secure:delete", (_event, key: string) => {
+    store.delete(secureKey(key));
   });
 
   // Confirm discard dialog

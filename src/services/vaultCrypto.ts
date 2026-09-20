@@ -79,12 +79,35 @@ function aad(vaultId: string): Uint8Array {
   return textEncoder.encode(`mmw-v1:${vaultId}`);
 }
 
-async function importAesKey(raw: Uint8Array, usage: KeyUsage): Promise<CryptoKey> {
-  return crypto.subtle.importKey("raw", raw as BufferSource, { name: "AES-GCM" }, false, [usage]);
+/** Either raw derived bytes (fresh from deriveVaultKeys) or an already
+    imported — possibly non-extractable — AES-GCM key. Resident keys
+    (docs/ambient-vault-sync.md, Part 1) are the latter: on web the bytes can
+    never be read back out, so every consumer must accept the handle form. */
+export type AesKeyInput = Uint8Array | CryptoKey;
+
+/** Import raw key material once and hold the handle for the session (or
+    persist it — see vaultKeyStore). Non-extractable by default so the bytes
+    cannot be exported again by script. */
+export async function importEncryptionKey(
+  raw: Uint8Array,
+  extractable = false,
+): Promise<CryptoKey> {
+  return crypto.subtle.importKey("raw", raw as BufferSource, { name: "AES-GCM" }, extractable, [
+    "encrypt",
+    "decrypt",
+  ]);
+}
+
+async function importAesKey(key: AesKeyInput, usage: KeyUsage): Promise<CryptoKey> {
+  // Duck-typed on purpose: `CryptoKey` isn't a guaranteed global everywhere
+  // WebCrypto is (test runners included); anything that isn't raw bytes is
+  // an already-imported handle.
+  if (!(key instanceof Uint8Array)) return key;
+  return crypto.subtle.importKey("raw", key as BufferSource, { name: "AES-GCM" }, false, [usage]);
 }
 
 export async function encryptSnapshot(
-  encryptionKey: Uint8Array,
+  encryptionKey: AesKeyInput,
   vaultId: string,
   plaintext: string,
 ): Promise<VaultEnvelope> {
@@ -101,7 +124,7 @@ export async function encryptSnapshot(
 /** Throws (WebCrypto OperationError) on wrong key, tampered ciphertext, or a
     mismatched vault id (AAD). */
 export async function decryptSnapshot(
-  encryptionKey: Uint8Array,
+  encryptionKey: AesKeyInput,
   vaultId: string,
   envelope: VaultEnvelope,
 ): Promise<string> {

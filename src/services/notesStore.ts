@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { buildNote, buildTagIndex, filterNotes, type Note, type TagCount } from "./notesModel";
+import { emitLibraryChange } from "./libraryEvents";
 
 const WELCOME_BODY = `# Welcome to Mac Markdown
 
@@ -59,6 +60,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
       set((s) => ({
         notes: sortNotes(s.notes.map((n) => (n.id === id ? updated : n))),
       }));
+      emitLibraryChange({ kind: "update", id });
       return updated;
     };
     // Start an idle write in the current turn so a close flush does not leave
@@ -118,6 +120,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
   createNote: async (body = "") => {
     const note = buildNote(await window.appApi.createNote({ body }));
     set((s) => ({ notes: sortNotes([note, ...s.notes]), activeNoteId: note.id }));
+    emitLibraryChange({ kind: "create", id: note.id });
     return note;
   },
 
@@ -133,6 +136,8 @@ export const useNotesStore = create<NotesStore>((set, get) => {
 
   // Re-read the whole library from storage without re-seeding a welcome note.
   // Used after a vault sync applies remote edits/deletions underneath the store.
+  // Deliberately emits NO library change: what sync pulled in is already in
+  // the vault, and an emit here would schedule a pointless push.
   reloadLibrary: async () => {
     const raw = await window.appApi.listNotes();
     const notes = sortNotes(raw.map(buildNote));
@@ -158,6 +163,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
       const activeNoteId = s.activeNoteId === id ? notes[0]?.id ?? null : s.activeNoteId;
       return { notes, activeNoteId };
     });
+    emitLibraryChange({ kind: "delete", id });
   },
 
   selectNote: (id) => set({ activeNoteId: id }),

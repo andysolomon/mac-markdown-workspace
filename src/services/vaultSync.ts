@@ -4,7 +4,9 @@ import {
   encryptSnapshot,
   decryptSnapshot,
   generateVaultId,
+  type AesKeyInput,
   type VaultEnvelope,
+  type VaultKeys,
 } from "./vaultCrypto";
 
 /**
@@ -73,20 +75,46 @@ export interface RemoteSnapshot {
   etag: string | null;
 }
 
+/** A conditional pull found the remote unchanged since `etag` (HTTP 304):
+    nothing was downloaded. */
+export interface RemoteNotModified {
+  notModified: true;
+  etag: string;
+}
+
+export function isNotModified(
+  result: RemoteSnapshot | RemoteNotModified | null,
+): result is RemoteNotModified {
+  return result !== null && "notModified" in result && result.notModified === true;
+}
+
 /** Remote transport port — HTTP client for the Phase B API (issue #20). */
 export interface VaultTransport {
   createVault(payload: { vaultId: string; writeTokenHash: string }): Promise<void>;
-  /** Cheap freshness probe (meta.json) so a "Sync now" can skip the full
-      download when nothing changed. Optional; unused until Phase C tracks
-      lastSyncedAt + local dirtiness. */
+  /** Cheap freshness probe (meta.json). Optional and advisory only — the
+      ambient loop decides freshness from the snapshot ETag via a conditional
+      getSnapshot, never from meta.updatedAt. */
   getMeta?(vaultId: string): Promise<VaultMeta | null>;
-  getSnapshot(vaultId: string): Promise<RemoteSnapshot | null>;
+  /** `ifNoneMatch` makes the pull conditional: a transport that supports it
+      answers RemoteNotModified when the remote still carries that etag. A
+      transport that ignores the option simply returns the snapshot. */
+  getSnapshot(
+    vaultId: string,
+    opts?: { ifNoneMatch?: string },
+  ): Promise<RemoteSnapshot | RemoteNotModified | null>;
+  /** May resolve with the remote's new version tag so a later conditional
+      pull can skip the download; a transport without one resolves void. */
   putSnapshot(
     vaultId: string,
     writeToken: string,
     envelope: VaultEnvelope,
     opts?: { ifMatch?: string | null },
-  ): Promise<void>;
+  ): Promise<void | { etag: string | null }>;
+  /** Pairing (docs/ambient-vault-sync.md, Part 2). Minting requires the write
+      token; redeeming yields only the vault id. Optional so in-memory fakes
+      that never pair stay small. */
+  createPairing?(vaultId: string, writeToken: string): Promise<{ code: string; expiresAt: number }>;
+  redeemPairing?(code: string): Promise<{ vaultId: string }>;
 }
 
 export interface MergeResult {
@@ -211,6 +239,19 @@ export interface SyncOutcome {
   pulled: number;
   pushed: boolean;
   mergedCount: number;
+  /** Remote version tag after this cycle (what a later conditional pull
+      should send as ifNoneMatch); null when the remote reports none. */
+  etag: string | null;
+  /** True when a conditional pull short-circuited on 304: nothing moved. */
+  notModified: boolean;
+}
+
+/** What a device needs to sync without the passphrase: the derived
+    encryption key (raw or an imported handle) and the write token. This is
+    exactly the material a VaultKeyStore remembers. */
+export interface VaultKeyMaterial {
+  encryptionKey: AesKeyInput;
+  writeToken: string;
 }
 
 /** Minimum passphrase length (after normalization) accepted at vault
@@ -221,14 +262,16 @@ export const MIN_PASSPHRASE_LENGTH = 8;
 const MAX_SYNC_ATTEMPTS = 3;
 
 /** Create a fresh vault from the current local library. Returns the vault id
-    (the user's "Sync code"). The passphrase is used transiently and never
-    stored. */
+    (the user's "Sync code") and the derived keys, which the CALLER owns: hand
+    them to a VaultKeyStore to remember the device, or `.fill(0)` the raw
+    encryption key when done. The passphrase itself is used transiently and
+    never stored. */
 export async function createVault(
   passphrase: string,
   local: LocalNotesPort,
   transport: VaultTransport,
   now: number = Date.now(),
-): Promise<{ vaultId: string }> {
+): Promise<{ vaultId: string; keys: VaultKeys; etag: string | null }> {
   if (passphrase.normalize("NFKC").length < MIN_PASSPHRASE_LENGTH) {
     throw new Error(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters.`);
   }
@@ -244,16 +287,17 @@ export async function createVault(
       now,
     );
     const envelope = await encryptSnapshot(keys.encryptionKey, vaultId, JSON.stringify(snapshot));
-    await transport.putSnapshot(vaultId, keys.writeToken, envelope, { ifMatch: null });
+    const put = await transport.putSnapshot(vaultId, keys.writeToken, envelope, { ifMatch: null });
     if (tombstones.length) await local.clearTombstones(tombstones.map((t) => t.id));
-    return { vaultId };
-  } finally {
+    return { vaultId, keys, etag: etagOf(put) };
+  } catch (error) {
     keys.encryptionKey.fill(0);
+    throw error;
   }
 }
 
-/** Full sync cycle: pull remote, merge, apply locally, push when needed.
-    Retries the cycle on a concurrent-push conflict (VaultConflictError). */
+/** Full sync cycle from the passphrase: derive, sync, zero. Retries the
+    cycle on a concurrent-push conflict (VaultConflictError). */
 export async function syncVault(
   passphrase: string,
   vaultId: string,
@@ -263,28 +307,69 @@ export async function syncVault(
 ): Promise<SyncOutcome> {
   const keys = deriveVaultKeys(passphrase, vaultId);
   try {
-    for (let attempt = 1; ; attempt++) {
-      try {
-        return await syncOnce(keys.encryptionKey, keys.writeToken, vaultId, local, transport, now);
-      } catch (error) {
-        if (error instanceof VaultConflictError && attempt < MAX_SYNC_ATTEMPTS) continue;
-        throw error;
-      }
-    }
+    return await syncVaultWithKeys(keys, vaultId, local, transport, { now });
   } finally {
     keys.encryptionKey.fill(0);
   }
 }
 
+/** putSnapshot may resolve void (fakes, transports without version tags). */
+function etagOf(result: void | { etag: string | null }): string | null {
+  return result && typeof result === "object" ? result.etag : null;
+}
+
+export interface SyncOptions {
+  /** Make the pull conditional on this remote etag. Use ONLY for a pull-only
+      poll: on 304 the cycle ends without looking at local state, so a device
+      with unsynced local edits must run an unconditional cycle instead. */
+  ifNoneMatch?: string | null;
+  now?: number;
+}
+
+/** Full sync cycle from already-derived material (resident keys, or keys
+    the caller is holding for the session). No scrypt, no passphrase. */
+export async function syncVaultWithKeys(
+  keys: VaultKeyMaterial,
+  vaultId: string,
+  local: LocalNotesPort,
+  transport: VaultTransport,
+  opts: SyncOptions = {},
+): Promise<SyncOutcome> {
+  const now = opts.now ?? Date.now();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await syncOnce(
+        keys.encryptionKey,
+        keys.writeToken,
+        vaultId,
+        local,
+        transport,
+        now,
+        opts.ifNoneMatch ?? undefined,
+      );
+    } catch (error) {
+      if (error instanceof VaultConflictError && attempt < MAX_SYNC_ATTEMPTS) continue;
+      throw error;
+    }
+  }
+}
+
 async function syncOnce(
-  encryptionKey: Uint8Array,
+  encryptionKey: AesKeyInput,
   writeToken: string,
   vaultId: string,
   local: LocalNotesPort,
   transport: VaultTransport,
   now: number,
+  ifNoneMatch?: string,
 ): Promise<SyncOutcome> {
-  const snapshot = await transport.getSnapshot(vaultId);
+  const snapshot = await transport.getSnapshot(
+    vaultId,
+    ifNoneMatch ? { ifNoneMatch } : undefined,
+  );
+  if (isNotModified(snapshot)) {
+    return { pulled: 0, pushed: false, mergedCount: 0, etag: snapshot.etag, notModified: true };
+  }
   const localNotes = await local.listNotes();
   const tombstones = await local.listTombstones();
   const tombstoneIds = tombstones.map((t) => t.id);
@@ -292,14 +377,20 @@ async function syncOnce(
   if (!snapshot) {
     // Empty vault: first push.
     const initial = packSnapshot(localNotes, tombstoneIds, now);
-    await transport.putSnapshot(
+    const put = await transport.putSnapshot(
       vaultId,
       writeToken,
       await encryptSnapshot(encryptionKey, vaultId, JSON.stringify(initial)),
       { ifMatch: null },
     );
     if (tombstoneIds.length) await local.clearTombstones(tombstoneIds);
-    return { pulled: 0, pushed: true, mergedCount: localNotes.length };
+    return {
+      pulled: 0,
+      pushed: true,
+      mergedCount: localNotes.length,
+      etag: etagOf(put),
+      notModified: false,
+    };
   }
 
   let plaintext: string;
@@ -330,19 +421,29 @@ async function syncOnce(
     }
   }
 
+  let etag: string | null = snapshot.etag;
   if (result.remoteChanged) {
     const next = packSnapshot(result.merged, result.deletedIds, now);
-    await transport.putSnapshot(
+    const put = await transport.putSnapshot(
       vaultId,
       writeToken,
       await encryptSnapshot(encryptionKey, vaultId, JSON.stringify(next)),
       { ifMatch: snapshot.etag },
     );
+    // The PUT response carries the remote's NEW tag. Without one, report null
+    // so the next conditional pull runs unconditionally once and re-learns it.
+    etag = etagOf(put);
   }
 
   // Every listed tombstone is now folded into the vault (or resolved by a
   // newer remote edit) — safe to drop. Skipped on conflict via the throw.
   if (tombstoneIds.length) await local.clearTombstones(tombstoneIds);
 
-  return { pulled, pushed: result.remoteChanged, mergedCount: result.merged.length };
+  return {
+    pulled,
+    pushed: result.remoteChanged,
+    mergedCount: result.merged.length,
+    etag,
+    notModified: false,
+  };
 }

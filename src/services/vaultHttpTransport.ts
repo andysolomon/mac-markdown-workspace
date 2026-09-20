@@ -1,6 +1,7 @@
 import type { VaultEnvelope } from "./vaultCrypto";
 import {
   VaultConflictError,
+  type RemoteNotModified,
   type RemoteSnapshot,
   type VaultMeta,
   type VaultTransport,
@@ -67,8 +68,14 @@ export function createHttpVaultTransport(baseUrl = ""): VaultTransport {
       return (await res.json()) as VaultMeta;
     },
 
-    async getSnapshot(vaultId): Promise<RemoteSnapshot | null> {
-      const res = await fetch(url(`/${vaultId}/snapshot`));
+    async getSnapshot(vaultId, opts): Promise<RemoteSnapshot | RemoteNotModified | null> {
+      const headers: Record<string, string> = {};
+      // Custom name: Vercel's edge consumes the standard If-None-Match.
+      if (opts?.ifNoneMatch) headers["x-vault-if-none-match"] = opts.ifNoneMatch;
+      const res = await fetch(url(`/${vaultId}/snapshot`), { headers });
+      if (res.status === 304 && opts?.ifNoneMatch) {
+        return { notModified: true, etag: res.headers.get("etag") ?? opts.ifNoneMatch };
+      }
       if (res.status === 404) return null;
       if (!res.ok) throw new Error(`Vault download failed (${res.status})`);
       const envelope = (await res.json()) as VaultEnvelope;
@@ -101,6 +108,38 @@ export function createHttpVaultTransport(baseUrl = ""): VaultTransport {
         throw new Error("This vault no longer exists on the server.");
       }
       if (!res.ok) throw new Error(`Vault upload failed (${res.status})`);
+      return { etag: res.headers.get("etag") };
+    },
+
+    async createPairing(vaultId, writeToken) {
+      const res = await fetch(url("/pair"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${writeToken}`,
+        },
+        body: JSON.stringify({ vaultId }),
+      });
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("This device's write token was rejected — sync it once with the passphrase first.");
+      }
+      if (res.status === 404) throw new Error("This vault no longer exists on the server.");
+      if (!res.ok) throw new Error(`Couldn't create a pairing code (${res.status})`);
+      return (await res.json()) as { code: string; expiresAt: number };
+    },
+
+    async redeemPairing(code) {
+      const res = await fetch(url("/pair/redeem"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      if (res.status === 404 || res.status === 410) {
+        throw new Error("That pairing code isn't valid any more — codes last ten minutes and work once.");
+      }
+      if (res.status === 429) throw new Error("Too many attempts — wait a minute and try again.");
+      if (!res.ok) throw new Error(`Pairing failed (${res.status})`);
+      return (await res.json()) as { vaultId: string };
     },
   };
 }

@@ -11,6 +11,7 @@ import {
 /**
  * GET /api/vault/:id/snapshot — return the encrypted envelope; the S3 ETag
  * rides along in the ETag header as the optimistic-concurrency version tag.
+ * `X-Vault-If-None-Match: <etag>` turns it into a conditional read (304).
  *
  * PUT /api/vault/:id/snapshot — requires `Authorization: Bearer <writeToken>`.
  * `X-Vault-If-Match: <etag>` / `X-Vault-If-None-Match: *` map onto S3
@@ -30,9 +31,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   try {
     if (req.method === "GET") {
-      const snapshot = await store.getSnapshot(vaultId);
+      // Conditional pull (docs/ambient-vault-sync.md, Part 3): the ambient
+      // loop polls every minute per device, so an unchanged vault must cost
+      // a 304 and no body. Same custom header name as the PUT path — the
+      // standard If-None-Match never reaches the function.
+      const ifNoneMatch = req.headers["x-vault-if-none-match"];
+      const snapshot = await store.getSnapshot(
+        vaultId,
+        typeof ifNoneMatch === "string" && ifNoneMatch !== "*" ? { ifNoneMatch } : undefined,
+      );
       if (!snapshot) {
         res.status(404).json({ error: "No snapshot" });
+        return;
+      }
+      if ("notModified" in snapshot) {
+        res.setHeader("ETag", snapshot.etag);
+        res.setHeader("Cache-Control", "no-store");
+        res.status(304).end();
         return;
       }
       if (snapshot.etag) res.setHeader("ETag", snapshot.etag);

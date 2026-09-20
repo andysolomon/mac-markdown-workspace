@@ -1,4 +1,5 @@
 import React from "react";
+import { SyncIndicator } from "./SyncIndicator";
 
 export function EditorChrome({
   onBack,
@@ -46,6 +47,7 @@ export function EditorChrome({
         Aa
       </button>
       {children}
+      <SyncIndicator />
       <button
         type="button"
         className="mm-plus"

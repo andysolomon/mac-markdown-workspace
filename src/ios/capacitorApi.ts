@@ -1,6 +1,8 @@
 import type { AppApi } from "../../shared/types/ipc";
+import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
+import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
 import {
   IOS_STORAGE_KEY,
   createNotesStorageController,
@@ -212,6 +214,31 @@ export const capacitorApi: AppApi = {
     const settings = getSettings();
     settings[key] = value;
     setSettings(settings);
+  },
+
+  // Host secure storage (docs/ambient-vault-sync.md, Part 1): iOS Keychain
+  // through capacitor-secure-storage-plugin (SwiftKeychainWrapper; items are
+  // NOT marked synchronizable, so nothing rides iCloud Keychain to other
+  // devices). Only available on the native shell — the web bundle also
+  // carries a bare `window.Capacitor`, hence the explicit platform check.
+  secureAvailable: async () => Capacitor.isNativePlatform(),
+  secureGet: async (key) => {
+    try {
+      const { value } = await SecureStoragePlugin.get({ key: `mmw.${key}` });
+      return typeof value === "string" ? value : null;
+    } catch {
+      return null; // the plugin rejects on a missing key
+    }
+  },
+  secureSet: async (key, value) => {
+    await SecureStoragePlugin.set({ key: `mmw.${key}`, value });
+  },
+  secureDelete: async (key) => {
+    try {
+      await SecureStoragePlugin.remove({ key: `mmw.${key}` });
+    } catch {
+      /* already gone */
+    }
   },
 
   onMenuAction: () => () => {

@@ -13,8 +13,10 @@ S3 bucket. It is deliberately thin: it enforces *write* authorization and
 | --------------------------------- | ------------------------------------------------------------------------ |
 | `POST /api/vault`                 | Register a client-generated `vlt_<uuid>`; store `writeTokenHash`; 409 on reuse |
 | `GET /api/vault/:id/meta`         | Return advisory `meta.json`                                              |
-| `GET /api/vault/:id/snapshot`     | Stream `snapshot.enc` with its S3 ETag                                    |
-| `PUT /api/vault/:id/snapshot`     | Bearer-token gated; conditional write; store ciphertext                   |
+| `GET /api/vault/:id/snapshot`     | Stream `snapshot.enc` with its S3 ETag; `X-Vault-If-None-Match: <etag>` → `304` (the ambient loop's poll) |
+| `PUT /api/vault/:id/snapshot`     | Bearer-token gated; conditional write; store ciphertext; answers with the new ETag |
+| `POST /api/vault/pair`            | Bearer-token gated; mint a 10-minute, single-use 8-char pairing code for `{ vaultId }` |
+| `POST /api/vault/pair/redeem`     | Burn `{ code }` and return `{ vaultId }`; unknown, expired, and used codes are all `404` |
 
 The vault id is **client-generated** (so the id can salt key derivation before the
 server ever hears about it); `POST` therefore *registers* rather than mints, using

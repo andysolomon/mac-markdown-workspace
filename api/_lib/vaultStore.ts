@@ -1,11 +1,18 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   S3Client,
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import {
+  encodePairingCode,
+  isCanonicalPairingCode,
+  PAIRING_CODE_LENGTH,
+  PAIRING_TTL_MS,
+} from "../../shared/pairingCode";
 
 /**
  * Vault sync backend store (issue #20 / W-000020,
@@ -15,6 +22,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
  *   vaults/{vaultId}/auth.json     { writeTokenHash }        server-only
  *   vaults/{vaultId}/meta.json     { updatedAt, size, schemaVersion } public
  *   vaults/{vaultId}/snapshot.enc  VaultEnvelope JSON        public (ciphertext)
+ *   pairing/{code}.json            { vaultId, expiresAt }    short-lived, single-use
+ *
+ * Pairing codes (docs/ambient-vault-sync.md, Part 2) are 40-bit capability
+ * tokens that map onto a vault id for ten minutes. `expiresAt` is enforced
+ * on redeem; an S3 lifecycle rule on the `pairing/` prefix is only the
+ * backstop for codes nobody ever redeemed.
  *
  * The server never sees plaintext or the write token's preimage-at-rest:
  * clients send `Authorization: Bearer <writeToken>` and we compare
@@ -169,6 +182,14 @@ async function getObject(
   }
 }
 
+async function deleteObject(env: VaultEnv, objectKey: string): Promise<void> {
+  try {
+    await s3(env).send(new DeleteObjectCommand({ Bucket: env.bucket, Key: objectKey }));
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
+  }
+}
+
 async function putObject(
   env: VaultEnv,
   objectKey: string,
@@ -196,16 +217,52 @@ async function putObject(
   }
 }
 
+export interface PairingRecord {
+  vaultId: string;
+  expiresAt: number;
+}
+
+/** Result of a conditional read: the caller's tag still matches. */
+export interface SnapshotNotModified {
+  notModified: true;
+  etag: string;
+}
+
 export interface VaultStore {
   createVault(vaultId: string, writeTokenHash: string): Promise<void>;
   getMeta(vaultId: string): Promise<VaultMetaRecord | null>;
-  getSnapshot(vaultId: string): Promise<{ envelope: string; etag: string | null } | null>;
+  /** `ifNoneMatch` short-circuits with SnapshotNotModified when the stored
+      object's ETag equals it — the body is still fetched from S3 (a HEAD
+      would cost a second round-trip on the miss path) but never sent. */
+  getSnapshot(
+    vaultId: string,
+    conditions?: { ifNoneMatch?: string },
+  ): Promise<{ envelope: string; etag: string | null } | SnapshotNotModified | null>;
   putSnapshot(
     vaultId: string,
     writeToken: string,
     envelopeJson: string,
     conditions?: { ifMatch?: string | null },
   ): Promise<{ etag: string | null }>;
+  /** Mint a pairing code for `vaultId`; requires the vault's write token. */
+  createPairing(vaultId: string, writeToken: string): Promise<{ code: string; expiresAt: number }>;
+  /** Burn a pairing code and return the vault it named; 404 when unknown,
+      expired, or already used. */
+  redeemPairing(code: string): Promise<{ vaultId: string }>;
+}
+
+/** Load auth.json and verify a presented bearer token against it. */
+async function assertWriteToken(env: VaultEnv, vaultId: string, writeToken: string): Promise<void> {
+  const auth = await getObject(env, key(env, vaultId, "auth.json"));
+  if (!auth) throw new VaultStoreError(404, "Vault not found");
+  const { writeTokenHash } = JSON.parse(auth.body) as { writeTokenHash?: string };
+  if (!writeTokenHash || !writeTokenMatches(writeToken, writeTokenHash)) {
+    throw new VaultStoreError(403, "Invalid write token");
+  }
+}
+
+function pairingKey(env: VaultEnv, code: string): string {
+  return `${env.prefix}/pairing/${code}.json`;
 }
 
 export function createVaultStore(): VaultStore {
@@ -231,18 +288,17 @@ export function createVaultStore(): VaultStore {
       return result ? (JSON.parse(result.body) as VaultMetaRecord) : null;
     },
 
-    async getSnapshot(vaultId) {
+    async getSnapshot(vaultId, conditions) {
       const result = await getObject(env, key(env, vaultId, "snapshot.enc"));
-      return result ? { envelope: result.body, etag: result.etag } : null;
+      if (!result) return null;
+      if (conditions?.ifNoneMatch && result.etag && result.etag === conditions.ifNoneMatch) {
+        return { notModified: true, etag: result.etag };
+      }
+      return { envelope: result.body, etag: result.etag };
     },
 
     async putSnapshot(vaultId, writeToken, envelopeJson, conditions) {
-      const auth = await getObject(env, key(env, vaultId, "auth.json"));
-      if (!auth) throw new VaultStoreError(404, "Vault not found");
-      const { writeTokenHash } = JSON.parse(auth.body) as { writeTokenHash?: string };
-      if (!writeTokenHash || !writeTokenMatches(writeToken, writeTokenHash)) {
-        throw new VaultStoreError(403, "Invalid write token");
-      }
+      await assertWriteToken(env, vaultId, writeToken);
       const etag = await putObject(env, key(env, vaultId, "snapshot.enc"), envelopeJson, conditions);
       // meta.json is ADVISORY ONLY. The snapshot write above is the atomic,
       // conditional source of truth; this second unconditional PUT is not
@@ -256,6 +312,46 @@ export function createVaultStore(): VaultStore {
       };
       await putObject(env, key(env, vaultId, "meta.json"), JSON.stringify(meta));
       return { etag };
+    },
+
+    async createPairing(vaultId, writeToken) {
+      await assertWriteToken(env, vaultId, writeToken);
+      // Collisions in a 40-bit space are vanishingly rare; the conditional
+      // PUT turns one into a retry instead of silently re-pointing a code
+      // somebody else is about to redeem.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const code = encodePairingCode(randomBytes(PAIRING_CODE_LENGTH));
+        const record: PairingRecord = { vaultId, expiresAt: Date.now() + PAIRING_TTL_MS };
+        try {
+          await putObject(env, pairingKey(env, code), JSON.stringify(record), { ifMatch: null });
+          return { code, expiresAt: record.expiresAt };
+        } catch (error) {
+          if (error instanceof VaultStoreError && error.status === 412) continue;
+          throw error;
+        }
+      }
+      throw new VaultStoreError(503, "Couldn't allocate a pairing code");
+    },
+
+    async redeemPairing(code) {
+      if (!isCanonicalPairingCode(code)) throw new VaultStoreError(404, "Unknown pairing code");
+      const objectKey = pairingKey(env, code);
+      const result = await getObject(env, objectKey);
+      if (!result) throw new VaultStoreError(404, "Unknown pairing code");
+      // Single use: delete BEFORE answering so two racing redeems can't both
+      // succeed off one read (the second delete is a no-op and its caller
+      // has already been answered from the same record — acceptable: both
+      // callers hold the passphrase-gated address, nothing more).
+      await deleteObject(env, objectKey);
+      const record = JSON.parse(result.body) as Partial<PairingRecord>;
+      if (
+        !isValidVaultId(record.vaultId) ||
+        typeof record.expiresAt !== "number" ||
+        record.expiresAt < Date.now()
+      ) {
+        throw new VaultStoreError(404, "Unknown pairing code");
+      }
+      return { vaultId: record.vaultId };
     },
   };
 }

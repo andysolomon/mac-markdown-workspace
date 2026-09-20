@@ -10,7 +10,7 @@ import {
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useNotesStore } from "../services/notesStore";
 import { useSettingsStore, isIosStorage } from "../services/settingsStore";
-import { openSyncModal } from "./shell/SettingsPanel";
+import { startAmbientSync } from "../services/ambientSync";
 
 const MD_EXTENSIONS = [".md", ".markdown", ".mdx", ".txt"];
 
@@ -94,8 +94,10 @@ export function App() {
         useSettingsStore.getState().setVimMode(saved);
       }
     });
-    // Cloud sync (issue #21) — restore the non-secret sync config; the
-    // passphrase is never persisted, so it's re-collected at sync time.
+    // Cloud sync (issue #21) — restore the non-secret sync config. The
+    // passphrase is never persisted; the DERIVED keys may be (opt-in, see
+    // vaultKeyStore), and the ambient loop below picks them up once the
+    // vault id is known.
     void Promise.all([
       window.appApi?.getSetting?.("syncEnabled"),
       window.appApi?.getSetting?.("syncVaultId"),
@@ -108,29 +110,13 @@ export function App() {
     });
   }, [setPalette, setMode, setFont, setSize]);
 
-  // On-return auto-sync nudge (issue #21). The passphrase is never stored, so
-  // "auto" surfaces the passphrase prompt rather than syncing silently — and
-  // only when the vault is stale, throttled so it can't nag. visibilitychange
-  // (not focus) fires consistently across web, Electron, and Capacitor and
-  // never on initial load. NotesShell ignores the nudge if the modal is
-  // already open, so it can't yank the view out from under an active user.
-  useEffect(() => {
-    const STALE_MS = 5 * 60 * 1000;
-    const BACKOFF_MS = 30 * 60 * 1000; // once nudged, back off well past the stale window
-    let lastNudge = 0;
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      const s = useSettingsStore.getState();
-      if (!s.syncEnabled || !s.syncVaultId) return;
-      const now = Date.now();
-      if (now - (s.lastSyncedAt ?? 0) < STALE_MS) return;
-      if (now - lastNudge < BACKOFF_MS) return;
-      lastNudge = now;
-      openSyncModal(true);
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, []);
+  // Ambient sync (docs/ambient-vault-sync.md): once the sync settings above
+  // hydrate, the loop binds to the vault's resident keys and converges in
+  // the background — push after edits settle, conditional pull on focus and
+  // on an interval. It replaces the old on-return nudge, which could only
+  // open a passphrase prompt. A device without resident keys shows "locked"
+  // in the chrome instead of being nagged.
+  useEffect(() => startAmbientSync(), []);
 
   // Listen for menu actions from main process
   useEffect(() => {

@@ -3,6 +3,7 @@ import {
   deriveVaultKeys,
   encryptSnapshot,
   decryptSnapshot,
+  importEncryptionKey,
   generateVaultId,
 } from "../services/vaultCrypto";
 import {
@@ -15,6 +16,9 @@ import {
   type VaultSnapshot,
   type LocalNotesPort,
   type VaultTransport,
+  syncVaultWithKeys,
+  type RemoteSnapshot,
+  type RemoteNotModified,
 } from "../services/vaultSync";
 import type { RawNote } from "../services/notesModel";
 import type { VaultEnvelope } from "../services/vaultCrypto";
@@ -434,4 +438,72 @@ describe("vault end-to-end (fakes)", () => {
     },
     KDF_TIMEOUT,
   );
+});
+
+describe("syncVaultWithKeys (resident keys, docs/ambient-vault-sync.md)", () => {
+  const RAW = new Uint8Array(32).map((_, i) => 3 * i + 5);
+
+  function local(seed: RawNote[]): { notes: RawNote[]; port: LocalNotesPort } {
+    const notes: RawNote[] = [...seed];
+    const port: LocalNotesPort = {
+      listNotes: async (): Promise<RawNote[]> => [...notes],
+      writeNote: async ({ id, body, updatedAt }): Promise<RawNote> => {
+        const i = notes.findIndex((n) => n.id === id);
+        const next: RawNote = { id, body, updatedAt };
+        if (i >= 0) notes[i] = next;
+        else notes.push(next);
+        return next;
+      },
+      deleteNote: async ({ id }): Promise<void> => {
+        const i = notes.findIndex((n) => n.id === id);
+        if (i >= 0) notes.splice(i, 1);
+      },
+      listTombstones: async () => [],
+      clearTombstones: async () => undefined,
+    };
+    return { notes, port };
+  }
+
+  it("syncs with a non-extractable CryptoKey handle exactly like raw bytes", async () => {
+    const vaultId = "vlt_handle";
+    const handle = await importEncryptionKey(RAW, false);
+    expect(handle.extractable).toBe(false);
+    let stored: { envelope: VaultEnvelope; etag: string } | null = null;
+    let version = 0;
+    const transport: VaultTransport = {
+      createVault: async () => undefined,
+      getSnapshot: async (
+        _id,
+        opts,
+      ): Promise<RemoteSnapshot | RemoteNotModified | null> => {
+        if (!stored) return null;
+        if (opts?.ifNoneMatch && opts.ifNoneMatch === stored.etag) {
+          return { notModified: true, etag: stored.etag };
+        }
+        return stored;
+      },
+      putSnapshot: async (_id, _t, envelope): Promise<{ etag: string }> => {
+        const etag = `"v${++version}"`;
+        stored = { envelope, etag };
+        return { etag };
+      },
+    };
+
+    // Device A pushes with raw bytes.
+    const a = local([{ id: "n1", body: "from A", updatedAt: 10 }]);
+    const first = await syncVaultWithKeys({ encryptionKey: RAW, writeToken: "t" }, vaultId, a.port, transport);
+    expect(first).toMatchObject({ pushed: true, etag: '"v1"', notModified: false });
+
+    // Device B pulls with the handle.
+    const b = local([]);
+    const pulled = await syncVaultWithKeys({ encryptionKey: handle, writeToken: "t" }, vaultId, b.port, transport);
+    expect(pulled.pulled).toBe(1);
+    expect(b.notes[0]?.body).toBe("from A");
+
+    // A conditional poll from B is a 304 and touches nothing.
+    const poll = await syncVaultWithKeys({ encryptionKey: handle, writeToken: "t" }, vaultId, b.port, transport, {
+      ifNoneMatch: pulled.etag,
+    });
+    expect(poll).toMatchObject({ notModified: true, pulled: 0, pushed: false, etag: '"v1"' });
+  });
 });

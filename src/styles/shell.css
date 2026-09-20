@@ -897,3 +897,107 @@
 .mm-btn-danger {
   color: #d5573b;
 }
+
+/* --- Ambient sync (docs/ambient-vault-sync.md) --------------------------- */
+
+/* Quiet status dot in the topbar: the loop reports through it instead of
+   opening modals. Hidden entirely while sync is off. */
+.mm-sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mm-text-muted, var(--text-secondary));
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.mm-sync-indicator:hover {
+  background: var(--mm-surface-hover, rgba(127, 127, 127, 0.12));
+}
+.mm-sync-indicator .mm-sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+.mm-sync-indicator[data-status="syncing"] .mm-sync-dot {
+  animation: mm-sync-pulse 1s ease-in-out infinite;
+}
+.mm-sync-indicator[data-status="idle"] .mm-sync-dot {
+  background: var(--mm-accent, var(--accent));
+  opacity: 1;
+}
+.mm-sync-indicator[data-status="offline"] .mm-sync-dot,
+.mm-sync-indicator[data-status="locked"] .mm-sync-dot {
+  opacity: 0.35;
+}
+.mm-sync-indicator[data-status="error"] .mm-sync-dot {
+  background: var(--mm-danger, #d9534f);
+  opacity: 1;
+}
+.mm-sync-indicator .mm-sync-label {
+  display: none;
+}
+@media (min-width: 900px) {
+  .mm-sync-indicator .mm-sync-label {
+    display: inline;
+  }
+}
+@keyframes mm-sync-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Pairing code: big, monospaced, unmistakable. */
+.mm-pair-code {
+  display: block;
+  margin: 8px 0 4px;
+  padding: 14px 12px;
+  border-radius: 10px;
+  background: var(--mm-surface-sunken, rgba(127, 127, 127, 0.1));
+  font-family: var(--mm-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.mm-pair-expiry {
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Remember this device" */
+.mm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mm-check input {
+  margin-top: 3px;
+}
+.mm-check .mm-sync-note {
+  margin: 2px 0 0;
+}
+
+.mm-sync-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
