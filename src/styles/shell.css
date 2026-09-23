@@ -504,7 +504,10 @@
   background: var(--mm-sel);
 }
 
-/* Markdown keyboard accessory — rides above the on-screen keyboard (#10). */
+/* Markdown keyboard accessory — rides above the on-screen keyboard (#10).
+   Vertical size is 6 + 44 + 6 = ACCESSORY_BAR_HEIGHT in editorViewport.ts.
+   Buttons share the row so the whole set stays on screen, and each control
+   is 44px tall so a thumb can hit it once Safari's URL pill is cleared. */
 .mm-accessory {
   position: fixed;
   left: 0;
@@ -513,10 +516,12 @@
   z-index: 45;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 6px var(--mm-space-2);
+  gap: 0;
+  padding: 6px 4px;
   background: var(--mm-accent);
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mm-acc-btn {
@@ -524,18 +529,20 @@
   background: transparent;
   color: #fff;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: var(--mm-w-bold);
-  min-width: 40px;
-  height: 38px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 44px;
   border-radius: var(--mm-radius-md);
   cursor: pointer;
-  flex: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mm-acc-btn.mono {
   font-family: var(--mm-font-mono);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .mm-acc-btn:active {
