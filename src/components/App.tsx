@@ -33,6 +33,15 @@ export function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", palette);
     document.documentElement.setAttribute("data-mode", resolvedMode);
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--mm-bg").trim();
+    if (!bg) return;
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "theme-color");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", bg);
   }, [palette, resolvedMode]);
 
   // Native iOS: the system keyboard follows the app's light/dark mode

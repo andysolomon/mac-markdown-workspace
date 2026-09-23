@@ -1,8 +1,35 @@
-/** Height of the markdown helper strip, including its vertical padding. */
-export const ACCESSORY_BAR_HEIGHT = 50;
+/**
+ * Height of the markdown helper strip, including its vertical padding.
+ * Keep in sync with `.mm-accessory` / `.mm-acc-btn` in shell.css (6 + 44 + 6).
+ */
+export const ACCESSORY_BAR_HEIGHT = 56;
 
 /** Existing mobile bottom-bar clearance used when the editor is not focused. */
 export const MOBILE_EDITOR_CHROME_INSET = 88;
+
+/**
+ * Lift applied on top of a real keyboard inset while editing in mobile Safari.
+ *
+ * Safari draws a floating URL pill inside the visual viewport, just above the
+ * keyboard. `visualViewport` does not shrink for that pill, so a bar placed
+ * flush with the keyboard ends up underneath it. On a 402pt iPhone screenshot
+ * the pill's top sits about 64px above the keyboard. 72px clears that pill.
+ * The strip under the bar is painted with the theme background — the clearance
+ * must not show the white canvas.
+ */
+export const IOS_SAFARI_URL_PILL_CLEARANCE = 72;
+
+/**
+ * Insets smaller than this are Safari's bottom chrome or the home indicator,
+ * not the software keyboard. Portrait iPhone keyboards are well above it.
+ * Treating chrome as a keyboard lifts the bar while the keyboard is closed.
+ */
+export const KEYBOARD_OPEN_MIN_INSET = 150;
+
+export interface AccessoryHost {
+  userAgent: string;
+  nativePlatform: boolean;
+}
 
 export interface VisualViewportMetrics {
   height: number;
@@ -24,6 +51,26 @@ export function measureKeyboardInset(
   if (!viewport) return 0;
   const inset = innerHeight - (viewport.height + viewport.offsetTop);
   return Number.isFinite(inset) ? Math.max(0, inset) : 0;
+}
+
+/** iPhone/iPad Safari (and other iOS browsers). The native shell has no URL pill. */
+export function iosBrowserShowsUrlPill(host: AccessoryHost): boolean {
+  if (host.nativePlatform) return false;
+  return /iP(hone|ad|od)/.test(host.userAgent);
+}
+
+/**
+ * Bottom offset for the formatting bar. Browser chrome alone leaves the bar
+ * on the bottom edge. A real keyboard on iOS Safari also clears the URL pill.
+ */
+export function measureAccessoryOffset(
+  keyboardInset: number,
+  host: AccessoryHost,
+): number {
+  const inset = Number.isFinite(keyboardInset) ? Math.max(0, keyboardInset) : 0;
+  if (inset < KEYBOARD_OPEN_MIN_INSET) return 0;
+  if (!iosBrowserShowsUrlPill(host)) return inset;
+  return inset + IOS_SAFARI_URL_PILL_CLEARANCE;
 }
 
 /** Parse a CSS pixel value while treating missing/invalid values as zero. */
