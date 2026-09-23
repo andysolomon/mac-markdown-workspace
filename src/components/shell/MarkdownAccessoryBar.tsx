@@ -18,10 +18,11 @@ import {
  * keyboard while editing (issue #10 / W-000010, per the author's Bear
  * screenshot). Buttons insert markdown at the CodeMirror cursor. Positioned
  * via visualViewport so it tracks the iOS keyboard. On iPhone Safari the
- * floating URL pill overlays the top of that strip, so the bar is lifted by
- * an extra clearance and the buttons are sized for a thumb. The measured
- * keyboard inset (plus the bar) is published as --mm-kb-inset so the editor
- * can pad its scroller and keep the caret visible (issue #14 / W-000015).
+ * floating URL pill overlays a bar that sits flush with the keyboard, so a
+ * real keyboard inset also clears that pill. The space under the bar is
+ * filled with the theme background (not the white page canvas). The measured
+ * offset (plus the bar) is published as --mm-kb-inset so the editor can pad
+ * its scroller and keep the caret visible (issue #14 / W-000015).
  * No Done button — iOS/WKWebView already provide keyboard dismissal
  * (issue #15).
  *
@@ -108,20 +109,24 @@ export function MarkdownAccessoryBar() {
   ];
 
   return (
-    <div className="mm-accessory">
-      {buttons.map((b) => (
-        <button
-          key={b.aria}
-          type="button"
-          aria-label={b.aria}
-          className={`mm-acc-btn${b.mono ? " mono" : ""}`}
-          onMouseDown={keepFocus}
-          onTouchStart={keepFocus}
-          onClick={b.action}
-        >
-          {b.label}
-        </button>
-      ))}
-    </div>
+    <>
+      {/* Paints the keyboard/pill offset with the theme background. */}
+      <div className="mm-accessory-gap" aria-hidden="true" />
+      <div className="mm-accessory">
+        {buttons.map((b) => (
+          <button
+            key={b.aria}
+            type="button"
+            aria-label={b.aria}
+            className={`mm-acc-btn${b.mono ? " mono" : ""}`}
+            onMouseDown={keepFocus}
+            onTouchStart={keepFocus}
+            onClick={b.action}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+    </>
   );
 }

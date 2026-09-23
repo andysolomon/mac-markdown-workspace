@@ -140,4 +140,17 @@ describe("MarkdownAccessoryBar keyboard viewport", () => {
 
     unmount();
   });
+
+  it("does not lift the bar for Safari chrome while the keyboard is closed", () => {
+    setUserAgent(IPHONE_SAFARI);
+    viewport.viewport.height = 754;
+    const { unmount } = render(<MarkdownAccessoryBar />);
+
+    expect(document.documentElement.style.getPropertyValue("--mm-kb-offset")).toBe("0px");
+    expect(document.documentElement.style.getPropertyValue("--mm-kb-inset")).toBe(
+      `${ACCESSORY_BAR_HEIGHT}px`,
+    );
+
+    unmount();
+  });
 });

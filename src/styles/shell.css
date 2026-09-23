@@ -506,22 +506,37 @@
 
 /* Markdown keyboard accessory — rides above the on-screen keyboard (#10).
    Vertical size is 6 + 44 + 6 = ACCESSORY_BAR_HEIGHT in editorViewport.ts.
-   Buttons share the row so the whole set stays on screen, and each control
-   is 44px tall so a thumb can hit it once Safari's URL pill is cleared. */
+   An explicit height stops iOS from stretching this fixed bar across the
+   browser-chrome gap. Buttons share the row and are 44px tall.
+   The offset band below the bar is the theme background, not the white canvas. */
 .mm-accessory {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: var(--mm-kb-offset, 0px);
+  /* Home-indicator inset when the keyboard is closed; the keyboard offset
+     already clears that inset while the keyboard is open. */
+  bottom: max(var(--mm-kb-offset, 0px), env(safe-area-inset-bottom, 0px));
   z-index: 45;
   display: flex;
   align-items: center;
   gap: 0;
+  box-sizing: border-box;
+  height: 56px;
+  max-height: 56px;
   padding: 6px 4px;
   background: var(--mm-accent);
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+}
+
+.mm-accessory-gap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: max(var(--mm-kb-offset, 0px), env(safe-area-inset-bottom, 0px));
+  background: var(--mm-bg);
+  z-index: 44;
+  pointer-events: none;
 }
 
 .mm-acc-btn {

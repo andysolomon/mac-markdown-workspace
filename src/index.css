@@ -30,6 +30,18 @@
   box-sizing: border-box;
 }
 
+/* The canvas behind the app — overscroll, the status-bar safe area, and the
+   band under the keyboard accessory — follows the theme. The default white
+   document background is what showed through those regions on iPhone Safari. */
+html {
+  background: var(--mm-bg);
+  color-scheme: light;
+}
+
+html[data-mode="dark"] {
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
@@ -39,6 +51,7 @@ body,
   height: 100%;
   overflow: hidden;
   max-width: 100vw;
+  background: var(--mm-bg);
 }
 
 .app-shell {

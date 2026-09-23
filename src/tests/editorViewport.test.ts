@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ACCESSORY_BAR_HEIGHT,
   IOS_SAFARI_URL_PILL_CLEARANCE,
+  KEYBOARD_OPEN_MIN_INSET,
   getMobileEditorBottomInset,
   iosBrowserShowsUrlPill,
   measureAccessoryOffset,
@@ -27,6 +28,7 @@ describe("editor viewport measurements", () => {
     expect(offset - keyboard).toBe(IOS_SAFARI_URL_PILL_CLEARANCE);
     expect(offset - keyboard).toBeGreaterThanOrEqual(64);
     expect(measureAccessoryOffset(0, iphone)).toBe(0);
+    expect(measureAccessoryOffset(98, iphone)).toBe(0);
     expect(measureAccessoryOffset(keyboard, { ...iphone, nativePlatform: true })).toBe(keyboard);
     expect(
       measureAccessoryOffset(keyboard, {
@@ -56,6 +58,17 @@ describe("editor viewport measurements", () => {
       }),
     ).toBe(false);
     expect(iosBrowserShowsUrlPill({ userAgent: "Mozilla/5.0", nativePlatform: false })).toBe(false);
+  });
+
+  it("ignores browser chrome when the keyboard is closed", () => {
+    const iphone = {
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) Safari/604.1",
+      nativePlatform: false,
+    };
+    expect(measureAccessoryOffset(0, iphone)).toBe(0);
+    expect(measureAccessoryOffset(34, iphone)).toBe(0);
+    expect(measureAccessoryOffset(98, iphone)).toBe(0);
+    expect(measureAccessoryOffset(KEYBOARD_OPEN_MIN_INSET - 1, iphone)).toBe(0);
   });
 
   it("keeps the published bar height aligned with the 44px controls", () => {
