@@ -147,9 +147,11 @@ vi.mock("@capacitor/filesystem", () => ({
 }));
 vi.mock("@capacitor/share", () => ({ Share: { share: vi.fn() } }));
 
-// Vitest's jsdom environment here exposes no localStorage global; the shim
-// persists settings through it, so install a minimal in-memory Storage.
-if (typeof globalThis.localStorage === "undefined") {
+// jsdom 28's Storage writes through an internal slot, so replacing
+// localStorage.setItem (including vi.spyOn) never observes or fails the
+// write. These tests assert the exact settings snapshot of each write and
+// inject an activation-write failure, which requires ordinary functions.
+{
   const store = new Map<string, string>();
   const storage = {
     getItem: (k: string): string | null => store.get(k) ?? null,
@@ -165,7 +167,11 @@ if (typeof globalThis.localStorage === "undefined") {
       return store.size;
     },
   };
-  Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
+  Object.defineProperty(globalThis, "localStorage", {
+    value: storage,
+    configurable: true,
+    writable: true,
+  });
 }
 
 const SETTINGS_KEY = "mmw-settings";

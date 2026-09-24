@@ -52,13 +52,20 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run web:build
 
-      - uses: browser-actions/setup-xvfb@v1
-
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
+      # browser-actions/setup-xvfb was removed (the action repo 404s).
+      # xvfb-run provides the same virtual display for the browser project.
       - name: Run web e2e
-        run: bun run test:e2e -- --project=web
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" \
+            bun run test:e2e -- --project=web
 
   linux-build:
     name: Linux build + checksums
@@ -114,6 +121,7 @@ jobs:
           bash -n PKGBUILD
           bash -n build.sh
           bash -n release.sh
+          bash -n check-srcinfo.sh
           bash -n ../../scripts/native-test/installed-package-smoke.sh
           if grep -rE 'oauth2:|ghp_|gho_|x-access-token:' . ; then
             echo "embedded token detected in packaging/arch" >&2
@@ -121,12 +129,7 @@ jobs:
           fi
 
       - name: Rebuild PKGBUILD-derived checksums
-        working-directory: packaging/arch
-        run: |
-          set -euo pipefail
-          makepkg --printsrcinfo > computed.SRCINFO
-          diff -u .SRCINFO computed.SRCINFO
-          rm computed.SRCINFO
+        run: bash packaging/arch/check-srcinfo.sh
 
       - name: Upload validation log
         uses: actions/upload-artifact@v4
