@@ -83,6 +83,7 @@ Duplicate `@codemirror/language` instances make `syntaxHighlighting()` silently 
 
 ## Working conventions
 
+- **Testing rules: @AGENTS.md** — E2E-first; no unit tests written after the code; isolated tests only for listed failure modes the E2E suite can't reach.
 - Keep `IMPLEMENTATION_PLAN.md` and `progress.txt` in sync when scope changes; work is tracked as `[W-0000NN]` GitHub issues (Gherkin ACs) — reference `Closes #N` in commits.
 - Components are `React.memo`-wrapped where decomposed for perf — preserve prop stability.
 - Verify phases in the running app (agent-browser / Playwright WebKit / real Safari via safaridriver), not just tests.
