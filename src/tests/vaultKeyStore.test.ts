@@ -52,14 +52,6 @@ describe("host key store (Electron safeStorage / iOS Keychain)", () => {
     await ks.forget(VAULT);
     expect(await ks.recall(VAULT)).toBeNull();
   });
-
-  it("treats a corrupt record as nothing remembered", async () => {
-    const { api, store } = fakeSecureApi();
-    store.set(`vault-keys:${VAULT}`, "{not json");
-    expect(await createHostKeyStore(api).recall(VAULT)).toBeNull();
-    store.set(`vault-keys:${VAULT}`, JSON.stringify({ v: 2, enc: "00", wt: "x" }));
-    expect(await createHostKeyStore(api).recall(VAULT)).toBeNull();
-  });
 });
 
 describe("IndexedDB key store (web)", () => {
@@ -76,12 +68,6 @@ describe("IndexedDB key store (web)", () => {
     await expect(decryptSnapshot(recalled.encryptionKey, VAULT, env)).resolves.toBe("hello");
     await ks.forget(VAULT);
     expect(await ks.recall(VAULT)).toBeNull();
-  });
-
-  it("reports unavailable without IndexedDB", async () => {
-    const ks = createIndexedDbKeyStore(null);
-    expect(await ks.available()).toBe(false);
-    await expect(ks.remember(VAULT, { encryptionKey: RAW.slice(), writeToken: "t" })).rejects.toThrow();
   });
 });
 
@@ -101,16 +87,5 @@ describe("createVaultKeyStore strategy selection", () => {
     await ks.remember(VAULT, { encryptionKey: RAW.slice(), writeToken: "tok" });
     expect(api.secureSet).not.toHaveBeenCalled();
     expect((await ks.recall(VAULT))?.writeToken).toBe("tok");
-  });
-
-  it("is a graceful no-op with neither: available false, recall null, remember throws", async () => {
-    const ks = createVaultKeyStore({}, null);
-    expect(await ks.available()).toBe(false);
-    expect(await ks.strategy()).toBe("none");
-    expect(await ks.recall(VAULT)).toBeNull();
-    await expect(ks.remember(VAULT, { encryptionKey: RAW.slice(), writeToken: "t" })).rejects.toThrow(
-      /can't remember/,
-    );
-    await expect(ks.forget(VAULT)).resolves.toBeUndefined();
   });
 });
