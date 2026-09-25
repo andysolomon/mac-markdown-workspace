@@ -40,30 +40,6 @@ function fakeTransport(): VaultTransport & {
 }
 
 describe("browserApi notes shim", () => {
-  it("writeNote preserves a supplied updatedAt and stamps now when omitted", async () => {
-    const before = Date.now();
-    const pulled = await browserApi.writeNote({ id: "w-pulled", body: "x", updatedAt: 12345 });
-    expect(pulled.updatedAt).toBe(12345);
-    const local = await browserApi.writeNote({ id: "w-local", body: "y" });
-    expect(local.updatedAt).toBeGreaterThanOrEqual(before);
-    // Round-trips through listNotes verbatim.
-    const notes = await browserApi.listNotes();
-    expect(notes.find((n) => n.id === "w-pulled")?.updatedAt).toBe(12345);
-  });
-
-  it("records, lists, and clears tombstones", async () => {
-    await browserApi.recordTombstone({ id: "t-1", deletedAt: 100 });
-    await browserApi.recordTombstone({ id: "t-2", deletedAt: 200 });
-    let tombs = await browserApi.listTombstones();
-    expect(tombs.find((t) => t.id === "t-1")?.deletedAt).toBe(100);
-    expect(tombs.map((t) => t.id).sort()).toContain("t-2");
-
-    await browserApi.clearTombstones({ ids: ["t-1"] });
-    tombs = await browserApi.listTombstones();
-    expect(tombs.some((t) => t.id === "t-1")).toBe(false);
-    expect(tombs.some((t) => t.id === "t-2")).toBe(true);
-  });
-
   it("writeNote drops a stale tombstone for the same id (resurrection)", async () => {
     await browserApi.recordTombstone({ id: "r-1", deletedAt: 100 });
     await browserApi.writeNote({ id: "r-1", body: "back", updatedAt: 500 });

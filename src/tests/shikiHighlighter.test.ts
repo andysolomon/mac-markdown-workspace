@@ -12,12 +12,6 @@ describe("highlightCode", () => {
     expect(html).toContain("--shiki-token-string-expression");
     expect(html).toContain("--shiki-token-comment");
   });
-
-  it("falls back for unknown languages without throwing", async () => {
-    const html = await highlightCode("hello world", "not-a-real-lang-xyz");
-    expect(html).toContain("<pre");
-    expect(html).toContain("hello world");
-  });
 });
 
 describe("markdownToHtml code fences", () => {

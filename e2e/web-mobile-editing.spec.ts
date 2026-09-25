@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -8,7 +9,10 @@ import { expect, test, type Page } from "@playwright/test";
  * Chromium has no software keyboard, so window.visualViewport is replaced by
  * a stand-in that behaves like iOS Safari's: `__vv.set(height, offsetTop)`
  * is the keyboard finishing its animation (and iOS panning the page), and
- * window.scrollTo(0, 0) un-pans it.
+ * window.scrollTo(0, 0) un-pans it unless `__vv.refuseUnpan` is set.
+ *
+ * Artifact: the iPhone run attaches a screenshot and a JSON geometry snapshot
+ * of the keyboard-up state (fixed viewport, fixed note, fresh context).
  */
 
 const W = 402;
@@ -39,6 +43,7 @@ const FAKE_VISUAL_VIEWPORT = `(() => {
   };
   Object.defineProperty(window, "visualViewport", { configurable: true, get: () => vv });
   window.__vv = {
+    refuseUnpan: false,
     set(height, offsetTop) {
       state.height = height;
       state.offsetTop = offsetTop;
@@ -49,7 +54,7 @@ const FAKE_VISUAL_VIEWPORT = `(() => {
   const scrollTo = window.scrollTo.bind(window);
   window.scrollTo = (x, y) => {
     const top = typeof x === "object" && x ? x.top : y;
-    if (top === 0 && state.offsetTop !== 0) {
+    if (top === 0 && state.offsetTop !== 0 && !window.__vv.refuseUnpan) {
       state.offsetTop = 0;
       queueMicrotask(() => events.dispatchEvent(new Event("scroll")));
     }
@@ -95,7 +100,9 @@ async function box(page: Page, selector: string) {
   return rect;
 }
 
-type FakeViewport = { __vv: { set(height: number, offsetTop: number): void } };
+type FakeViewport = {
+  __vv: { refuseUnpan: boolean; set(height: number, offsetTop: number): void };
+};
 
 /** The keyboard finished animating; iOS may also have panned the page. */
 async function keyboardUp(page: Page, offsetTop = 0) {
@@ -119,6 +126,17 @@ async function screenTop(page: Page, selector: string) {
   return (await box(page, selector)).top - (await pan(page));
 }
 
+/** Where an element's bottom edge is on the physical screen (pan applied). */
+async function screenBottom(page: Page, selector: string) {
+  return (await box(page, selector)).bottom - (await pan(page));
+}
+
+/** Tap a line in the lower half of the note, where the keyboard will land. */
+async function tapLowerHalf(page: Page) {
+  await page.touchscreen.tap(W / 2, 640);
+  await expect(page.locator(".mm-accessory")).toBeVisible();
+}
+
 test.describe("iPhone Safari", () => {
   test.use({
     viewport: { width: W, height: H },
@@ -129,13 +147,13 @@ test.describe("iPhone Safari", () => {
     contextOptions: { reducedMotion: "reduce" },
   });
 
-  test("the formatting bar rides on the keyboard and the note stays scrollable", async ({ page }) => {
+  test("the formatting bar rides on the keyboard and the note stays scrollable", async ({
+    page,
+  }, testInfo) => {
     await openLongNote(page);
     const bar = page.locator(".mm-accessory");
 
-    // Tap a line in the lower half, where the keyboard will land.
-    await page.touchscreen.tap(W / 2, 640);
-    await expect(bar).toBeVisible();
+    await tapLowerHalf(page);
     await expect(page.locator(".mm-bottombar")).toHaveCount(0);
 
     // Before the keyboard has even arrived, the bar and the caret are already
@@ -153,6 +171,15 @@ test.describe("iPhone Safari", () => {
       .poll(async () => Math.abs((await box(page, ".mm-accessory")).bottom - (VISIBLE - URL_PILL_CLEARANCE)))
       .toBeLessThanOrEqual(1);
     expect(await screenTop(page, ".mm-topbar")).toBeGreaterThanOrEqual(0);
+    const shotPath = testInfo.outputPath("keyboard-up.png");
+    await page.screenshot({ path: shotPath });
+    const keyboardUpGeometry = {
+      viewport: { width: W, height: H, visibleAboveKeyboard: VISIBLE },
+      header: await box(page, ".mm-topbar"),
+      bar: await box(page, ".mm-accessory"),
+      caret: await box(page, ".cm-cursor-primary"),
+      urlPillClearance: VISIBLE - (await box(page, ".mm-accessory")).bottom,
+    };
 
     // iOS pans the page anyway → it is undone; the header stays on screen.
     await keyboardUp(page, 159);
@@ -180,6 +207,49 @@ test.describe("iPhone Safari", () => {
     await expect(page.locator(".mm-bottombar")).toBeVisible();
     await expect(bar).toHaveCount(0);
     await expect.poll(async () => (await box(page, ".app-shell")).bottom).toBe(H);
+
+    // Next edit: the measured keyboard is remembered, so the bar lands on its
+    // final spot before the keyboard arrives — nothing moves when it does.
+    await tapLowerHalf(page);
+    await expect
+      .poll(async () => Math.abs((await box(page, ".mm-accessory")).bottom - (VISIBLE - URL_PILL_CLEARANCE)))
+      .toBeLessThanOrEqual(1);
+
+    const geometryPath = testInfo.outputPath("keyboard-up-geometry.json");
+    writeFileSync(geometryPath, JSON.stringify(keyboardUpGeometry, null, 2));
+    await testInfo.attach("keyboard-up.png", { path: shotPath, contentType: "image/png" });
+    await testInfo.attach("keyboard-up-geometry.json", {
+      path: geometryPath,
+      contentType: "application/json",
+    });
+  });
+
+  test("a pan iOS refuses to undo is followed, keeping the header and bar on screen", async ({
+    page,
+  }) => {
+    await openLongNote(page);
+    await tapLowerHalf(page);
+    await page.evaluate(() => {
+      (window as unknown as FakeViewport).__vv.refuseUnpan = true;
+    });
+    await keyboardUp(page, 120);
+    await expect.poll(() => pan(page)).toBe(120);
+    await expect.poll(() => screenTop(page, ".mm-topbar")).toBeGreaterThanOrEqual(0);
+    await expect
+      .poll(async () => Math.abs((await screenBottom(page, ".mm-accessory")) - (VISIBLE - URL_PILL_CLEARANCE)))
+      .toBeLessThanOrEqual(1);
+  });
+
+  test("with a hardware keyboard the bar settles at the bottom instead of floating", async ({
+    page,
+  }) => {
+    await openLongNote(page);
+    await tapLowerHalf(page);
+    // No software keyboard ever arrives: the prediction expires (1.5s).
+    await expect
+      .poll(async () => (await box(page, ".mm-accessory")).bottom, { timeout: 5000 })
+      .toBe(H);
+    await expect(page.locator(".mm-bottombar")).toHaveCount(0);
   });
 });
 

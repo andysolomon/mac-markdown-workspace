@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import React from "react";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
-import { SettingsPanel, IOS_STORAGE_OPTIONS, IOS_STORAGE_HINT } from "../components/shell/SettingsPanel";
+import { SettingsPanel } from "../components/shell/SettingsPanel";
 import { useSettingsStore } from "../services/settingsStore";
 import { useNotesStore } from "../services/notesStore";
 import { useDocumentStore } from "../services/documentStore";
@@ -12,18 +12,16 @@ import type { AppApi } from "../../shared/types/ipc";
 
 /**
  * Settings panel — iOS storage location (issue #8 / W-000008).
- * The Storage section is native-only and its control is transactional: it
- * awaits the shim's migration, blocks repeat taps, updates the selection
- * only on success, and keeps the previous selection (with an error) on
- * rejection.
+ * The Storage control is transactional: it awaits the shim's migration,
+ * blocks repeat taps, updates the selection only on success, and keeps the
+ * previous selection (with an error) on rejection.
  */
 
 type CapWindow = Window & { Capacitor?: { isNativePlatform?: () => boolean } };
 const win = window as CapWindow;
 
-function setNative(native: boolean | "absent") {
-  if (native === "absent") delete win.Capacitor;
-  else win.Capacitor = { isNativePlatform: () => native };
+function setNative(native: boolean) {
+  win.Capacitor = { isNativePlatform: () => native };
 }
 
 function stubApi(overrides: Partial<AppApi> = {}) {
@@ -48,40 +46,6 @@ afterEach(() => {
   cleanup();
   delete win.Capacitor;
   delete (window as { appApi?: AppApi }).appApi;
-});
-
-describe("SettingsPanel storage section — platform gating", () => {
-  it("renders the Storage section in the native Capacitor runtime", () => {
-    setNative(true);
-    stubApi();
-    render(<SettingsPanel open onClose={() => undefined} />);
-    expect(screen.getByTestId("ios-storage-section")).toBeTruthy();
-    expect(screen.getByRole("radio", { name: "Documents & Backup" })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: "On device" })).toBeTruthy();
-  });
-
-  it("is absent when no Capacitor global exists (web / Electron)", () => {
-    setNative("absent");
-    stubApi();
-    render(<SettingsPanel open onClose={() => undefined} />);
-    expect(screen.queryByTestId("ios-storage-section")).toBeNull();
-  });
-
-  it("is absent for Capacitor's non-native web shim", () => {
-    setNative(false);
-    stubApi();
-    render(<SettingsPanel open onClose={() => undefined} />);
-    expect(screen.queryByTestId("ios-storage-section")).toBeNull();
-  });
-
-  it("copy never promises iCloud Drive sync and points cross-device sync at Cloud Sync", () => {
-    for (const opt of IOS_STORAGE_OPTIONS) {
-      expect(opt.label.toLowerCase()).not.toContain("icloud");
-      expect(opt.description.toLowerCase()).not.toContain("icloud");
-    }
-    expect(IOS_STORAGE_HINT).toContain("Cloud Sync");
-    expect(IOS_STORAGE_HINT.toLowerCase()).not.toContain("icloud");
-  });
 });
 
 describe("SettingsPanel storage section — transactional switching", () => {
@@ -135,14 +99,6 @@ describe("SettingsPanel storage section — transactional switching", () => {
     // Retry is possible after a failure.
     fireEvent.click(screen.getByRole("radio", { name: "On device" }));
     await waitFor(() => expect(api.setSetting).toHaveBeenCalledTimes(2));
-  });
-
-  it("does nothing when the active location is re-selected", () => {
-    setNative(true);
-    const api = stubApi();
-    render(<SettingsPanel open onClose={() => undefined} />);
-    fireEvent.click(screen.getByRole("radio", { name: "Documents & Backup" }));
-    expect(api.setSetting).not.toHaveBeenCalled();
   });
 
   it("flushes a pending edit of the active note before migrating, then reloads the library", async () => {

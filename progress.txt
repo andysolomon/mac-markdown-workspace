@@ -11,7 +11,7 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 0.2 - Single-doc store, CodeMirror source, Milkdown WYSIWYG, react-markdown preview
     [x] 0.3 - File open/save/saveAs + TXT/PDF/DOCX export per platform
     [x] 0.4 - light/dark/system themes (color-only tokens)
-    [x] 0.5 - Web entry wiring fixed + regression test (src/tests/webEntry.test.ts)
+    [x] 0.5 - Web entry wiring fixed + regression test (src/tests/webEntry.test.ts, since superseded by e2e/web-notes.spec.ts)
 
 [x] 1.0 - Phase 1 - Token foundation + dark derivation
     [x] 1.1 - Copy kit tokens into src/styles/tokens/{colors,typography,spacing,markdown}.css + tokens entry (index.css)
@@ -156,5 +156,6 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 20.1 - Reproduced in a simulated iPhone 16 Pro (Chromium, safe areas 62/34, stand-in visualViewport driven like the iOS 26 keyboard; keyboard/capsule/URL-pill geometry measured from the author's screenshot): bar first appears at the screen bottom, is covered by the rising keyboard, then pops up; iOS pans 159pt so the header leaves the screen; scrolling while typing snaps back to the caret (capture-phase window scroll listener re-revealed on every scroll); onTouchStart preventDefault was a no-op (React touch listeners are passive); tapped buttons kept a dark :hover tile
     [x] 20.2 - startEditingViewport pins .app-shell to the visual viewport (height = vv.height, top = vv.pageTop); accessory bar in the layout, not fixed; predicted keyboard line one frame after focus (0.41 x innerHeight first time, then the measured height per orientation); un-pan with scrollTo(0,0); caret revealed synchronously from the DOM caret only when the visible area changes; hardware keyboard falls back to the bottom after 1.5s; native shell unpinned (WebView resize), reveal on window resize kept
     [x] 20.3 - URL-pill clearance 72 -> 50pt (pill spans 42 -> 10pt above the keyboard on iOS 26); none for Home Screen web apps or iPad; status strip hidden while typing; entrance fade (reduced-motion aware); sticky :hover removed on accessory + bottom-bar buttons; ?viewport-debug ViewportProbe
-    [x] 20.4 - Verification: typecheck, lint (pre-existing warning only), all unit tests, web e2e incl. new web-mobile-editing.spec.ts (fails on the old layout at the bar-position assertion, passes on the new); simulated before/after screenshots (dark, light, probe)
+    [x] 20.4 - Verification: typecheck, lint (pre-existing warning only), unit tests, web e2e incl. new web-mobile-editing.spec.ts (fails on the old layout at the bar-position assertion, passes on the new; attaches keyboard-up screenshot + geometry JSON); simulated before/after screenshots (dark, light, probe)
+    [x] 20.4a - Merged main's AGENTS.md testing rules (#46): after-the-fact unit tests for the controller/accessory/probe removed; their uncovered failure modes (pan refused, hardware keyboard, remembered keyboard) moved into the E2E spec; editorViewport.test.ts keeps only listed failure modes E2E can't reach (native WebView resize, scroll margins)
     [ ] 20.5 - Confirm on a real iPhone with ?viewport-debug (Safari Compact/Bottom tabs + Home Screen web app); recalibrate IOS_SAFARI_URL_PILL_CLEARANCE if the red shell edge is not the keyboard's top edge

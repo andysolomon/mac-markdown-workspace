@@ -8,21 +8,6 @@ describe("parseOpenFileArgs (issue #25)", () => {
     ).toEqual(["/tmp/a.md", "/tmp/b.markdown"]);
   });
 
-  it("keeps paths with spaces and Unicode", () => {
-    expect(
-      parseOpenFileArgs([
-        "mac-markdown-workspace",
-        "/tmp/my notes.md",
-        "/tmp/日本語.md",
-      ]),
-    ).toEqual(["/tmp/my notes.md", "/tmp/日本語.md"]);
-  });
-
-  it("treats a leading-dash Markdown name as a file", () => {
-    expect(parseOpenFileArgs(["electron", "-notes.md"])).toEqual(["-notes.md"]);
-    expect(parseOpenFileArgs(["electron", "--", "-dash.md", "ok.md"])).toEqual(["-dash.md", "ok.md"]);
-  });
-
   it("skips Electron/Chromium switches and an unpackaged entry script", () => {
     expect(
       parseOpenFileArgs([
@@ -36,21 +21,6 @@ describe("parseOpenFileArgs (issue #25)", () => {
         "/tmp/real.md",
       ]),
     ).toEqual(["/tmp/real.md"]);
-  });
-
-  it("does not treat --user-data-dir's value as a Markdown file", () => {
-    expect(
-      parseOpenFileArgs([
-        "electron",
-        "--user-data-dir=/tmp/not-a-note",
-        "main.js",
-        "/tmp/note.md",
-      ]),
-    ).toEqual(["/tmp/note.md"]);
-  });
-
-  it("dedupes identical paths and ignores empty tokens after --", () => {
-    expect(parseOpenFileArgs(["app", "a.md", "a.md", "--", "a.md", ""])).toEqual(["a.md"]);
   });
 
   it("skips macOS process-serial flags and the cwd placeholder", () => {

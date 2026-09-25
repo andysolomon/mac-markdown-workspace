@@ -209,13 +209,4 @@ describe("lostSinceLastWindow side buffer (issue #25)", () => {
     makeRendererReady(w2);
     expect(w2.webContents.send).not.toHaveBeenCalled();
   });
-
-  it("keeps parked paths on before-quit when no quit is possible (quit not reachable with a live window)", () => {
-    // Control: while the window is alive and no quit has started, paths are
-    // delivered directly, not parked.
-    const w1 = asWindow(h.windows[0]);
-    lastHandler("second-instance")({}, ["/electron", "/direct.md"], "/tmp");
-    makeRendererReady(w1);
-    expect(w1.webContents.send).toHaveBeenCalledWith("host:open-files", ["/direct.md"]);
-  });
 });
