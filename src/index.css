@@ -576,18 +576,18 @@ button.active:hover {
     max-height: 60vh;
   }
 
-  /* Editor content clears the fixed bottom bar — and, while the keyboard is
-     open, the keyboard + accessory bar (--mm-kb-inset is published by
-     MarkdownAccessoryBar; issue #14 / W-000015). The caret is re-revealed on
-     inset changes so typed text stays visible instead of iOS panning the
-     whole app. */
+  /* Editor content clears the fixed bottom tool strip. While editing, the
+     formatting bar is part of the layout (the shell is pinned above the
+     keyboard), so the caret only needs a small scroll margin there. The
+     trailing padding stays constant so entering edit mode never shifts
+     the text. */
   .mm-editor .cm-scroller {
-    /* Leave enough trailing content for CodeMirror to scroll the caret above
-       the fixed bottom chrome. The scroll-margin facet supplies the
-       asymmetric visible-area boundary; this padding supplies the scroll
-       range for the final line. */
-    padding-bottom: max(88px, var(--mm-kb-inset, 0px));
-    scroll-padding-bottom: max(88px, var(--mm-kb-inset, 0px));
+    padding-bottom: 88px;
+    scroll-padding-bottom: 88px;
+  }
+
+  html[data-mm-editing] .mm-editor .cm-scroller {
+    scroll-padding-bottom: 16px;
   }
 
   .preview {

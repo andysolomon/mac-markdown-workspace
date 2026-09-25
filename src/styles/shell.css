@@ -504,39 +504,88 @@
   background: var(--mm-sel);
 }
 
-/* Markdown keyboard accessory — rides above the on-screen keyboard (#10).
-   Vertical size is 6 + 44 + 6 = ACCESSORY_BAR_HEIGHT in editorViewport.ts.
-   An explicit height stops iOS from stretching this fixed bar across the
-   browser-chrome gap. Buttons share the row and are 44px tall.
-   The offset band below the bar is the theme background, not the white canvas. */
+/* Markdown keyboard accessory (#10) — the last row of the editor column.
+   While it is mounted, startEditingViewport (editorViewport.ts) pins the app
+   to the visible area above the keyboard, so the bar sits on the keyboard's
+   top edge without any position: fixed geometry (unreliable on iOS 26).
+   Vertical size is 6 + 44 + 6 = ACCESSORY_BAR_HEIGHT in editorViewport.ts. */
+.mm-accessory-dock {
+  flex: none;
+  background: var(--mm-bg);
+  transition:
+    opacity 160ms ease-out,
+    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* First frame of an editing session: the keyboard line is not known yet, so
+   the bar waits instead of flashing at the bottom of the screen. */
+html[data-mm-editing="pending"] .mm-accessory-dock {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: none;
+}
+
+/* iPhone Safari floats its URL pill just above the keyboard, inside the
+   visible area: keep the bar clear of it (IOS_SAFARI_URL_PILL_CLEARANCE). The
+   band is the theme background. */
+html[data-mm-keyboard][data-mm-url-pill] .mm-accessory-dock {
+  padding-bottom: 50px;
+}
+
 .mm-accessory {
-  position: fixed;
-  left: 0;
-  right: 0;
-  /* Home-indicator inset when the keyboard is closed; the keyboard offset
-     already clears that inset while the keyboard is open. */
-  bottom: max(var(--mm-kb-offset, 0px), env(safe-area-inset-bottom, 0px));
-  z-index: 45;
   display: flex;
   align-items: center;
   gap: 0;
   box-sizing: border-box;
   height: 56px;
-  max-height: 56px;
   padding: 6px 4px;
   background: var(--mm-accent);
   overflow: hidden;
 }
 
-.mm-accessory-gap {
+@media (max-width: 640px) {
+  /* Pinned editing surface: the shell is exactly the visible area — header
+     on top, text in the middle, formatting bar on the keyboard. The keyboard
+     covers the home indicator, so its inset is dropped. */
+  html[data-mm-keyboard] .app-shell {
+    position: relative;
+    top: var(--mm-vv-top, 0px);
+    height: var(--mm-vv-height, 100%);
+    padding-bottom: 0;
+  }
+
+  /* Writing mode stays quiet: the word-count strip returns with the reader. */
+  html[data-mm-editing] .mm-editor > .status-bar {
+    display: none;
+  }
+}
+
+/* ?viewport-debug — ViewportProbe readout; the red outline is the pinned
+   shell, i.e. where the app believes the visible area ends. */
+.mm-viewport-probe {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: max(var(--mm-kb-offset, 0px), env(safe-area-inset-bottom, 0px));
-  background: var(--mm-bg);
-  z-index: 44;
+  top: calc(env(safe-area-inset-top, 0px) + 48px);
+  right: 6px;
+  z-index: 100;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: var(--mm-radius-md);
+  background: rgba(0, 0, 0, 0.72);
+  color: #7ee2a8;
+  font: 11px/1.35 var(--mm-font-mono);
   pointer-events: none;
+  white-space: pre;
+}
+
+html[data-mm-viewport-debug] .app-shell {
+  outline: 2px solid #ff3b30;
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-accessory-dock {
+    transition: none;
+  }
 }
 
 .mm-acc-btn {
@@ -558,6 +607,13 @@
 .mm-acc-btn.mono {
   font-family: var(--mm-font-mono);
   font-size: 16px;
+}
+
+/* Touch browsers keep :hover on the last tapped element; the global
+   button:hover wash would leave a dark tile on every tapped control. */
+.mm-acc-btn:hover,
+.mm-bottombar .mm-bb-btn:hover {
+  background: transparent;
 }
 
 .mm-acc-btn:active {
