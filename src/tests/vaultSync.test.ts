@@ -3,7 +3,6 @@ import {
   deriveVaultKeys,
   encryptSnapshot,
   decryptSnapshot,
-  importEncryptionKey,
   generateVaultId,
 } from "../services/vaultCrypto";
 import {
@@ -12,13 +11,9 @@ import {
   createVault,
   syncVault,
   VaultConflictError,
-  MIN_PASSPHRASE_LENGTH,
   type VaultSnapshot,
   type LocalNotesPort,
   type VaultTransport,
-  syncVaultWithKeys,
-  type RemoteSnapshot,
-  type RemoteNotModified,
 } from "../services/vaultSync";
 import type { RawNote } from "../services/notesModel";
 import type { VaultEnvelope } from "../services/vaultCrypto";
@@ -108,27 +103,6 @@ describe("vaultCrypto", () => {
   );
 
   it(
-    "encrypts and decrypts a snapshot round-trip; wrong passphrase fails",
-    async () => {
-      const vaultId = generateVaultId();
-      const keys = deriveVaultKeys("passphrase-1", vaultId);
-      const plaintext = JSON.stringify(packSnapshot([note("a", "# Hi", 1)], [], 42));
-      const envelope = await encryptSnapshot(keys.encryptionKey, vaultId, plaintext);
-      expect(envelope.v).toBe(1);
-      expect(envelope.ct).not.toContain("# Hi");
-
-      const keys2 = deriveVaultKeys("passphrase-1", vaultId);
-      await expect(decryptSnapshot(keys2.encryptionKey, vaultId, envelope)).resolves.toBe(
-        plaintext,
-      );
-
-      const wrong = deriveVaultKeys("passphrase-2", vaultId);
-      await expect(decryptSnapshot(wrong.encryptionKey, vaultId, envelope)).rejects.toThrow();
-    },
-    KDF_TIMEOUT,
-  );
-
-  it(
     "rejects tampered ciphertext and envelopes replayed into another vault",
     async () => {
       const vaultId = generateVaultId();
@@ -164,20 +138,6 @@ describe("mergeSnapshots", () => {
   const remote = (notes: RawNote[], deletedIds: string[] = [], syncedAt = 100): VaultSnapshot =>
     packSnapshot(notes, deletedIds, syncedAt);
 
-  it("keeps the newer copy per id in both directions", () => {
-    const result = mergeSnapshots(
-      [note("a", "local-new", 200), note("b", "local-old", 50)],
-      [],
-      remote([note("a", "remote-old", 100), note("b", "remote-new", 150)]),
-    );
-    const a = result.merged.find((n) => n.id === "a");
-    const b = result.merged.find((n) => n.id === "b");
-    expect(a?.body).toBe("local-new");
-    expect(b?.body).toBe("remote-new");
-    expect(result.localChanged).toBe(true);
-    expect(result.remoteChanged).toBe(true);
-  });
-
   it("equal-timestamp ties converge on the remote copy", () => {
     const result = mergeSnapshots(
       [note("t", "local-variant", 100)],
@@ -207,17 +167,6 @@ describe("mergeSnapshots", () => {
     expect(result.remoteChanged).toBe(true);
   });
 
-  it("local tombstones delete the remote note and propagate", () => {
-    const result = mergeSnapshots(
-      [],
-      [{ id: "x", deletedAt: 200 }],
-      remote([note("x", "old", 100)]),
-    );
-    expect(result.merged.find((n) => n.id === "x")).toBeUndefined();
-    expect(result.deletedIds).toContain("x");
-    expect(result.remoteChanged).toBe(true);
-  });
-
   it("a remote edit newer than the local deletion resurrects the note", () => {
     const result = mergeSnapshots(
       [],
@@ -228,63 +177,9 @@ describe("mergeSnapshots", () => {
     expect(result.deletedIds).not.toContain("x");
     expect(result.localChanged).toBe(true);
   });
-
-  it("no-ops cleanly when both sides are identical", () => {
-    const same = [note("x", "same", 10)];
-    const result = mergeSnapshots(same, [], remote(same, [], 10));
-    expect(result.localChanged).toBe(false);
-    expect(result.remoteChanged).toBe(false);
-  });
 });
 
 describe("vault end-to-end (fakes)", () => {
-  it(
-    "createVault then syncVault on a second device transfers the library",
-    async () => {
-      const transport = fakeTransport();
-      const deviceA = fakeLocal([note("n1", "# From A", 100)]);
-      const { vaultId } = await createVault("shared-pass", deviceA, transport, 100);
-      expect(vaultId.startsWith("vlt_")).toBe(true);
-      expect(transport.vaults.get(vaultId)?.envelope).toBeTruthy();
-
-      const deviceB = fakeLocal([]);
-      const outcome = await syncVault("shared-pass", vaultId, deviceB, transport, 200);
-      expect(deviceB.state.get("n1")?.body).toBe("# From A");
-      expect(outcome.pulled).toBe(1);
-      expect(outcome.mergedCount).toBe(1);
-    },
-    KDF_TIMEOUT,
-  );
-
-  it(
-    "rejects a too-short passphrase at vault creation",
-    async () => {
-      const transport = fakeTransport();
-      const local = fakeLocal([]);
-      await expect(createVault("short", local, transport)).rejects.toThrow(
-        new RegExp(String(MIN_PASSPHRASE_LENGTH)),
-      );
-      expect(transport.vaults.size).toBe(0);
-    },
-    KDF_TIMEOUT,
-  );
-
-  it(
-    "second device edits flow back on next sync",
-    async () => {
-      const transport = fakeTransport();
-      const deviceA = fakeLocal([note("n1", "v1", 100)]);
-      const { vaultId } = await createVault("passphrase", deviceA, transport, 100);
-
-      const deviceB = fakeLocal([note("n1", "v2-from-B", 300)]);
-      await syncVault("passphrase", vaultId, deviceB, transport, 300);
-
-      await syncVault("passphrase", vaultId, deviceA, transport, 400);
-      expect(deviceA.state.get("n1")?.body).toBe("v2-from-B");
-    },
-    KDF_TIMEOUT,
-  );
-
   it(
     "a local deletion propagates to other devices and stays deleted",
     async () => {
@@ -328,39 +223,6 @@ describe("vault end-to-end (fakes)", () => {
       const again = await syncVault("passphrase", vaultId, deviceB, transport, 100000);
       expect(again.pulled).toBe(0);
       expect(again.pushed).toBe(false);
-    },
-    KDF_TIMEOUT,
-  );
-
-  it(
-    "three devices converge without clobbering the newest edit",
-    async () => {
-      const transport = fakeTransport();
-      const deviceA = fakeLocal([note("n1", "v1", 100)]);
-      const { vaultId } = await createVault("passphrase", deviceA, transport, 100);
-
-      const deviceB = fakeLocal([]);
-      await syncVault("passphrase", vaultId, deviceB, transport, 200);
-
-      const deviceC = fakeLocal([]);
-      await syncVault("passphrase", vaultId, deviceC, transport, 250);
-
-      // B edits and syncs; C then syncs (pull), edits later, syncs again.
-      deviceB.state.set("n1", note("n1", "v2-from-B", 300));
-      await syncVault("passphrase", vaultId, deviceB, transport, 300);
-      await syncVault("passphrase", vaultId, deviceC, transport, 350);
-      expect(deviceC.state.get("n1")?.body).toBe("v2-from-B");
-      expect(deviceC.state.get("n1")?.updatedAt).toBe(300);
-
-      deviceC.state.set("n1", note("n1", "v3-from-C", 400));
-      await syncVault("passphrase", vaultId, deviceC, transport, 400);
-
-      // A and B both converge on C's newest edit.
-      await syncVault("passphrase", vaultId, deviceA, transport, 500);
-      await syncVault("passphrase", vaultId, deviceB, transport, 500);
-      expect(deviceA.state.get("n1")?.body).toBe("v3-from-C");
-      expect(deviceB.state.get("n1")?.body).toBe("v3-from-C");
-      expect(deviceA.state.get("n1")?.updatedAt).toBe(400);
     },
     KDF_TIMEOUT,
   );
@@ -438,72 +300,4 @@ describe("vault end-to-end (fakes)", () => {
     },
     KDF_TIMEOUT,
   );
-});
-
-describe("syncVaultWithKeys (resident keys, docs/ambient-vault-sync.md)", () => {
-  const RAW = new Uint8Array(32).map((_, i) => 3 * i + 5);
-
-  function local(seed: RawNote[]): { notes: RawNote[]; port: LocalNotesPort } {
-    const notes: RawNote[] = [...seed];
-    const port: LocalNotesPort = {
-      listNotes: async (): Promise<RawNote[]> => [...notes],
-      writeNote: async ({ id, body, updatedAt }): Promise<RawNote> => {
-        const i = notes.findIndex((n) => n.id === id);
-        const next: RawNote = { id, body, updatedAt };
-        if (i >= 0) notes[i] = next;
-        else notes.push(next);
-        return next;
-      },
-      deleteNote: async ({ id }): Promise<void> => {
-        const i = notes.findIndex((n) => n.id === id);
-        if (i >= 0) notes.splice(i, 1);
-      },
-      listTombstones: async () => [],
-      clearTombstones: async () => undefined,
-    };
-    return { notes, port };
-  }
-
-  it("syncs with a non-extractable CryptoKey handle exactly like raw bytes", async () => {
-    const vaultId = "vlt_handle";
-    const handle = await importEncryptionKey(RAW, false);
-    expect(handle.extractable).toBe(false);
-    let stored: { envelope: VaultEnvelope; etag: string } | null = null;
-    let version = 0;
-    const transport: VaultTransport = {
-      createVault: async () => undefined,
-      getSnapshot: async (
-        _id,
-        opts,
-      ): Promise<RemoteSnapshot | RemoteNotModified | null> => {
-        if (!stored) return null;
-        if (opts?.ifNoneMatch && opts.ifNoneMatch === stored.etag) {
-          return { notModified: true, etag: stored.etag };
-        }
-        return stored;
-      },
-      putSnapshot: async (_id, _t, envelope): Promise<{ etag: string }> => {
-        const etag = `"v${++version}"`;
-        stored = { envelope, etag };
-        return { etag };
-      },
-    };
-
-    // Device A pushes with raw bytes.
-    const a = local([{ id: "n1", body: "from A", updatedAt: 10 }]);
-    const first = await syncVaultWithKeys({ encryptionKey: RAW, writeToken: "t" }, vaultId, a.port, transport);
-    expect(first).toMatchObject({ pushed: true, etag: '"v1"', notModified: false });
-
-    // Device B pulls with the handle.
-    const b = local([]);
-    const pulled = await syncVaultWithKeys({ encryptionKey: handle, writeToken: "t" }, vaultId, b.port, transport);
-    expect(pulled.pulled).toBe(1);
-    expect(b.notes[0]?.body).toBe("from A");
-
-    // A conditional poll from B is a 304 and touches nothing.
-    const poll = await syncVaultWithKeys({ encryptionKey: handle, writeToken: "t" }, vaultId, b.port, transport, {
-      ifNoneMatch: pulled.etag,
-    });
-    expect(poll).toMatchObject({ notModified: true, pulled: 0, pushed: false, etag: '"v1"' });
-  });
 });

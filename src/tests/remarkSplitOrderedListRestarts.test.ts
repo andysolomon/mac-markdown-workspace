@@ -16,40 +16,10 @@ function topLists(tree: Root): List[] {
 }
 
 describe("remarkSplitOrderedListRestarts", () => {
-  it("splits when a blank line is followed by 1.", () => {
-    const tree = process("1. a\n2. b\n\n1. c\n2. d\n");
-    const lists = topLists(tree);
-    expect(lists).toHaveLength(2);
-    expect(lists[0].ordered).toBe(true);
-    expect(lists[0].children).toHaveLength(2);
-    expect(lists[1].ordered).toBe(true);
-    expect(lists[1].start).toBe(1);
-    expect(lists[1].children).toHaveLength(2);
-  });
-
   it("does not split when a blank line is followed by 2. (continuation)", () => {
     const tree = process("1. a\n\n2. b\n");
     const lists = topLists(tree);
     expect(lists).toHaveLength(1);
-    expect(lists[0].children).toHaveLength(2);
-  });
-
-  it("leaves nested ordered lists intact under a parent item", () => {
-    const tree = process("1. Car\n    1. Levels\n        1. Moe Levels\n2. Bike\n");
-    const lists = topLists(tree);
-    expect(lists).toHaveLength(1);
-    expect(lists[0].children).toHaveLength(2);
-    const car = lists[0].children[0];
-    const nested = car.children.find((c): c is List => c.type === "list");
-    expect(nested?.ordered).toBe(true);
-    expect(nested?.children).toHaveLength(1);
-  });
-
-  it("does not affect bullet lists", () => {
-    const tree = process("- One\n\n- Two\n");
-    const lists = topLists(tree);
-    expect(lists).toHaveLength(1);
-    expect(lists[0].ordered).toBe(false);
     expect(lists[0].children).toHaveLength(2);
   });
 

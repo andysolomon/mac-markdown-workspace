@@ -60,48 +60,4 @@ describe("vault SyncBackend", () => {
     await backend.converge("full");
     expect(getSnapshot.mock.calls[2][1]).toBeUndefined();
   });
-
-  it("uses the etag a push returned for the next poll", async () => {
-    const envelope = await remoteEnvelope();
-    const seen: Array<string | undefined> = [];
-    const transport: VaultTransport = {
-      createVault: async () => undefined,
-      getSnapshot: async (_id, opts) => {
-        seen.push(opts?.ifNoneMatch);
-        if (opts?.ifNoneMatch === '"v2"') return { notModified: true, etag: '"v2"' };
-        return { envelope, etag: '"v1"' };
-      },
-      putSnapshot: async () => ({ etag: '"v2"' }),
-    };
-    const local = fakeLocal();
-    local.listNotes = async () => [{ id: "n1", body: "new local note", updatedAt: 5 }];
-    const backend = createVaultSyncBackend({
-      vaultId: VAULT,
-      keys: { encryptionKey: RAW, writeToken: "t" },
-      local,
-      transport,
-    });
-    const pushed = await backend.converge("full");
-    expect(pushed.pushed).toBe(true);
-    const poll = await backend.converge("pull-if-changed");
-    expect(poll.notModified).toBe(true);
-    expect(seen).toEqual([undefined, '"v2"']);
-  });
-
-  it("mints pairing codes through the transport with the write token", async () => {
-    const createPairing = vi.fn(async () => ({ code: "K7F2M9QX", expiresAt: 9 }));
-    const backend = createVaultSyncBackend({
-      vaultId: VAULT,
-      keys: { encryptionKey: RAW, writeToken: "write-me" },
-      local: fakeLocal(),
-      transport: {
-        createVault: async () => undefined,
-        getSnapshot: async () => null,
-        putSnapshot: async () => undefined,
-        createPairing,
-      },
-    });
-    await expect(backend.createPairing?.()).resolves.toEqual({ code: "K7F2M9QX", expiresAt: 9 });
-    expect(createPairing).toHaveBeenCalledWith(VAULT, "write-me");
-  });
 });

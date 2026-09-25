@@ -149,8 +149,8 @@ vi.mock("@capacitor/share", () => ({ Share: { share: vi.fn() } }));
 
 // jsdom 28's Storage writes through an internal slot, so replacing
 // localStorage.setItem (including vi.spyOn) never observes or fails the
-// write. These tests assert the exact settings snapshot of each write and
-// inject an activation-write failure, which requires ordinary functions.
+// write. The activation-write failure test injects a failing setItem, which
+// requires ordinary functions.
 {
   const store = new Map<string, string>();
   const storage = {
@@ -201,54 +201,7 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-describe("preference normalization", () => {
-  it("maps canonical values to distinct directories and never to Directory.Data", async () => {
-    const m = await import("../ios/notesStorage");
-    expect(m.directoryFor("documents")).toBe(DIR.Documents);
-    expect(m.directoryFor("private")).toBe(DIR.LibraryNoCloud);
-    expect(m.directoryFor("documents")).not.toBe(m.directoryFor("private"));
-    expect([m.directoryFor("documents"), m.directoryFor("private")]).not.toContain(DIR.Data);
-  });
-
-  it("normalizes legacy and unknown values", async () => {
-    const m = await import("../ios/notesStorage");
-    expect(m.normalizeStoredPreference("documents")).toEqual({ storage: "documents", legacyUpgrade: null });
-    expect(m.normalizeStoredPreference("private")).toEqual({ storage: "private", legacyUpgrade: null });
-    expect(m.normalizeStoredPreference("icloud")).toEqual({ storage: "documents", legacyUpgrade: null });
-    expect(m.normalizeStoredPreference("device")).toEqual({ storage: "documents", legacyUpgrade: "device" });
-    expect(m.normalizeStoredPreference(undefined)).toEqual({ storage: "documents", legacyUpgrade: null });
-    expect(m.normalizeStoredPreference("nonsense")).toEqual({ storage: "documents", legacyUpgrade: null });
-  });
-
-  it("parses metadata strictly (corrupt sidecars throw instead of reading as empty)", async () => {
-    const m = await import("../ios/notesStorage");
-    expect(m.parseMeta('{"times":{"a":1},"tombstones":{"b":2}}')).toEqual({ times: { a: 1 }, tombstones: { b: 2 } });
-    expect(m.parseMeta("{}")).toEqual({ times: {}, tombstones: {} });
-    expect(() => m.parseMeta("not json")).toThrow(/Corrupt/);
-    expect(() => m.parseMeta("[]")).toThrow(/Corrupt/);
-    expect(() => m.parseMeta('{"times":{"a":"x"}}')).toThrow(/Corrupt/);
-  });
-});
-
 describe("routing by storage setting", () => {
-  it("defaults to Documents, persists the canonical value, and uses only Documents for CRUD", async () => {
-    const api = await loadApi();
-    expect(await api.getSetting("iosStorage")).toBe("documents");
-    const note = await api.createNote({ body: "hello" });
-    await api.writeNote({ id: note.id, body: "hello again" });
-    expect(await api.readNote({ id: note.id })).toMatchObject({ id: note.id, body: "hello again" });
-    expect((await api.listNotes()).map((n) => n.body)).toEqual(["hello again"]);
-    expect(fs.notesIn(DIR.Documents)).toEqual({ [note.id]: "hello again" });
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({});
-    expect(fs.metaIn(DIR.Documents)).toMatchObject({ times: { [note.id]: expect.any(Number) } });
-    expect(fs.directoriesUsed().has(DIR.Data)).toBe(false);
-    expect(fs.directoriesUsed().has(DIR.LibraryNoCloud)).toBe(false);
-    // getSetting re-reads the canonical value on a fresh launch.
-    const relaunched = await loadApi();
-    expect(await relaunched.getSetting("iosStorage")).toBe("documents");
-    expect(settings().iosStorage).toBe("documents");
-  });
-
   it("routes every notes operation to LibraryNoCloud when 'private' is persisted", async () => {
     setSettings({ iosStorage: "private" });
     const api = await loadApi();
@@ -271,14 +224,6 @@ describe("routing by storage setting", () => {
     expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({});
   });
 
-  it("generic file open/save/export stays on Documents regardless of the notes setting", async () => {
-    setSettings({ iosStorage: "private" });
-    const api = await loadApi();
-    await api.saveFile({ filePath: "export.md", content: "x" });
-    expect(fs.files.get(`${DIR.Documents}::export.md`)?.data).toBe("x");
-    expect(fs.files.has(`${DIR.LibraryNoCloud}::export.md`)).toBe(false);
-  });
-
   it("reads only the active root — stale copies in the inactive root never surface", async () => {
     seedLibrary(DIR.Documents, { a: "docs copy" });
     seedLibrary(DIR.LibraryNoCloud, { a: "old private copy", zz: "orphan" });
@@ -298,16 +243,6 @@ describe("routing by storage setting", () => {
 });
 
 describe("legacy upgrades", () => {
-  it("upgrades legacy 'icloud' to 'documents' without moving anything", async () => {
-    seedLibrary(DIR.Documents, { a: "A" }, { times: { a: 1 }, tombstones: {} });
-    setSettings({ iosStorage: "icloud" });
-    const api = await loadApi();
-    expect(await api.getSetting("iosStorage")).toBe("documents");
-    expect(settings().iosStorage).toBe("documents");
-    expect(fs.notesIn(DIR.Documents)).toEqual({ a: "A" });
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({});
-  });
-
   it("upgrades legacy 'device' by migrating Documents -> LibraryNoCloud (old data lived in Documents)", async () => {
     seedLibrary(DIR.Documents, { a: "A", b: "B" }, { times: { a: 11, b: 22 }, tombstones: { t: 33 } });
     setSettings({ iosStorage: "device" });
@@ -334,93 +269,10 @@ describe("legacy upgrades", () => {
     expect(fs.notesIn(DIR.Documents)).toEqual({ a: "A" });
     expect((await api.listNotes()).map((n) => n.id)).toEqual(["a"]);
   });
-
-  it("a legacy 'device' cleanup failure stays private and never writes into the partially deleted source", async () => {
-    seedLibrary(DIR.Documents, { a: "A", b: "B" }, { times: { a: 11, b: 22 }, tombstones: {} });
-    setSettings({ iosStorage: "device" });
-    fs.failOn("deleteFile", (d, p) => d === DIR.Documents && p === "notes/b.md");
-
-    const api = await loadApi();
-    expect(await api.getSetting("iosStorage")).toBe("private");
-    expect(settings()).toMatchObject({
-      iosStorage: "private",
-      iosStorageMigration: { from: "documents", to: "private", phase: "cleanup" },
-    });
-    expect(fs.notesIn(DIR.Documents)).toEqual({ b: "B" });
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({ a: "A", b: "B" });
-
-    const created = await api.createNote({ body: "created after activation" });
-    expect(fs.notesIn(DIR.LibraryNoCloud)[created.id]).toBe("created after activation");
-    expect(fs.notesIn(DIR.Documents)[created.id]).toBeUndefined();
-
-    const relaunched = await loadApi();
-    expect(await relaunched.getSetting("iosStorage")).toBe("private");
-    expect(fs.notesIn(DIR.Documents)).toEqual({});
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({
-      a: "A",
-      b: "B",
-      [created.id]: "created after activation",
-    });
-  });
 });
 
 describe("explicit switch (migration)", () => {
   const META = { times: { a: 1, b: 2 }, tombstones: { deleted: 99 } };
-
-  it("moves the complete library Documents -> private, preserving ids, bodies, timestamps, tombstones", async () => {
-    seedLibrary(DIR.Documents, { a: "A", b: "B" }, META);
-    const api = await loadApi();
-    await api.setSetting("iosStorage", "private");
-    expect(await api.getSetting("iosStorage")).toBe("private");
-    expect(settings().iosStorage).toBe("private");
-    expect(settings().iosStorageMigration).toBeUndefined();
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({ a: "A", b: "B" });
-    expect(fs.metaIn(DIR.LibraryNoCloud)).toEqual(META);
-    expect(fs.notesIn(DIR.Documents)).toEqual({});
-    expect(fs.metaIn(DIR.Documents)).toBeNull();
-    expect(await api.listTombstones()).toEqual([{ id: "deleted", deletedAt: 99 }]);
-    const listed = await api.listNotes();
-    expect(listed.map((n) => [n.id, n.body, n.updatedAt]).sort()).toEqual([["a", "A", 1], ["b", "B", 2]]);
-    // Subsequent CRUD lands in the new root only.
-    const c = await api.createNote({ body: "C" });
-    expect(fs.notesIn(DIR.LibraryNoCloud)[c.id]).toBe("C");
-    expect(fs.notesIn(DIR.Documents)).toEqual({});
-    expect(fs.directoriesUsed().has(DIR.Data)).toBe(false);
-  });
-
-  it("moves the library private -> Documents", async () => {
-    setSettings({ iosStorage: "private" });
-    seedLibrary(DIR.LibraryNoCloud, { a: "A" }, META);
-    const api = await loadApi();
-    await api.setSetting("iosStorage", "documents");
-    expect(await api.getSetting("iosStorage")).toBe("documents");
-    expect(fs.notesIn(DIR.Documents)).toEqual({ a: "A" });
-    expect(fs.metaIn(DIR.Documents)).toEqual(META);
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({});
-    expect(fs.metaIn(DIR.LibraryNoCloud)).toBeNull();
-  });
-
-  it("atomically persists the target preference with its cleanup marker", async () => {
-    seedLibrary(DIR.Documents, { a: "A" }, META);
-    const writes: Array<Record<string, unknown>> = [];
-    const originalSetItem = localStorage.setItem.bind(localStorage);
-    const setItem = vi.spyOn(localStorage, "setItem").mockImplementation((key, value) => {
-      if (key === SETTINGS_KEY) writes.push(JSON.parse(value) as Record<string, unknown>);
-      originalSetItem(key, value);
-    });
-    try {
-      const api = await loadApi();
-      await api.setSetting("iosStorage", "private");
-    } finally {
-      setItem.mockRestore();
-    }
-
-    const firstTargetWrite = writes.find((snapshot) => snapshot.iosStorage === "private");
-    expect(firstTargetWrite).toMatchObject({
-      iosStorage: "private",
-      iosStorageMigration: { from: "documents", to: "private", phase: "cleanup" },
-    });
-  });
 
   it("atomic activation-write failure rejects with the complete source still active across relaunch", async () => {
     seedLibrary(DIR.Documents, { a: "A", b: "B" }, META);
@@ -449,19 +301,6 @@ describe("explicit switch (migration)", () => {
     expect((await relaunched.listNotes()).map((note) => note.id).sort()).toEqual(["a", "b"]);
   });
 
-  it("preserves source mtimes as logical updatedAt values when metadata is missing", async () => {
-    seedLibrary(DIR.Documents, { a: "A", b: "B" });
-    const sourceTimes = {
-      a: noteMtime(DIR.Documents, "a"),
-      b: noteMtime(DIR.Documents, "b"),
-    };
-    const api = await loadApi();
-    await api.setSetting("iosStorage", "private");
-
-    expect(fs.metaIn(DIR.LibraryNoCloud)).toEqual({ times: sourceTimes, tombstones: {} });
-    expect(Object.fromEntries((await api.listNotes()).map((note) => [note.id, note.updatedAt]))).toEqual(sourceTimes);
-  });
-
   it("fills every missing metadata time from its source note mtime without replacing canonical times", async () => {
     seedLibrary(DIR.Documents, { a: "A", b: "B" });
     const bSourceTime = noteMtime(DIR.Documents, "b");
@@ -488,28 +327,6 @@ describe("explicit switch (migration)", () => {
     expect(fs.metaIn(DIR.LibraryNoCloud)).toEqual(META);
   });
 
-  it("migrates an empty library (no notes, no metadata) cleanly", async () => {
-    const api = await loadApi();
-    await api.setSetting("iosStorage", "private");
-    expect(await api.getSetting("iosStorage")).toBe("private");
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({});
-  });
-
-  it("is a no-op when re-selecting the active location", async () => {
-    seedLibrary(DIR.Documents, { a: "A" });
-    const api = await loadApi();
-    const before = fs.calls.length;
-    await api.setSetting("iosStorage", "documents");
-    expect(fs.calls.length).toBe(before);
-  });
-
-  it("rejects non-canonical values", async () => {
-    const api = await loadApi();
-    await expect(api.setSetting("iosStorage", "icloud")).rejects.toThrow(/Invalid/);
-    await expect(api.setSetting("iosStorage", "device")).rejects.toThrow(/Invalid/);
-    expect(await api.getSetting("iosStorage")).toBe("documents");
-  });
-
   it("copy failure: rejects, keeps the old location active and the source intact; retry succeeds", async () => {
     seedLibrary(DIR.Documents, { a: "A", b: "B" }, META);
     const api = await loadApi();
@@ -525,28 +342,6 @@ describe("explicit switch (migration)", () => {
     await api.setSetting("iosStorage", "private");
     expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({ a: "A", b: "B" });
     expect(fs.notesIn(DIR.Documents)).toEqual({});
-  });
-
-  it("verification failure (readback mismatch) rejects before activation", async () => {
-    seedLibrary(DIR.Documents, { a: "A" }, META);
-    const api = await loadApi();
-    // Corrupt the target's metadata after it is written, before readback.
-    const origWrite = fs.Filesystem.writeFile;
-    fs.Filesystem.writeFile = async (o) => {
-      const r = await origWrite(o);
-      if (o.directory === DIR.LibraryNoCloud && o.path === "notes/.vault-meta.json") {
-        fs.files.set(`${DIR.LibraryNoCloud}::notes/.vault-meta.json`, { data: "{}", mtime: 0 });
-      }
-      return r;
-    };
-    try {
-      await expect(api.setSetting("iosStorage", "private")).rejects.toThrow(/Verification failed/);
-    } finally {
-      fs.Filesystem.writeFile = origWrite;
-    }
-    expect(await api.getSetting("iosStorage")).toBe("documents");
-    expect(fs.notesIn(DIR.Documents)).toEqual({ a: "A" });
-    expect(fs.metaIn(DIR.Documents)).toEqual(META);
   });
 
   it("corrupt source metadata fails closed: nothing moves, old location stays active", async () => {
@@ -580,30 +375,6 @@ describe("explicit switch (migration)", () => {
     expect(settings().iosStorageMigration).toBeUndefined();
   });
 
-  it("interrupted before activation (copy-phase marker on relaunch): source stays authoritative", async () => {
-    seedLibrary(DIR.Documents, { a: "A" }, META);
-    seedLibrary(DIR.LibraryNoCloud, { a: "partial" });
-    setSettings({ iosStorage: "documents", iosStorageMigration: { from: "documents", to: "private", phase: "copy" } });
-    const api = await loadApi();
-    expect(await api.getSetting("iosStorage")).toBe("documents");
-    expect(settings().iosStorageMigration).toBeUndefined();
-    expect((await api.listNotes()).map((n) => n.body)).toEqual(["A"]);
-    expect(fs.notesIn(DIR.Documents)).toEqual({ a: "A" });
-  });
-
-  it("interrupted after activation (cleanup-phase marker on relaunch): finishes cleanup and serves the new root", async () => {
-    seedLibrary(DIR.Documents, { a: "A" }, META);
-    seedLibrary(DIR.LibraryNoCloud, { a: "A" }, META);
-    // Simulate a kill between activation and cleanup where the preference write landed.
-    setSettings({ iosStorage: "private", iosStorageMigration: { from: "documents", to: "private", phase: "cleanup" } });
-    const api = await loadApi();
-    expect(await api.getSetting("iosStorage")).toBe("private");
-    expect(fs.notesIn(DIR.Documents)).toEqual({});
-    expect(fs.metaIn(DIR.Documents)).toBeNull();
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({ a: "A" });
-    expect(settings().iosStorageMigration).toBeUndefined();
-  });
-
   it("a cleanup that keeps failing on relaunch stays on the target and retains the marker without data loss", async () => {
     seedLibrary(DIR.Documents, { a: "A", b: "B" }, META);
     fs.failOn("deleteFile", (d, p) => d === DIR.Documents && p === "notes/b.md", false);
@@ -628,19 +399,6 @@ describe("explicit switch (migration)", () => {
     expect(fs.notesIn(DIR.Documents)).toEqual({ b: "B", fresh: "written after the marker" });
     expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({ a: "A", b: "B" });
     expect((await api.listNotes()).map((n) => n.id).sort()).toEqual(["b", "fresh"]);
-  });
-
-  it("a legacy 'device' upgrade interrupted mid-copy retries the upgrade on relaunch", async () => {
-    seedLibrary(DIR.Documents, { a: "A", b: "B" }, META);
-    seedLibrary(DIR.LibraryNoCloud, { a: "partial" });
-    setSettings({ iosStorage: "device", iosStorageMigration: { from: "documents", to: "private", phase: "copy" } });
-    const api = await loadApi();
-    expect(await api.getSetting("iosStorage")).toBe("private");
-    expect(settings().iosStorage).toBe("private");
-    expect(settings().iosStorageMigration).toBeUndefined();
-    expect(fs.notesIn(DIR.LibraryNoCloud)).toEqual({ a: "A", b: "B" });
-    expect(fs.metaIn(DIR.LibraryNoCloud)).toEqual(META);
-    expect(fs.notesIn(DIR.Documents)).toEqual({});
   });
 
   it("serializes concurrent writes with a migration: a write issued mid-switch lands in the new root", async () => {

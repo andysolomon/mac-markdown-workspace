@@ -31,7 +31,7 @@ bun run test:e2e          # playwright, config e2e/playwright.config.ts
 
 # Single test file / name
 bunx vitest run src/tests/notesModel.test.ts
-bunx vitest run -t "extracts inline hashtags"
+bunx vitest run -t "does NOT treat heading markers as tags"
 ```
 
 > Use `bun run test`, never `bun test`. `bun test` invokes Bun's built-in runner, which has no jsdom environment and wrongly picks up the Playwright specs in `e2e/` — producing spurious `document is not defined` and `test.describe()` failures.
@@ -83,6 +83,7 @@ Duplicate `@codemirror/language` instances make `syntaxHighlighting()` silently 
 
 ## Working conventions
 
+- **Testing rules: @AGENTS.md** — E2E-first; no unit tests written after the code; isolated tests only for listed failure modes the E2E suite can't reach.
 - Keep `IMPLEMENTATION_PLAN.md` and `progress.txt` in sync when scope changes; work is tracked as `[W-0000NN]` GitHub issues (Gherkin ACs) — reference `Closes #N` in commits.
 - Components are `React.memo`-wrapped where decomposed for perf — preserve prop stability.
 - Verify phases in the running app (agent-browser / Playwright WebKit / real Safari via safaridriver), not just tests.

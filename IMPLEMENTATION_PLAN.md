@@ -20,7 +20,7 @@
 
 ## 2. Current baseline (what exists)
 
-- **Foundation shipped (v1):** React 19 single-document editor; one platform-agnostic component tree behind `window.appApi` (`AppApi` in `shared/types/ipc.ts`) with three shims — Electron (`preload.ts` + `main.ts` IPC), web (`src/web/browserApi.ts`), iOS (`src/ios/capacitorApi.ts`). Web entry wiring fixed + regression-tested (`src/tests/webEntry.test.ts`).
+- **Foundation shipped (v1):** React 19 single-document editor; one platform-agnostic component tree behind `window.appApi` (`AppApi` in `shared/types/ipc.ts`) with three shims — Electron (`preload.ts` + `main.ts` IPC), web (`src/web/browserApi.ts`), iOS (`src/ios/capacitorApi.ts`). Web entry wiring fixed + regression-tested (`e2e/web-notes.spec.ts`).
 - **State:** `documentStore` (Zustand) holds one doc (content/savedContent/filePath/viewMode/cursorPosition); dirty is derived. `themeStore` = light/dark/system via `data-theme`.
 - **Editing surfaces:** CodeMirror 6 source, react-markdown preview (remark/rehype: gfm, math, emoji; KaTeX; Mermaid via `MermaidBlock`).
 - **Styling:** `src/styles/themes.css` (color-only tokens, 33 lines) + `src/index.css` (426 lines, flat class selectors, hardcoded spacing/type/radii).

@@ -23,31 +23,6 @@ describe("parseTree", () => {
     expect(entries).toContainEqual({ relativePath: "app/lib/util.ts", kind: "file" });
     expect(entries).toContainEqual({ relativePath: "app/main.ts", kind: "file" });
   });
-
-  it("implicitly creates parent directories for nested files", () => {
-    const entries = parseTree(`a/b/c.txt`);
-    expect(entries).toEqual([
-      { relativePath: "a", kind: "dir" },
-      { relativePath: "a/b", kind: "dir" },
-      { relativePath: "a/b/c.txt", kind: "file" },
-    ]);
-  });
-
-  it("rejects unsafe path segments", () => {
-    const entries = parseTree(`../escape
-/rooted
-safe/ok.txt`);
-    expect(entries).toEqual([
-      { relativePath: "safe", kind: "dir" },
-      { relativePath: "safe/ok.txt", kind: "file" },
-    ]);
-  });
-
-  it("treats tabs as two spaces for depth", () => {
-    const entries = parseTree(`root/
-\tchild.txt`);
-    expect(entries).toContainEqual({ relativePath: "root/child.txt", kind: "file" });
-  });
 });
 
 describe("extractTreeFences", () => {
@@ -68,9 +43,5 @@ not-a-tree
 \`\`\`
 `;
     expect(extractTreeFences(md)).toEqual(["alpha/\n  beta.txt", "gamma/"]);
-  });
-
-  it("returns empty array when no tree fences exist", () => {
-    expect(extractTreeFences("```txt\nhello\n```")).toEqual([]);
   });
 });

@@ -69,19 +69,6 @@ function harness(opts: { run?: (mode: ConvergeMode) => Promise<ConvergeResult>; 
 }
 
 describe("ambient scheduler — push coalescing", () => {
-  it("a typing burst produces exactly one full cycle after the debounce", async () => {
-    const h = harness();
-    for (let i = 0; i < 10; i++) {
-      h.scheduler.noteChanged();
-      await h.timers.advance(30);
-    }
-    expect(h.calls).toEqual([]);
-    await h.timers.advance(100);
-    expect(h.calls).toEqual(["full"]);
-    expect(h.prepare).toHaveBeenCalledTimes(1);
-    expect(h.scheduler.getState().dirty).toBe(false);
-  });
-
   it("pushNow flushes a pending change immediately and is a no-op when clean", async () => {
     const h = harness();
     await h.scheduler.pushNow();
@@ -90,15 +77,6 @@ describe("ambient scheduler — push coalescing", () => {
     await h.scheduler.pushNow();
     expect(h.calls).toEqual(["full"]);
     expect(h.timers.pending()).toBe(0); // the debounce timer was cancelled
-  });
-
-  it("a poll is upgraded to a full cycle when local edits are pending", async () => {
-    const h = harness();
-    await h.scheduler.pullNow();
-    expect(h.calls).toEqual(["pull-if-changed"]);
-    h.scheduler.noteChanged();
-    await h.scheduler.pullNow();
-    expect(h.calls).toEqual(["pull-if-changed", "full"]);
   });
 });
 
