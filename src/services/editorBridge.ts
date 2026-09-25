@@ -24,14 +24,48 @@ function focusAndReveal(view: EditorView): void {
   });
 }
 
-/** Scroll the caret back into the visible area (called when the keyboard
-    inset changes and after accessory insertions — issue #14 / W-000015). */
+/** Scroll the caret back into the visible area (after accessory insertions —
+    issue #14 / W-000015). Runs in CodeMirror's next measure cycle. */
 export function scrollCursorIntoView(): void {
   const view = activeView;
   if (!view) return;
   view.dispatch({
     effects: EditorView.scrollIntoView(view.state.selection.main.head, { y: "nearest" }),
   });
+}
+
+/** The caret's on-screen rect. On a tap the DOM selection is placed before
+    CodeMirror reads it back, so prefer the live DOM caret. */
+function caretRect(view: EditorView): { top: number; bottom: number } | null {
+  const selection = view.dom.ownerDocument.getSelection?.();
+  if (selection && selection.rangeCount > 0 && selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    if (view.contentDOM.contains(range.startContainer)) {
+      const rect = range.getClientRects()[0] ?? range.getBoundingClientRect();
+      if (rect && rect.height > 0) return { top: rect.top, bottom: rect.bottom };
+    }
+  }
+  const coords = view.coordsAtPos(view.state.selection.main.head);
+  return coords ? { top: coords.top, bottom: coords.bottom } : null;
+}
+
+/**
+ * Scroll the editor so the caret sits inside its visible box, synchronously.
+ * Used when the visible editing area changes (keyboard up/down) so the caret
+ * is already clear of the keyboard when iOS decides whether to pan the page.
+ */
+export function revealCaretNow(bottomMargin = 16): void {
+  const view = activeView;
+  if (!view) return;
+  const caret = caretRect(view);
+  if (!caret) return;
+  const box = view.scrollDOM.getBoundingClientRect();
+  const top = box.top + 8;
+  const bottom = box.bottom - bottomMargin;
+  let delta = 0;
+  if (caret.bottom > bottom) delta = caret.bottom - bottom;
+  else if (caret.top < top) delta = caret.top - top;
+  if (Math.abs(delta) >= 1) view.scrollDOM.scrollTop += delta;
 }
 
 /** Wrap the selection (or insert a pair and park the cursor inside). */

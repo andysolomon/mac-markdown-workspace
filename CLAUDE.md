@@ -79,7 +79,7 @@ Duplicate `@codemirror/language` instances make `syntaxHighlighting()` silently 
 
 ## Shell components (`src/components/shell/`)
 
-`NotesShell` (container) · `Sidebar`/`Tag` · `DocList`/`DocListItem` · `EditorChrome` (nav · Aa · optional inline Toolbar · + · ⋯; list icon toggles BOTH panels → full-width editor) · `FontPopover` · `SettingsPanel` · `BottomBar` + `MarkdownAccessoryBar` (mobile, swap on editor focus; accessory inserts via `src/services/editorBridge.ts` — buttons use mousedown `preventDefault` to keep editor focus). Layout CSS in `src/styles/shell.css`; mobile collapse at the 640px breakpoint is tracked with a **live matchMedia listener** (never sample width once at mount).
+`NotesShell` (container) · `Sidebar`/`Tag` · `DocList`/`DocListItem` · `EditorChrome` (nav · Aa · optional inline Toolbar · + · ⋯; list icon toggles BOTH panels → full-width editor) · `FontPopover` · `SettingsPanel` · `BottomBar` + `MarkdownAccessoryBar` (mobile, swap on editor focus; accessory inserts via `src/services/editorBridge.ts` — buttons use mousedown `preventDefault` to keep editor focus). While the accessory is mounted, `startEditingViewport` (`src/services/editorViewport.ts`) **pins `.app-shell` to the visual viewport** and the bar is the last row of the editor column — never position it with `position: fixed; bottom` (iOS 26's fixed-bottom edge and `innerHeight` disagree with `visualViewport`), and never re-reveal the caret on scroll events (it fights the reader). `?viewport-debug` shows the live geometry on a device. Layout CSS in `src/styles/shell.css`; mobile collapse at the 640px breakpoint is tracked with a **live matchMedia listener** (never sample width once at mount).
 
 ## Working conventions
 

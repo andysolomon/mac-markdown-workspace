@@ -1,5 +1,6 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { NotesShell } from "./shell/NotesShell";
+import { ViewportProbe, viewportProbeRequested } from "./shell/ViewportProbe";
 import {
   useThemeStore,
   FONT_OPTIONS,
@@ -137,6 +138,9 @@ export function App() {
 
   useKeyboardShortcuts();
 
+  // On-device geometry readout for the mobile editing viewport (?viewport-debug).
+  const [showViewportProbe] = useState(viewportProbeRequested);
+
   // Drag-and-drop .md files to open
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -178,6 +182,7 @@ export function App() {
       onDrop={handleDrop}
     >
       <NotesShell />
+      {showViewportProbe ? <ViewportProbe /> : null}
     </div>
   );
 }
