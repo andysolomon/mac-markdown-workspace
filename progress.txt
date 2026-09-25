@@ -11,7 +11,7 @@ across Electron / web / iOS. Plan: IMPLEMENTATION_PLAN.md.
     [x] 0.2 - Single-doc store, CodeMirror source, Milkdown WYSIWYG, react-markdown preview
     [x] 0.3 - File open/save/saveAs + TXT/PDF/DOCX export per platform
     [x] 0.4 - light/dark/system themes (color-only tokens)
-    [x] 0.5 - Web entry wiring fixed + regression test (src/tests/webEntry.test.ts)
+    [x] 0.5 - Web entry wiring fixed + regression test (src/tests/webEntry.test.ts, since superseded by e2e/web-notes.spec.ts)
 
 [x] 1.0 - Phase 1 - Token foundation + dark derivation
     [x] 1.1 - Copy kit tokens into src/styles/tokens/{colors,typography,spacing,markdown}.css + tokens entry (index.css)

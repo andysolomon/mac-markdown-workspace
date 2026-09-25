@@ -31,7 +31,7 @@ bun run test:e2e          # playwright, config e2e/playwright.config.ts
 
 # Single test file / name
 bunx vitest run src/tests/notesModel.test.ts
-bunx vitest run -t "extracts inline hashtags"
+bunx vitest run -t "does NOT treat heading markers as tags"
 ```
 
 > Use `bun run test`, never `bun test`. `bun test` invokes Bun's built-in runner, which has no jsdom environment and wrongly picks up the Playwright specs in `e2e/` — producing spurious `document is not defined` and `test.describe()` failures.
