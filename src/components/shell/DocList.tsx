@@ -22,6 +22,8 @@ export function DocList({
 }) {
   // The one row whose swipe-to-delete action is showing, if any.
   const [revealedId, setRevealedId] = useState<string | null>(null);
+  // A revealed row that search or a tag filter hides must come back closed.
+  if (revealedId !== null && !notes.some((n) => n.id === revealedId)) setRevealedId(null);
 
   return (
     <section className="mm-doclist">

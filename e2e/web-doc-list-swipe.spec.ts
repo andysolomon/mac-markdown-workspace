@@ -10,7 +10,10 @@ import { expect, test, type CDPSession, type Page } from "@playwright/test";
  * Delete, one row at a time, and scrolling puts an open row away.
  *
  * Touches are real touch input dispatched through CDP, so Chromium runs its
- * own scroll gesture off them — the handlers see what a phone would send.
+ * own scroll gesture off them and the handlers see real touch events. How
+ * `touch-action` and native scrolling interact is Chromium's here, not iOS
+ * WebKit's — that half (a swipe's wobble must not scroll the list) needs a
+ * check on a real iPhone.
  *
  * Artifact: a screenshot and a JSON snapshot (list scroll + every row's
  * horizontal offset) right after the drifting scroll, from 30 fixed notes in
@@ -129,6 +132,17 @@ test("scrolling the list with a thumb that drifts sideways never reveals Delete"
   await openSeededList(page);
   const cdp = await page.context().newCDPSession(page);
 
+  // At the top, pulling down scrolls nothing — no scroll event can rescue a
+  // drift-heavy drag (80pt sideways over 130pt down); only the gesture's own
+  // axis decision keeps the row still.
+  const y0 = await rowCenterY(page, 2);
+  await drag(page, cdp, { x: 330, y: y0 }, { x: 250, y: y0 + 130 }, { lift: false, settle: true });
+  expect(await rowOffsets(page)).toEqual(Array(NOTES.length + 1).fill(0));
+  await lift(cdp);
+  await page.waitForTimeout(300);
+  expect(await rowOffsets(page)).toEqual(Array(NOTES.length + 1).fill(0));
+  expect(await listScrollTop(page)).toBe(0);
+
   // A thumb dragging the list 480pt up while drifting 70pt left — well past
   // the halfway point that snaps Delete open. Sample mid-gesture, finger still
   // down. (Settled, not flicked, so the scroll offset is the same every run.)
@@ -171,7 +185,6 @@ test("a deliberate swipe reveals Delete on one row at a time, and scrolling puts
   await swipe(page, cdp, { x: 330, y }, { x: 210, y: y + 6 });
   await expect.poll(() => rowOffsets(page)).toEqual(openAt(2));
   expect(await deleteIsExposed(page, 2)).toBe(true);
-  expect(await listScrollTop(page)).toBe(0); // ...without scrolling the list.
 
   // ...opening row 4 closes row 2 (never two Delete buttons at once)...
   y = await rowCenterY(page, 4);

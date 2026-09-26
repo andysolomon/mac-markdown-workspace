@@ -41,6 +41,7 @@ export function DocListItem({
 }) {
   // Live offset while a sideways swipe is under the finger; null at rest.
   const [dragX, setDragX] = useState<number | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const dragged = useRef(false);
   const stopWatchingScroll = useRef<(() => void) | null>(null);
@@ -51,7 +52,39 @@ export function DocListItem({
     stopWatchingScroll.current = null;
   };
 
-  useEffect(() => () => stopWatchingScroll.current?.(), []);
+  // touchmove is a native non-passive listener (React's are passive): once a
+  // swipe commits, it must hold the list still — iOS WebKit otherwise lets
+  // the swipe's vertical wobble scroll the list.
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const onTouchMove = (e: TouchEvent) => {
+      const g = gesture.current;
+      if (!g || g.axis === "y") return;
+      if (e.touches.length !== 1) {
+        g.axis = "y";
+        setDragX(null);
+        return;
+      }
+      const dx = e.touches[0].clientX - g.startX;
+      const dy = e.touches[0].clientY - g.startY;
+      if (g.axis === null) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < AXIS_SLOP) return;
+        // A move the browser won't let us cancel is one it is already scrolling with.
+        g.axis = e.cancelable && Math.abs(dx) > Math.abs(dy) * SWIPE_BIAS ? "x" : "y";
+        if (g.axis === "y") return;
+        dragged.current = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      g.offset = Math.min(0, Math.max(-REVEAL_WIDTH - 20, g.base + dx));
+      setDragX(g.offset);
+    };
+    row.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      row.removeEventListener("touchmove", onTouchMove);
+      stopWatchingScroll.current?.();
+    };
+  }, []);
 
   const onTouchStart = (e: React.TouchEvent) => {
     endGesture();
@@ -66,34 +99,15 @@ export function DocListItem({
       axis: null,
     };
     dragged.current = false;
-    // Anything scrolling under the finger means the browser took this
-    // gesture as a scroll: it can no longer reveal Delete.
-    const onScroll = () => {
-      if (gesture.current) gesture.current.axis = "y";
-      setDragX(null);
+    // The list (or page) scrolling before the gesture picks an axis means the
+    // browser took it as a scroll: it can no longer reveal Delete.
+    const onScroll = (ev: Event) => {
+      const g = gesture.current;
+      const row = rowRef.current;
+      if (g?.axis === null && row && (ev.target as Node | null)?.contains?.(row)) g.axis = "y";
     };
     window.addEventListener("scroll", onScroll, { capture: true, passive: true });
     stopWatchingScroll.current = () => window.removeEventListener("scroll", onScroll, { capture: true });
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    const g = gesture.current;
-    if (!g || g.axis === "y") return;
-    if (e.touches.length !== 1) {
-      endGesture();
-      setDragX(null);
-      return;
-    }
-    const dx = e.touches[0].clientX - g.startX;
-    const dy = e.touches[0].clientY - g.startY;
-    if (g.axis === null) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < AXIS_SLOP) return;
-      g.axis = Math.abs(dx) > Math.abs(dy) * SWIPE_BIAS ? "x" : "y";
-      if (g.axis === "y") return;
-      dragged.current = true;
-    }
-    g.offset = Math.min(0, Math.max(-REVEAL_WIDTH - 20, g.base + dx));
-    setDragX(g.offset);
   };
 
   const onTouchEnd = () => {
@@ -136,10 +150,10 @@ export function DocListItem({
         </button>
       ) : null}
       <div
+        ref={rowRef}
         className="mm-doc-row"
         onClick={handleClick}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
         style={{
