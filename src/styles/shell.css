@@ -711,10 +711,13 @@ html[data-mm-viewport-debug] .app-shell {
 
 /* Simulator feedback round (issue #18 / W-000018) */
 
-/* Swipe-to-delete: the row translates left to reveal a destructive action. */
+/* Swipe-to-delete: the row translates left to reveal a destructive action.
+   Vertical pans stay native scrolling; a sideways swipe is left to the row's
+   touch handlers instead of also scrolling the list. */
 .mm-doc-swipe {
   position: relative;
   overflow: hidden;
+  touch-action: pan-y pinch-zoom;
 }
 
 .mm-swipe-delete {
