@@ -36,12 +36,17 @@ test.use({
   userAgent: IPHONE_SAFARI,
 });
 
+type NotesApi = { writeNote(p: { id: string; body: string; updatedAt: number }): Promise<unknown> };
+
+/** Fixed ids and a minute apart: the list order (newest first) is the same every run. */
 async function openSeededList(page: Page) {
   await page.goto("/");
   await expect(page.locator(".mm-doc-row").first()).toBeVisible();
   await page.evaluate(async (bodies) => {
-    const api = (window as unknown as { appApi: { createNote(p: { body: string }): Promise<unknown> } }).appApi;
-    for (const body of bodies) await api.createNote({ body });
+    const api = (window as unknown as { appApi: NotesApi }).appApi;
+    for (const [i, body] of bodies.entries()) {
+      await api.writeNote({ id: `swipe-seed-${i}`, body, updatedAt: Date.UTC(2026, 0, 1) + i * 60_000 });
+    }
   }, NOTES);
   await page.reload();
   await expect(page.locator(".mm-doc-row")).toHaveCount(NOTES.length + 1);
@@ -49,17 +54,38 @@ async function openSeededList(page: Page) {
 
 type Point = { x: number; y: number };
 
-/** One finger: down at `from`, moved in even steps to `to`, then lifted. */
-async function drag(cdp: CDPSession, from: Point, to: Point, opts: { lift?: boolean } = {}) {
+/**
+ * One finger: down at `from`, moved in even steps to `to`, then lifted
+ * mid-motion (a flick, which carries momentum) — or, with `settle`, held
+ * still first the way a thumb rests after a swipe. Chromium suppresses the
+ * next tap while a flick's fling is still running, so swipes settle.
+ */
+async function drag(
+  page: Page,
+  cdp: CDPSession,
+  from: Point,
+  to: Point,
+  opts: { lift?: boolean; settle?: boolean } = {},
+) {
   const steps = 20;
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
   for (let i = 1; i <= steps; i++) {
+    await page.waitForTimeout(16); // one move per frame, like a real finger
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchMove",
       touchPoints: [{ x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps }],
     });
   }
+  if (opts.settle) {
+    await page.waitForTimeout(150);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [to] });
+  }
   if (opts.lift !== false) await lift(cdp);
+}
+
+/** A deliberate sideways swipe: slide, rest, lift. */
+function swipe(page: Page, cdp: CDPSession, from: Point, to: Point) {
+  return drag(page, cdp, from, to, { settle: true });
 }
 
 async function lift(cdp: CDPSession) {
@@ -103,10 +129,11 @@ test("scrolling the list with a thumb that drifts sideways never reveals Delete"
   await openSeededList(page);
   const cdp = await page.context().newCDPSession(page);
 
-  // A real thumb flick: 480pt up while drifting 70pt left — well past the
-  // halfway point that snaps Delete open. Sample mid-gesture, finger still down.
+  // A thumb dragging the list 480pt up while drifting 70pt left — well past
+  // the halfway point that snaps Delete open. Sample mid-gesture, finger still
+  // down. (Settled, not flicked, so the scroll offset is the same every run.)
   const y = await rowCenterY(page, 5);
-  await drag(cdp, { x: 330, y }, { x: 260, y: y - 480 }, { lift: false });
+  await drag(page, cdp, { x: 330, y }, { x: 260, y: y - 480 }, { lift: false, settle: true });
   expect(await rowOffsets(page)).toEqual(Array(NOTES.length + 1).fill(0));
   await lift(cdp);
 
@@ -114,9 +141,9 @@ test("scrolling the list with a thumb that drifts sideways never reveals Delete"
   await page.waitForTimeout(300); // any snap animation would have settled
   expect(await rowOffsets(page)).toEqual(Array(NOTES.length + 1).fill(0));
 
-  // A shorter, slower scroll back down with drift the other way round.
+  // A shorter drag back toward the top, drifting left again.
   const y2 = await rowCenterY(page, 12);
-  await drag(cdp, { x: 300, y: y2 - 200 }, { x: 250, y: y2 });
+  await drag(page, cdp, { x: 300, y: y2 - 200 }, { x: 250, y: y2 }, { settle: true });
   await page.waitForTimeout(300);
   expect(await rowOffsets(page)).toEqual(Array(NOTES.length + 1).fill(0));
 
@@ -141,19 +168,19 @@ test("a deliberate swipe reveals Delete on one row at a time, and scrolling puts
 
   // A sideways swipe with a little natural wobble opens row 2...
   let y = await rowCenterY(page, 2);
-  await drag(cdp, { x: 330, y }, { x: 210, y: y + 6 });
+  await swipe(page, cdp, { x: 330, y }, { x: 210, y: y + 6 });
   await expect.poll(() => rowOffsets(page)).toEqual(openAt(2));
   expect(await deleteIsExposed(page, 2)).toBe(true);
   expect(await listScrollTop(page)).toBe(0); // ...without scrolling the list.
 
   // ...opening row 4 closes row 2 (never two Delete buttons at once)...
   y = await rowCenterY(page, 4);
-  await drag(cdp, { x: 330, y }, { x: 210, y: y - 6 });
+  await swipe(page, cdp, { x: 330, y }, { x: 210, y: y - 6 });
   await expect.poll(() => rowOffsets(page)).toEqual(openAt(4));
 
   // ...and scrolling the list closes it.
   y = await rowCenterY(page, 6);
-  await drag(cdp, { x: 200, y }, { x: 200, y: y - 300 });
+  await drag(page, cdp, { x: 200, y }, { x: 200, y: y - 300 });
   await expect.poll(() => listScrollTop(page)).toBeGreaterThan(100);
   await expect.poll(() => rowOffsets(page)).toEqual(closed);
   expect(await deleteIsExposed(page, 4)).toBe(false);
@@ -170,7 +197,7 @@ test("Delete from a swipe asks first: dismissing keeps the note, confirming remo
 
   const swipeOpen = async () => {
     const y = await rowCenterY(page, 1);
-    await drag(cdp, { x: 330, y }, { x: 210, y });
+    await swipe(page, cdp, { x: 330, y }, { x: 210, y });
     await expect.poll(() => deleteIsExposed(page, 1)).toBe(true);
   };
 
