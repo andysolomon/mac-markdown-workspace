@@ -711,10 +711,15 @@ html[data-mm-viewport-debug] .app-shell {
 
 /* Simulator feedback round (issue #18 / W-000018) */
 
-/* Swipe-to-delete: the row translates left to reveal a destructive action. */
+/* Swipe-to-delete: the row translates left to reveal a destructive action.
+   Vertical pans stay native scrolling; a sideways swipe is left to the row's
+   touch handlers instead of also scrolling the list. Exactly `pan-y`: iOS
+   WebKit only locks out scrolling for a sideways-starting gesture when
+   touch-action is pan-y alone (adding pinch-zoom disables that lock). */
 .mm-doc-swipe {
   position: relative;
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 .mm-swipe-delete {
